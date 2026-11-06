@@ -2,7 +2,7 @@
 //! listed, switched on, granted permissions and configured like any plugin
 //! (runtime type "builtin"). They need no download and no "allow third-party
 //! plugins", and cannot be uninstalled. Today: the local API, the collapsed
-//! island's center pattern and Claude usage.
+//! island's center pattern, Claude usage and the Claude session ring.
 //!
 //! A built-in plugin whose work happens in the island window (a collapsed-bar
 //! ring, say) needs only an entry in BUILTINS with `native` false: it starts and
@@ -14,7 +14,7 @@ use serde_json::{Map, Value};
 
 use super::manifest::{parse_builtin_manifest, LocalizedText, PluginManifest};
 use super::settings::InfoItem;
-use crate::{claude_usage, local_api};
+use crate::{claude_sessions, claude_usage, local_api};
 
 pub(super) const LOCAL_API_ID: &str = "focusd.local-api";
 pub(super) const LOCAL_API_ALLOW_WRITE: &str = "allowWrite";
@@ -128,12 +128,28 @@ const CLAUDE_USAGE_MANIFEST: &str = r#"{
   }
 }"#;
 
+pub(super) const CLAUDE_SESSIONS_ID: &str = "focusd.claude-sessions";
+
+const CLAUDE_SESSIONS_MANIFEST: &str = r#"{
+  "id": "focusd.claude-sessions",
+  "name": { "zh-CN": "Claude 会话环", "en": "Claude session ring" },
+  "description": {
+    "zh-CN": "在收起条上用一个分段小环显示 Claude Code 会话：等授权、等你回复、运行、刚完成各有颜色，中间是会话数，点击打开 Agent 页。依赖 claude-sessions（github.com/Nicsilver/claude-sessions）的 hooks，只读取它的状态目录 ~/.claude/session-status/state，不修改任何文件。",
+    "en": "Shows Claude Code sessions as a small segmented ring on the collapsed bar: needs approval, your turn, running and just done each have a colour, the count sits in the middle, and a click opens the Agent page. Needs the hooks of claude-sessions (github.com/Nicsilver/claude-sessions); only reads its state folder ~/.claude/session-status/state and changes no files."
+  },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" }
+}"#;
+
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
 /// whether it has work in this process (`native`, see `start` and `stop`).
 pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     (LOCAL_API_ID, LOCAL_API_MANIFEST, true),
     ("focusd.center-pattern", CENTER_PATTERN_MANIFEST, false),
     (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
+    (CLAUDE_SESSIONS_ID, CLAUDE_SESSIONS_MANIFEST, true),
 ];
 
 /// Every built-in plugin's id and manifest.
@@ -193,6 +209,9 @@ pub(super) fn start(id: &str, settings: &Map<String, Value>) -> Result<Vec<InfoI
     match id {
         LOCAL_API_ID => local_api::start(allow_write(settings)).map(local_api_info),
         CLAUDE_USAGE_ID => claude_usage::start(claude_usage_config(settings)).map(|()| Vec::new()),
+        CLAUDE_SESSIONS_ID => claude_sessions::start().map(|dir| {
+            vec![InfoItem::new(LocalizedText::new("状态目录（只读）", "State folder (read only)"), dir, true, false)]
+        }),
         _ => Err(format!("Built-in plugin {id} is marked native but has no start.")),
     }
 }
@@ -205,6 +224,10 @@ pub(super) fn stop(id: &str) -> Result<(), String> {
         LOCAL_API_ID => local_api::stop(),
         CLAUDE_USAGE_ID => {
             claude_usage::stop();
+            Ok(())
+        }
+        CLAUDE_SESSIONS_ID => {
+            claude_sessions::stop();
             Ok(())
         }
         _ => Ok(()),

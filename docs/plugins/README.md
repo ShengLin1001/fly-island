@@ -33,6 +33,7 @@
 - [本地接口](../local-api.md)（`focusd.local-api`）；
 - 中心图案（`focusd.center-pattern`，默认关闭）：折叠岛没有摘要文字时，在中间显示眼睛、小鸟、光点、小猫或一只 Codex Pets 宠物，宠物随 Agent 会话的状态变换动作。
 - Claude 用量环（`focusd.claude-usage`）：收起条上的同心双环，外环 5 小时、内环 7 天，悬停显示详情卡片。只读本机 Claude Code 保存的登录凭据（`~/.claude/.credentials.json`，不刷新、不改写），经 http(s) 代理请求 `api.anthropic.com/api/oauth/usage`（代理不通即失败，不直连），间隔 5–120 分钟；失败时可读 claude-hud 的用量文件。设置：代理地址、claude-hud 用量文件路径、刷新间隔。后端轮询在 `src-tauri/src/claude_usage/`，由插件启停。
+- Claude 会话环（`focusd.claude-sessions`）：在收起条上用分段小环显示 Claude Code 会话的状态和数量。依赖 [claude-sessions](https://github.com/Nicsilver/claude-sessions) 的 hooks，只读取它的状态目录 `~/.claude/session-status/state/*.json`（以及会话 transcript 的末尾），不修改任何文件；没装 claude-sessions 时环不显示。
 
 内置插件的清单写在 `src-tauri/src/plugin_host/builtin.rs` 中，`runtime.type` 为 `builtin`。插件目录里的第三方插件不能使用这个类型，也不能使用内置插件的 id。
 

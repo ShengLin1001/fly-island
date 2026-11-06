@@ -453,7 +453,10 @@ mod settings_tests {
 mod builtin_tests {
     use std::path::PathBuf;
 
-    use super::super::builtin::{claude_usage_config, has_native_work, is_builtin, manifests, BUILTINS, CLAUDE_USAGE_ID, LOCAL_API_ALLOW_WRITE, LOCAL_API_ID};
+    use super::super::builtin::{
+        claude_usage_config, has_native_work, is_builtin, manifests, BUILTINS, CLAUDE_SESSIONS_ID, CLAUDE_USAGE_ID,
+        LOCAL_API_ALLOW_WRITE, LOCAL_API_ID,
+    };
     use super::super::grants::{record_builtin_start, record_builtin_stop};
     use super::super::runtime::{RuntimeInfo, RuntimeStatus};
     use super::super::manifest::{parse_manifest, PluginRuntime};
@@ -509,6 +512,9 @@ mod builtin_tests {
     fn only_native_built_in_plugins_do_work_in_this_process() {
         assert_eq!(has_native_work(BUILTINS, LOCAL_API_ID), Ok(true));
         assert_eq!(has_native_work(BUILTINS, CLAUDE_USAGE_ID), Ok(true));
+        // Not start() itself: linking the watcher's Tauri calls into the test binary stops it
+        // loading (0xC0000139) without the app's manifest.
+        assert_eq!(has_native_work(BUILTINS, CLAUDE_SESSIONS_ID), Ok(true));
         let table = [("focusd.native", "", true), ("focusd.window-only", "", false)];
         assert_eq!(has_native_work(&table, "focusd.window-only"), Ok(false));
         assert!(has_native_work(&table, "focusd.unknown").expect_err("unknown").contains("focusd.unknown"));

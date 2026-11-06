@@ -64,31 +64,25 @@ fn read(dir: &Path) -> ClaudeSessionsSnapshot {
 }
 
 /// Starts watching (restarting a running watcher): emits `CLAUDE_SESSIONS_CHANGED_EVENT`
-/// with the first snapshot, then whenever it changes.
-#[expect(
-    dead_code,
-    reason = "called by the session ring's built-in plugin, wired up next"
-)]
-pub(crate) fn start() -> Result<(), String> {
+/// with the first snapshot, then whenever it changes. Returns the directory it reads, for
+/// the plugin page. Called by the built-in plugin `focusd.claude-sessions`.
+pub(crate) fn start() -> Result<String, String> {
     let app = APP
         .get()
         .cloned()
         .ok_or_else(|| "Claude sessions are not initialized.".to_string())?;
     let dir = state_dir()?;
+    let shown = dir.display().to_string();
     let (stop, stopped) = mpsc::channel();
     // Replacing the handle drops the previous one, which ends that watcher.
     *WATCHER.lock().unwrap_or_else(PoisonError::into_inner) = Some(stop);
     thread::Builder::new()
         .name("claude-sessions".into())
         .spawn(move || watch(&app, &dir, &stopped))
-        .map(|_| ())
+        .map(|_| shown)
         .map_err(|error| format!("Failed to watch Claude sessions: {error}"))
 }
 
-#[expect(
-    dead_code,
-    reason = "called by the session ring's built-in plugin, wired up next"
-)]
 pub(crate) fn stop() {
     WATCHER
         .lock()
