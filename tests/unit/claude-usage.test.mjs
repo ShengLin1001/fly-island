@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { USAGE_COLORS, USAGE_STALE_MS, isUsageStale, newerUsage, usageColor, usageTooltipLines } from "../../src/features/claude-usage/usageRing.ts";
+import { USAGE_COLORS, USAGE_STALE_MS, isUsageStale, newerUsage, usageCardLines, usageColor, usageRings } from "../../src/features/claude-usage/usageRing.ts";
 import { en, zhCN } from "../../src/i18n/sections/claudeUsage.ts";
 
 const NOW = Date.parse("2026-11-06T08:00:00Z");
@@ -13,9 +13,12 @@ function usage(overrides = {}) {
     source: "api",
     updatedAt: NOW - MINUTE,
     error: null,
+    revision: 3,
     ...overrides,
   };
 }
+const EMPTY = { fiveHour: null, sevenDay: null, source: null, updatedAt: null, error: null, revision: 0 };
+const texts = (lines) => lines.map((line) => line.text);
 
 test("ring colour follows the thresholds and turns grey when stale", () => {
   assert.equal(usageColor(0, false), USAGE_COLORS.normal);
@@ -25,49 +28,56 @@ test("ring colour follows the thresholds and turns grey when stale", () => {
   assert.equal(usageColor(100, true), USAGE_COLORS.stale);
 });
 
-test("numbers are stale when missing, failed or older than 15 minutes", () => {
+test("only the age of the numbers makes them stale, not a failed refresh", () => {
   assert.equal(isUsageStale(usage(), NOW), false);
+  assert.equal(isUsageStale(usage({ error: { kind: "network", message: "x" } }), NOW), false);
   assert.equal(isUsageStale(usage({ updatedAt: NOW - USAGE_STALE_MS - 1 }), NOW), true);
   assert.equal(isUsageStale(usage({ updatedAt: null }), NOW), true);
-  assert.equal(isUsageStale(usage({ error: { kind: "network", message: "x" } }), NOW), true);
 });
 
-test("tooltip lists both windows with reset countdowns", () => {
-  assert.deepEqual(usageTooltipLines(usage(), NOW, zhCN), ["5 小时 42% · 2 小时 13 分后重置", "7 天 17% · 3 天 4 小时后重置"]);
-  assert.deepEqual(usageTooltipLines(usage(), NOW, en), ["5h 42% · resets in 2h 13m", "7d 17% · resets in 3d 4h"]);
+test("rings: 5 hours outside, 7 days inside, bare grey tracks before any numbers", () => {
+  assert.deepEqual(usageRings(usage(), NOW), [
+    { value: 0.424, color: USAGE_COLORS.normal },
+    { value: 0.17, color: USAGE_COLORS.normal },
+  ]);
+  assert.deepEqual(usageRings(usage({ fiveHour: { percent: 95, resetsAt: null }, updatedAt: NOW - 20 * MINUTE }), NOW)[0], { value: 0.95, color: USAGE_COLORS.stale });
+  assert.deepEqual(usageRings(EMPTY, NOW), [{ value: 0, color: USAGE_COLORS.stale }, { value: 0, color: USAGE_COLORS.stale }]);
 });
 
-test("tooltip handles missing reset times, past resets and short countdowns", () => {
-  const lines = usageTooltipLines(
-    usage({
-      fiveHour: { percent: 99.6, resetsAt: new Date(NOW + 5 * MINUTE).toISOString() },
-      sevenDay: { percent: 3, resetsAt: null },
-    }),
-    NOW,
-    zhCN,
-  );
-  assert.deepEqual(lines, ["5 小时 100% · 5 分后重置", "7 天 3%"]);
-  const past = usageTooltipLines(usage({ fiveHour: { percent: 1, resetsAt: new Date(NOW - MINUTE).toISOString() }, sevenDay: null }), NOW, en);
-  assert.deepEqual(past, ["5h 1% · resetting soon"]);
+test("card lists both windows with countdowns, then when and from where", () => {
+  const lines = usageCardLines(usage(), NOW, zhCN);
+  assert.deepEqual(texts(lines), ["5 小时 42% · 2 小时 13 分后重置", "7 天 17% · 3 天 4 小时后重置", "1 分钟前更新 · 来自 Anthropic"]);
+  assert.equal(lines[0].color, USAGE_COLORS.normal);
+  assert.equal(lines[2].muted, true);
+  assert.deepEqual(texts(usageCardLines(usage(), NOW, en)), ["5h 42% · resets in 2h 13m", "7d 17% · resets in 3d 4h", "updated 1 min ago · from Anthropic"]);
 });
 
-test("tooltip explains failures, age and the hud source", () => {
-  const failed = usage({ updatedAt: NOW - 23 * MINUTE, error: { kind: "loginRequired", message: "HTTP 401" } });
-  assert.deepEqual(usageTooltipLines(failed, NOW, zhCN).slice(2), ["需要在 Claude Code 里重新登录", "23 分钟前更新"]);
+test("card handles missing reset times, past resets and short countdowns", () => {
+  const lines = usageCardLines(usage({
+    fiveHour: { percent: 99.6, resetsAt: new Date(NOW + 5 * MINUTE).toISOString() },
+    sevenDay: { percent: 3, resetsAt: null },
+  }), NOW, zhCN);
+  assert.deepEqual(texts(lines).slice(0, 2), ["5 小时 100% · 5 分后重置", "7 天 3%"]);
+  assert.equal(lines[0].color, USAGE_COLORS.danger);
+  const past = usageCardLines(usage({ fiveHour: { percent: 1, resetsAt: new Date(NOW - MINUTE).toISOString() }, sevenDay: null }), NOW, en);
+  assert.equal(past[0].text, "5h 1% · resetting soon");
+});
+
+test("card names the failure, the age and the hud source", () => {
+  const failed = usage({ updatedAt: NOW - 23 * MINUTE, error: { kind: "tokenExpired", message: "" } });
+  assert.deepEqual(texts(usageCardLines(failed, NOW, zhCN)).slice(2), ["登录已过期，打开 Claude Code 以刷新登录", "23 分钟前更新 · 来自 Anthropic"]);
   const hud = usage({ source: "hud", updatedAt: NOW - 3 * 60 * MINUTE });
-  assert.deepEqual(usageTooltipLines(hud, NOW, en).slice(2), ["updated 3 h ago", "via claude-hud"]);
-  const empty = { fiveHour: null, sevenDay: null, source: null, updatedAt: null, error: { kind: "noCredentials", message: "" } };
-  assert.deepEqual(usageTooltipLines(empty, NOW, en), [en.noData, en.errors.noCredentials]);
+  assert.deepEqual(texts(usageCardLines(hud, NOW, en)).slice(2), ["updated 3 h ago · via claude-hud"]);
+  const empty = { ...EMPTY, error: { kind: "noCredentials", message: "" } };
+  assert.deepEqual(texts(usageCardLines(empty, NOW, en)), [en.noData, en.errors.noCredentials]);
 });
 
 test("an older snapshot never replaces a newer one", () => {
   const current = usage();
-  const older = usage({ updatedAt: NOW - 10 * MINUTE });
-  const failed = usage({ error: { kind: "tokenExpired", message: "" } });
-  const empty = { fiveHour: null, sevenDay: null, source: null, updatedAt: null, error: null };
+  const older = usage({ revision: 2, updatedAt: NOW });
+  const failed = usage({ revision: 4, error: { kind: "network", message: "" } });
   assert.equal(newerUsage(current, older), current);
-  assert.equal(newerUsage(current, empty), current);
+  assert.equal(newerUsage(current, EMPTY), current);
   assert.equal(newerUsage(current, failed), failed);
-  assert.equal(newerUsage(empty, older), older);
-  assert.deepEqual(usageTooltipLines(failed, NOW, zhCN).slice(2), ["登录已过期，打开 Claude Code 以刷新登录", "1 分钟前更新"]);
+  assert.equal(newerUsage(EMPTY, older), older);
 });

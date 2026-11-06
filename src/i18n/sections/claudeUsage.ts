@@ -9,6 +9,11 @@ export type ClaudeUsageText = {
   resettingSoon: string;
   updatedAgo: (minutes: number) => string;
   fromHud: string;
+  fromApi: string;
+  /** "3 分钟前更新 · 来自 claude-hud". */
+  updated: (ago: string, source: string) => string;
+  /** The ring button's label: what the card says, and that a click refreshes. */
+  ringLabel: (details: string) => string;
   noData: string;
   /** One per ClaudeUsageErrorKind in features/claude-usage/api.ts. */
   errors: {
@@ -32,6 +37,9 @@ export const zhCN: ClaudeUsageText = {
   resettingSoon: "即将重置",
   updatedAgo: (minutes) => (minutes < 1 ? "刚刚更新" : minutes < 60 ? `${minutes} 分钟前更新` : `${Math.floor(minutes / 60)} 小时前更新`),
   fromHud: "来自 claude-hud",
+  fromApi: "来自 Anthropic",
+  updated: (ago, source) => `${ago} · ${source}`,
+  ringLabel: (details) => `Claude 用量：${details}。点击刷新`,
   noData: "暂无 Claude 用量",
   errors: {
     noCredentials: "未找到 Claude Code 登录，请先在 Claude Code 里登录",
@@ -54,6 +62,9 @@ export const en: ClaudeUsageText = {
   resettingSoon: "resetting soon",
   updatedAgo: (minutes) => (minutes < 1 ? "updated just now" : minutes < 60 ? `updated ${minutes} min ago` : `updated ${Math.floor(minutes / 60)} h ago`),
   fromHud: "via claude-hud",
+  fromApi: "from Anthropic",
+  updated: (ago, source) => `${ago} · ${source}`,
+  ringLabel: (details) => `Claude usage: ${details}. Click to refresh`,
   noData: "No Claude usage yet",
   errors: {
     noCredentials: "No Claude Code login found; sign in to Claude Code first",

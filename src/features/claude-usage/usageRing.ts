@@ -1,5 +1,10 @@
 import type { ClaudeUsage, ClaudeUsageWindow } from "./api";
+import type { HoverCardLine } from "../../components/IslandHoverCard";
+import type { MiniRingTrack } from "../../components/MiniRing";
 import type { ClaudeUsageText } from "../../i18n/sections/claudeUsage";
+
+/** Ring size plus the gauge slot's gap, for the collapsed width (CollapsedSlots.sideWidth). */
+export const CLAUDE_USAGE_GAUGE_WIDTH = 20 + 6;
 
 /** Older numbers turn the ring grey. */
 export const USAGE_STALE_MS = 15 * 60_000;
@@ -11,16 +16,17 @@ export const USAGE_COLORS = {
   stale: "#8E8E93",
 } as const;
 
-/** Keeps `current` when `next` carries older numbers (a late reply racing a pushed snapshot). */
+/** Keeps `current` when `next` is an older snapshot (a late reply racing a pushed one). */
 export function newerUsage(current: ClaudeUsage, next: ClaudeUsage) {
-  if (current.updatedAt !== null && next.updatedAt !== null && next.updatedAt < current.updatedAt) return current;
-  if (current.updatedAt !== null && next.updatedAt === null) return current;
-  return next;
+  return next.revision < current.revision ? current : next;
 }
 
-/** Stale when there are no numbers, the last refresh failed, or they are over 15 minutes old. */
+/**
+ * Grey when there are no numbers yet or they are over 15 minutes old. A failed refresh alone does
+ * not grey the ring: the card names the reason while the numbers are still fresh.
+ */
 export function isUsageStale(usage: ClaudeUsage, now: number) {
-  return usage.updatedAt === null || usage.error !== null || now - usage.updatedAt > USAGE_STALE_MS;
+  return usage.updatedAt === null || now - usage.updatedAt > USAGE_STALE_MS;
 }
 
 export function usageColor(percent: number, stale: boolean) {
@@ -28,6 +34,14 @@ export function usageColor(percent: number, stale: boolean) {
   if (percent >= 90) return USAGE_COLORS.danger;
   if (percent >= 70) return USAGE_COLORS.warn;
   return USAGE_COLORS.normal;
+}
+
+/** Outer ring 5 hours, inner 7 days; a missing window is a bare track. */
+export function usageRings(usage: ClaudeUsage, now: number): MiniRingTrack[] {
+  const stale = isUsageStale(usage, now);
+  return [usage.fiveHour, usage.sevenDay].map((limit) =>
+    limit ? { value: limit.percent / 100, color: usageColor(limit.percent, stale) } : { value: 0, color: USAGE_COLORS.stale },
+  );
 }
 
 function resetText(limit: ClaudeUsageWindow, now: number, text: ClaudeUsageText) {
@@ -42,20 +56,24 @@ function resetText(limit: ClaudeUsageWindow, now: number, text: ClaudeUsageText)
   });
 }
 
-/** Tooltip lines: each window, then where and when the numbers came from or why they are old. */
-export function usageTooltipLines(usage: ClaudeUsage, now: number, text: ClaudeUsageText) {
-  const lines: string[] = [];
+/** The hover card: each window with its ring colour, the failure reason, then when and from where. */
+export function usageCardLines(usage: ClaudeUsage, now: number, text: ClaudeUsageText): HoverCardLine[] {
+  const stale = isUsageStale(usage, now);
+  const lines: HoverCardLine[] = [];
   for (const [label, limit] of [
     [text.fiveHour, usage.fiveHour],
     [text.sevenDay, usage.sevenDay],
   ] as const) {
-    if (limit) lines.push(text.window(label, Math.round(limit.percent), resetText(limit, now, text)));
+    if (limit) {
+      const percent = Math.round(limit.percent);
+      lines.push({ text: text.window(label, percent, resetText(limit, now, text)), color: usageColor(limit.percent, stale) });
+    }
   }
-  if (lines.length === 0) lines.push(text.noData);
-  if (usage.error) lines.push(text.errors[usage.error.kind]);
-  if (usage.updatedAt !== null && isUsageStale(usage, now)) {
-    lines.push(text.updatedAgo(Math.max(0, Math.floor((now - usage.updatedAt) / 60_000))));
+  if (lines.length === 0) lines.push({ text: text.noData, muted: true });
+  if (usage.error) lines.push({ text: text.errors[usage.error.kind] });
+  if (usage.updatedAt !== null) {
+    const minutes = Math.max(0, Math.floor((now - usage.updatedAt) / 60_000));
+    lines.push({ text: text.updated(text.updatedAgo(minutes), usage.source === "hud" ? text.fromHud : text.fromApi), muted: true });
   }
-  if (usage.source === "hud") lines.push(text.fromHud);
   return lines;
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getClaudeUsage, listenClaudeUsage, refreshClaudeUsage, type ClaudeUsage } from "./api";
 import { newerUsage } from "./usageRing";
 
-export const EMPTY_CLAUDE_USAGE: ClaudeUsage = { fiveHour: null, sevenDay: null, source: null, updatedAt: null, error: null };
+export const EMPTY_CLAUDE_USAGE: ClaudeUsage = { fiveHour: null, sevenDay: null, source: null, updatedAt: null, error: null, revision: 0 };
 
 /** Ticks once a minute so reset countdowns and the stale grey stay current between snapshots. */
 const NOW_TICK_MS = 60_000;

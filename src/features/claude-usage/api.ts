@@ -27,6 +27,8 @@ export type ClaudeUsage = {
   updatedAt: number | null;
   /** The last refresh failed; the windows still hold the last good numbers. */
   error: { kind: ClaudeUsageErrorKind; message: string } | null;
+  /** Goes up with every refresh; the higher one is newer. */
+  revision: number;
 };
 
 export const CLAUDE_USAGE_UPDATED_EVENT = "claude-usage-updated";
