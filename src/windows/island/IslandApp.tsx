@@ -271,12 +271,12 @@ export function IslandApp() {
   );
 
   const agentVisualState = useMemo(
-    () => (settings.agentStatusEnabled ? getAgentVisualState(agentStatus) : "idle"),
-    [agentStatus, settings.agentStatusEnabled],
+    () => (settings.agentStatusEnabled ? getAgentVisualState(agentStatus, activeAgentSessionCount) : "idle"),
+    [agentStatus, activeAgentSessionCount, settings.agentStatusEnabled],
   );
   const agentStatusLabel = useMemo(
-    () => getAgentStatusLabel(agentStatus, t),
-    [agentStatus, t],
+    () => getAgentStatusLabel(agentStatus, t, activeAgentSessionCount),
+    [agentStatus, activeAgentSessionCount, t],
   );
 
   const { openTranslator, openTranslationPeek } = useIslandTranslation(

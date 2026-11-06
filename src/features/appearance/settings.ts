@@ -12,7 +12,8 @@ export const MIN_TOP_FILLET_RADIUS = 0;
 // The island window leaves room beside the island for fillets up to this size.
 export const MAX_TOP_FILLET_RADIUS = 12;
 // Bottom corner radius of the expanded island; every other island radius scales from it.
-export const DEFAULT_ISLAND_CORNER_RADIUS = 16;
+// 28 keeps inner panels (20px in) concentric and caps the collapsed corners as a capsule.
+export const DEFAULT_ISLAND_CORNER_RADIUS = 28;
 export const MIN_ISLAND_CORNER_RADIUS = 16;
 export const MAX_ISLAND_CORNER_RADIUS = 40;
 export const DEFAULT_HOVER_EXPAND_DELAY_MS = 0;
@@ -55,8 +56,9 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   fontFamily: "system",
   glassIntensity: 72,
   opacity: 100,
-  collapsedScale: 0.96,
-  expandedScale: 1.05,
+  // 1: any other scale resamples the island's text and 1px lines.
+  collapsedScale: 1,
+  expandedScale: 1,
   marginY: 0,
   topFilletRadius: 12,
   islandCornerRadius: DEFAULT_ISLAND_CORNER_RADIUS,
@@ -187,8 +189,9 @@ export function normalizeSettings(
   const collapsedScale = hasPreviousDefaultScales
     ? 0.82
     : settings?.collapsedScale ?? settings?.sizeScale ?? DEFAULT_SETTINGS.collapsedScale;
+  // The defaults these settings moved to back then, not today's.
   const expandedScale = hasPreviousDefaultScales
-    ? DEFAULT_SETTINGS.expandedScale
+    ? 1.05
     : settings?.expandedScale ?? settings?.sizeScale ?? DEFAULT_SETTINGS.expandedScale;
   const marginY = settings?.marginY ?? settings?.margin ?? DEFAULT_SETTINGS.marginY;
   const hasPreviousDefaultMargin =

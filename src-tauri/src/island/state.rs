@@ -69,7 +69,12 @@ impl IslandWindowState {
     }
 
     pub(super) fn bottom_corner_radius(self) -> f64 {
-        self.mode.corner_radius() * self.corner_radius_factor()
+        let radius = self.mode.corner_radius() * self.corner_radius_factor();
+        match self.mode {
+            // A capsule at most, as --island-radius-collapsed in IslandShell.css.
+            IslandMode::Collapsed => radius.min(COLLAPSED_ISLAND_HEIGHT / 2.0),
+            IslandMode::Expanded => radius,
+        }
     }
 
     pub(super) fn top_corner_radius(self) -> f64 {

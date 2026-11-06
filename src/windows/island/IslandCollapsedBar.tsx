@@ -163,7 +163,7 @@ export function IslandCollapsedBar({
               {agentSession.provider ? (
                 <AgentProviderIcon provider={agentSession.provider} size={16} />
               ) : (
-                <Bot className="island__agent-session-bot" size={16} strokeWidth={2.2} aria-hidden="true" />
+                <Bot className="island__agent-session-bot" size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
               )}
               <span className="island__agent-session-title">{agentSession.title}</span>
             </span>
@@ -202,14 +202,14 @@ export function IslandCollapsedBar({
             openSettingsWindow("updates");
           }}
         >
-          <CircleArrowUp size={15} strokeWidth={2.1} aria-hidden="true" />
+          <CircleArrowUp size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
           <span className="island-message-button__dot island-update-badge__dot" aria-hidden="true" />
         </button>
       )}
       {showCollapsedText && !preview && !translationPeek && pluginStatusChip}
       {shelfCount !== null && shelfCount > 0 && (
         <button className="island-shelf-count" type="button" aria-label={t.island.shelfCount(shelfCount)} onClick={() => onOpenPage("shelf")}>
-          <Inbox size={13} strokeWidth={2.3} aria-hidden="true" />
+          <Inbox size={14} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
           <span>{shelfCount}</span>
         </button>
       )}

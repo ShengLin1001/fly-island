@@ -89,6 +89,12 @@ pub(super) fn cursor_is_inside_island(window: &WebviewWindow) -> bool {
     )
 }
 
+/// Whether a point `dx`, `dy` from a corner's centre is inside its curve: the
+/// superellipse |x|^4 + |y|^4 <= 1 that CSS `corner-shape: squircle` draws.
+fn inside_corner(dx: f64, dy: f64, radius: f64) -> bool {
+    (dx / radius).powi(4) + (dy / radius).powi(4) <= 1.0
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "a point and the notch's rectangle and two radii, all plain numbers"
@@ -114,7 +120,7 @@ pub(super) fn point_in_notch(
     if y < top + top_radius && (x < left + top_radius || x > right - top_radius) {
         let dx = x - x.clamp(left + top_radius, right - top_radius);
         let dy = y - (top + top_radius);
-        return dx * dx + dy * dy <= top_radius * top_radius;
+        return inside_corner(dx, dy, top_radius);
     }
 
     let radius = radius.min(width / 2.0).min(height);
@@ -129,8 +135,5 @@ pub(super) fn point_in_notch(
         x
     };
     let center_y = y.min(bottom - radius);
-    let dx = x - center_x;
-    let dy = y - center_y;
-
-    (dx * dx) + (dy * dy) <= radius * radius
+    inside_corner(x - center_x, y - center_y, radius)
 }

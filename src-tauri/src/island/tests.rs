@@ -134,6 +134,17 @@ fn detached_island_rounds_top_corners() {
 }
 
 #[test]
+fn corners_follow_the_css_squircle() {
+    // Bottom corner radius 20 at (0, 100); top corner radius 14 at (0, 0) when detached.
+    let contains = |x, y, top_radius| point_in_notch(x, y, 0.0, 0.0, 200.0, 100.0, 20.0, top_radius);
+    // On the diagonal a squircle reaches 0.16 r from the corner, a circle only 0.29 r.
+    assert!(contains(4.4, 95.6, 0.0));
+    assert!(!contains(2.4, 97.6, 0.0));
+    assert!(contains(3.0, 3.0, 14.0));
+    assert!(!contains(1.5, 1.5, 14.0));
+}
+
+#[test]
 fn docked_island_does_not_capture_cursor_outside_its_sides() {
     for scale in [0.75, DEFAULT_COLLAPSED_SCALE, 1.0, 1.4, 2.1] {
         let width = COLLAPSED_ISLAND_WIDTH * scale;
@@ -203,7 +214,8 @@ fn corner_radius_setting_scales_every_hit_test_radius() {
     expanded.top_attached = false;
     collapsed.top_attached = false;
     assert_eq!(expanded.bottom_corner_radius(), EXPANDED_RADIUS);
-    assert_eq!(collapsed.bottom_corner_radius(), COLLAPSED_RADIUS);
+    // 22px would pass half the 38px height; the collapsed corners stop at a capsule.
+    assert_eq!(collapsed.bottom_corner_radius(), COLLAPSED_ISLAND_HEIGHT / 2.0);
     assert_eq!(expanded.top_corner_radius(), 22.0);
     assert_eq!(collapsed.top_corner_radius(), 14.0);
 
