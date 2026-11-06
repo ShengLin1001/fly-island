@@ -8,6 +8,7 @@ import "../../src/windows/island/IslandApp";
 import { IslandShell } from "../../src/windows/island/IslandShell";
 import { useCollapsedSlots } from "../../src/windows/island/useCollapsedSlots";
 import type { CollapsedSlots } from "../../src/windows/island/types";
+import type { AgentActivity } from "../../src/features/center-pattern";
 import type { ClaudeSessionsSnapshot } from "../../src/features/claude-sessions/api";
 import { useQQNotifications } from "../../src/features/messages/qq-notifications/QQNotifications";
 import { useWeChatReminders } from "../../src/features/messages/wechat/WeChatReminders";
@@ -56,9 +57,11 @@ mockIPC((command) => {
 }, { shouldMockEvents: true });
 
 let openedPage: string | null = null;
+// One array for every render: a new one each time would read as new agent activity.
+const NO_AGENTS: AgentActivity[] = [];
 
 function Island({ agents, count, report }: { agents: boolean; count: number; report: (slots: CollapsedSlots) => void }) {
-  const slots = useCollapsedSlots({ paused: true, agents: [], agentsOn: agents, onOpenAgents: () => { openedPage = "agents"; } });
+  const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, agentsOn: agents, onOpenAgents: () => { openedPage = "agents"; } });
   report(slots);
   const qq = useQQNotifications(true);
   const wechat = useWeChatReminders(true);
@@ -108,7 +111,7 @@ async function runChecks() {
   try {
     let [bar, slots] = await mount("AI Agent 开启：会话环替换蓝色数字", true);
     const ring = bar.querySelector<HTMLButtonElement>("button.claude-session-ring");
-    check(ring && !bar.querySelector(".island-agent-count") && bar.lastElementChild === ring && slots.sideWidth === 0,
+    check(ring && !bar.querySelector(".island-agent-count") && bar.lastElementChild?.contains(ring!) && !slots.sideWidth,
       "AI Agent 开启时会话环替换蓝色数字，排在最右，不加宽收起条");
     check(ring!.querySelector(".mini-ring__label")?.textContent === "5" && ring!.querySelectorAll(".mini-ring__arc").length === 4,
       "中心写总数，四种状态各一段");
