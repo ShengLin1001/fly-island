@@ -18,9 +18,6 @@ import { openSettingsWindow } from "../settings/api";
 import { TranslationPanel } from "../../features/translation/TranslationPanel";
 import { useQuickTranslation } from "../../features/translation/useQuickTranslation";
 import { getAgentStatusLabel, getAgentVisualState, withoutHiddenProviders } from "../../features/agent-status/status";
-import { useAgentStatus } from "../../features/agent-status/useAgentStatus";
-import { useAgentSession } from "../../features/agent-status/useAgentSession";
-import { useIslandAgentSessions } from "../../features/agent-status/useIslandAgentSessions";
 import { alertKindsOf, useAgentAlerts } from "../../features/agent-status/useAgentAlerts";
 import { useAgentSounds } from "../../features/agent-status/sounds/useAgentSounds";
 import { AgentSessionsPanel } from "../../features/agent-status/AgentSessionsPanel";
@@ -48,6 +45,7 @@ import { useGameMode } from "./useGameMode";
 import { useIslandKeyboard } from "./useIslandKeyboard";
 import { usePanelPreview } from "./usePanelPreview";
 import { useIslandFeatures } from "./useIslandFeatures";
+import { useIslandAgents } from "./useIslandAgents";
 import { useFileShelfDrop } from "./useFileShelfDrop";
 import { useIslandNavigation } from "./useIslandNavigation";
 import { useTuckPeek } from "./useTuckPeek";
@@ -107,14 +105,8 @@ export function IslandApp() {
     mediaCommandError,
     runMediaCommand,
   } = useMediaState(settings.musicEnabled);
-  const agentStatus = useAgentStatus(settings.agentStatusEnabled);
-  const { agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions } = useIslandAgentSessions(settings);
-  const agentSession = useAgentSession(
-    agentSessions,
-    agentStatus.others,
-    settings.agentStatusEnabled && settings.agentTitleEnabled,
-  );
-
+  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentSession } =
+    useIslandAgents(settings);
   const openSavePathSettings = useCallback(() => {
     openSettingsWindow("savePath");
   }, []);
