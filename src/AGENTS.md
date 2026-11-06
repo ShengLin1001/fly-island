@@ -26,6 +26,7 @@ src/
 │   ├── messages/            # 消息导航与预览；mail/、qq-notifications/、wechat/ 子目录
 │   ├── agent-status/        # AI 代理状态；sounds/ 为 Agent 音效：内置音效播放、设置 → 声音页、导入音效包
 │   ├── claude-usage/        # Claude 用量双环的数据：快照与事件的类型化封装、hook、阈值配色与提示文案（usageRing.ts）
+│   ├── claude-sessions/     # 会话环的数据：claude-sessions 状态目录的类型化封装、hook、分段与提示文字
 │   ├── appearance/          # 外观设置、布局编辑器、预设
 │   ├── translation/         # 快捷翻译：服务与模型设置、凭据、快捷键的类型化封装，请求与自动翻译 hook，岛内翻译页
 │   ├── settings-backup/     # 设置 → 通用 → 备份与恢复：导出到「下载」文件夹的 JSON、从文件恢复（只含 BACKUP_KEYS 列出的设置 key）

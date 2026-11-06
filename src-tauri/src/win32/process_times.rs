@@ -3,7 +3,10 @@
 //! Kept out of `process.rs` because the WeChat probe example compiles that file
 //! and has no use for this.
 
-use windows::Win32::{Foundation::FILETIME, System::Threading::GetProcessTimes};
+use windows::Win32::{
+    Foundation::{FILETIME, STILL_ACTIVE},
+    System::Threading::{GetExitCodeProcess, GetProcessTimes},
+};
 
 use super::process::open_for_limited_query;
 
@@ -23,6 +26,34 @@ pub(crate) fn start_time(process_id: u32) -> Option<u64> {
     Some(((started.dwHighDateTime as u64) << 32) | started.dwLowDateTime as u64)
 }
 
+/// Start time (as in [`start_time`]) of `process_id` if it is still running, with one
+/// handle for both checks; `Some(0)` when it runs but its times cannot be read. `None`
+/// when it has exited (an exited process stays openable while anyone holds a handle) or
+/// cannot be opened: limited queries are granted on any process of the same user, elevated
+/// ones included, so a refusal means the id belongs to another user's or a protected process.
+pub(crate) fn running_start_time(process_id: u32) -> Option<u64> {
+    let process = open_for_limited_query(process_id)?;
+    let mut code = 0u32;
+    // SAFETY: `process.0` is a live handle opened with
+    // PROCESS_QUERY_LIMITED_INFORMATION, which GetExitCodeProcess accepts, and
+    // `code` is a valid local.
+    unsafe { GetExitCodeProcess(process.0, &mut code) }.ok()?;
+    // A process that exited with code 259 also reads as running; nothing we watch exits so.
+    if code != STILL_ACTIVE.0 as u32 {
+        return None;
+    }
+    let mut started = FILETIME::default();
+    let mut exited = FILETIME::default();
+    let mut kernel = FILETIME::default();
+    let mut user = FILETIME::default();
+    // SAFETY: as in `start_time`: a live limited-query handle and four valid locals.
+    let read =
+        unsafe { GetProcessTimes(process.0, &mut started, &mut exited, &mut kernel, &mut user) };
+    Some(read.map_or(0, |()| {
+        ((started.dwHighDateTime as u64) << 32) | started.dwLowDateTime as u64
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -31,5 +62,19 @@ mod tests {
     fn the_current_process_has_a_start_time_and_missing_ones_do_not() {
         assert!(start_time(std::process::id()).is_some_and(|ticks| ticks > 0));
         assert_eq!(start_time(u32::MAX), None);
+        assert!(running_start_time(std::process::id()).is_some_and(|ticks| ticks > 0));
+        assert_eq!(running_start_time(u32::MAX), None);
+    }
+
+    #[test]
+    fn an_exited_process_is_not_running_while_its_handle_is_held() {
+        let mut child = std::process::Command::new("cmd")
+            .args(["/c", "exit 0"])
+            .spawn()
+            .unwrap();
+        child.wait().unwrap();
+        // `child` still owns its process handle, so the id stays openable until it drops.
+        assert!(start_time(child.id()).is_some());
+        assert_eq!(running_start_time(child.id()), None);
     }
 }

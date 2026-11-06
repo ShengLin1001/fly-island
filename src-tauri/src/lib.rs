@@ -1,5 +1,6 @@
 mod agent_approval;
 mod agent_status;
+mod claude_sessions;
 mod claude_usage;
 mod clipboard_history;
 mod dev_lane;
@@ -81,6 +82,7 @@ pub fn run() {
                 eprintln!("failed to initialize clipboard history: {error}");
             }
             translation::init(app.handle());
+            claude_sessions::init(app.handle());
             if let Err(error) = file_shelf::init(app.handle()) {
                 eprintln!("failed to initialize the file shelf: {error}");
             }
@@ -142,6 +144,7 @@ pub fn run() {
             agent_approval;
             device_use;
             claude_usage;
+            claude_sessions;
             media_control;
             lyrics;
             clipboard_history;
