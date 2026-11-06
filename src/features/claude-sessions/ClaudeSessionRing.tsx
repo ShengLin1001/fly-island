@@ -1,7 +1,9 @@
+import { useMemo } from "react";
+import { IslandHoverCard } from "../../components/IslandHoverCard";
 import { MiniRing } from "../../components/MiniRing";
 import { useTranslation } from "../../i18n";
 import type { ClaudeSessionsSnapshot } from "./api";
-import { sessionRingSegments, sessionRingSummary } from "./sessionRing.ts";
+import { sessionRingCardLines, sessionRingSegments, sessionRingSummary } from "./sessionRing.ts";
 import "./ClaudeSessionRing.css";
 
 /** Outer size of the ring in px; the collapsed bar reserves this plus a gap. */
@@ -25,19 +27,31 @@ export function ClaudeSessionRing({ snapshot, onOpen }: ClaudeSessionRingProps) 
       ariaLabel={summary}
     />
   );
-  if (!onOpen) return <span className="claude-session-ring">{ring}</span>;
+  const lines = useMemo(
+    () => sessionRingCardLines(snapshot, t.claudeSessions).map((text) => ({ text })),
+    [snapshot, t.claudeSessions],
+  );
+  if (!onOpen) {
+    return (
+      <IslandHoverCard lines={lines}>
+        <span className="claude-session-ring">{ring}</span>
+      </IslandHoverCard>
+    );
+  }
   return (
-    <button
-      className="claude-session-ring claude-session-ring--button"
-      type="button"
-      aria-label={t.claudeSessions.openAgents(summary)}
-      onClick={(event) => {
-        // The bar itself opens the island on a click; this one goes to the Agent page.
-        event.stopPropagation();
-        onOpen();
-      }}
-    >
-      {ring}
-    </button>
+    <IslandHoverCard lines={lines}>
+      <button
+        className="claude-session-ring claude-session-ring--button"
+        type="button"
+        aria-label={t.claudeSessions.openAgents(summary)}
+        onClick={(event) => {
+          // The bar itself opens the island on a click; this one goes to the Agent page.
+          event.stopPropagation();
+          onOpen();
+        }}
+      >
+        {ring}
+      </button>
+    </IslandHoverCard>
   );
 }
