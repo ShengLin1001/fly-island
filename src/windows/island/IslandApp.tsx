@@ -17,10 +17,6 @@ import { openSettingsWindow } from "../settings/api";
 import { TranslationPanel } from "../../features/translation/TranslationPanel";
 import { useQuickTranslation } from "../../features/translation/useQuickTranslation";
 import { getAgentStatusLabel, getAgentVisualState } from "../../features/agent-status/status";
-import { useAgentStatus } from "../../features/agent-status/useAgentStatus";
-import { useAgentSession } from "../../features/agent-status/useAgentSession";
-import { useAgentSessions } from "../../features/agent-status/useAgentSessions";
-import { countActiveSessions, filterSessions, isActivePhase } from "../../features/agent-status/sessionList";
 import { AgentSessionsPanel } from "../../features/agent-status/AgentSessionsPanel";
 import { useIslandSettings } from "../../features/appearance/useIslandSettings";
 import { ClipboardHistoryPanel } from "../../features/clipboard/ClipboardHistoryPanel";
@@ -46,6 +42,7 @@ import { useGameMode } from "./useGameMode";
 import { useIslandKeyboard } from "./useIslandKeyboard";
 import { usePanelPreview } from "./usePanelPreview";
 import { useIslandFeatures } from "./useIslandFeatures";
+import { useIslandAgents } from "./useIslandAgents";
 import { useFileShelfDrop } from "./useFileShelfDrop";
 import { useIslandNavigation } from "./useIslandNavigation";
 import { useTuckPeek } from "./useTuckPeek";
@@ -103,26 +100,7 @@ export function IslandApp() {
     mediaCommandError,
     runMediaCommand,
   } = useMediaState(settings.musicEnabled);
-  const agentStatus = useAgentStatus(settings.agentStatusEnabled);
-  // Read every second: the collapsed island names sessions from it and holds a finished one's
-  // title for three seconds after its file last changed. Answered from a cache in about 1 ms.
-  const allAgentSessions = useAgentSessions(settings.agentStatusEnabled, 1000, settings.agentSessionHours);
-  // Agents switched off in Settings → AI Agent are left out of the page and the count.
-  const agentSessions = useMemo(
-    () => filterSessions(allAgentSessions, { claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex }),
-    [allAgentSessions, settings.agentShowClaudeCode, settings.agentShowCodex],
-  );
-  const listedAgentSessions = useMemo(
-    () => (settings.agentHideFinished ? agentSessions.filter((session) => isActivePhase(session.phase)) : agentSessions),
-    [agentSessions, settings.agentHideFinished],
-  );
-  const activeAgentSessionCount = countActiveSessions(agentSessions);
-  const agentSession = useAgentSession(
-    agentSessions,
-    agentStatus.others,
-    settings.agentStatusEnabled && settings.agentTitleEnabled,
-  );
-
+  const { agentStatus, listedAgentSessions, activeAgentSessionCount, agentSession } = useIslandAgents(settings);
   const openSavePathSettings = useCallback(() => {
     openSettingsWindow("savePath");
   }, []);
