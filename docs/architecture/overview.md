@@ -18,6 +18,7 @@
 │           plugin_host（插件子进程，stdio JSON-RPC，按权限经 local_api 调用 main 窗口）     │
 │           mail · qq_notifications · wechat_reminders · translation · settings_window │
 │           device_use（摄像头、麦克风使用提示）· system_levels（音量、亮度变化提示）    │
+│           claude_usage（Claude 用量：只读 Claude Code 凭据，经代理问 oauth/usage）   │
 │  后台服务：IMAP IDLE 收信、剪贴板监听、通知监听、微信窗口闪烁检测、鼠标穿透循环        │
 └────────────┬─────────────────────────────────────────────────────────────────────────┘
              ▼
@@ -37,6 +38,7 @@
 | 插件：已安装插件、启用与授权状态、插件私有数据 | 应用数据目录（`plugins/<id>/`、`plugins.json`、`plugins-data/<id>/`，见 [docs/plugins/README.md](../plugins/README.md)） | `plugin_host` |
 | 审批端点端口与访问令牌（装进 Claude Code / Codex 的 PermissionRequest 钩子）；首选端口 47830，被占用时换端口并写回 | 应用数据目录（`agent-approval.json`） | `agent_approval` |
 | 本地接口端口与访问令牌（脚本也会读取）；开关与"允许修改"由内置插件 `focusd.local-api` 在 `plugins.json` 中保存，并同步写入此文件供脚本参考 | 应用数据目录（`local-api.json`，见 [docs/local-api.md](../local-api.md)） | `local_api`、`plugin_host/builtin.rs` |
+| Claude 用量（5 小时 / 7 天）：只读 Claude Code 的 access token，不刷新、不写凭据；令牌不进日志、前端和事件；失败时读 claude-hud 的 `display.externalUsageWritePath` 文件 | 只读 `%CLAUDE_CONFIG_DIR%` 或 `~/.claude/.credentials.json`；用量快照仅在内存中 | `claude_usage` |
 | Codex / Claude Code hook 配置 | `~/.codex/config.toml`、`~/.claude/settings.json` 中带标记的受管区块 | `agent_status` |
 | QQ 邮箱授权码、翻译 API 密钥 | Windows 凭据管理器（`com.focusd.island.qq-mail`、`com.focusd.island.translation`；翻译密钥按服务分条目，用户名为服务 id，DeepSeek 沿用 `deepseek`） | `qq_mail`、`translation` |
 | 待办 Markdown 导出 | 用户选择的目录（经过校验） | `system` |

@@ -1,5 +1,6 @@
 mod agent_approval;
 mod agent_status;
+mod claude_usage;
 mod clipboard_history;
 mod dev_lane;
 mod device_use;
@@ -139,6 +140,7 @@ pub fn run() {
             agent_status;
             agent_approval;
             device_use;
+            claude_usage;
             media_control;
             lyrics;
             clipboard_history;
