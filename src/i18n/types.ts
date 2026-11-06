@@ -7,6 +7,7 @@ import type { TranslatorText } from "./sections/translator";
 import type { IslandText } from "./sections/island";
 import type { AgentText } from "./sections/agent";
 import type { ClaudeUsageText } from "./sections/claudeUsage";
+import type { ClaudeSessionsText } from "./sections/claudeSessions";
 import type { NotebookText } from "./sections/notebook";
 import type { ArchiveText } from "./sections/archive";
 import type { MusicText } from "./sections/music";
@@ -35,6 +36,7 @@ export type Translations = {
 
   agent: AgentText;
   claudeUsage: ClaudeUsageText;
+  claudeSessions: ClaudeSessionsText;
 
   notebook: NotebookText;
 

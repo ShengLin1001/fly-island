@@ -8,6 +8,7 @@ import * as translator from "../sections/translator.ts";
 import * as island from "../sections/island.ts";
 import * as agent from "../sections/agent.ts";
 import * as claudeUsage from "../sections/claudeUsage.ts";
+import * as claudeSessions from "../sections/claudeSessions.ts";
 import * as notebook from "../sections/notebook.ts";
 import * as archive from "../sections/archive.ts";
 import * as music from "../sections/music.ts";
@@ -32,6 +33,7 @@ const en: Translations = {
 
   agent: agent.en,
   claudeUsage: claudeUsage.en,
+  claudeSessions: claudeSessions.en,
 
   notebook: notebook.en,
 
