@@ -86,6 +86,7 @@ export function IslandApp() {
   } = useIslandNavigation();
   const pluginPages = usePluginPages(page);
   const [settings, setSettings] = useIslandSettings();
+  const openAgentsPage = useCallback(() => openIslandPage("agents"), [openIslandPage]);
   // Quiet while a full-screen app (usually a game) is in front, if game mode asks for it.
   const game = useGameMode(settings, { mode, isTucked, collapseIsland, tuckIsland, revealIsland });
   // A tucked island still takes message previews when it will slide out to show them.
@@ -106,9 +107,13 @@ export function IslandApp() {
     mediaCommandError,
     runMediaCommand,
   } = useMediaState(settings.musicEnabled);
-  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentSession, agentActivity } =
-    useIslandAgents(settings);
-  const collapsedSlots = useCollapsedSlots({ paused: mode !== "collapsed" || isTucked || game.quiet, agents: agentActivity });
+  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentSession, agentActivity } = useIslandAgents(settings);
+  const collapsedSlots = useCollapsedSlots({
+    paused: mode !== "collapsed" || isTucked || game.quiet,
+    agents: agentActivity,
+    agentsOn: settings.agentStatusEnabled,
+    onOpenAgents: openAgentsPage,
+  });
   const openSavePathSettings = useCallback(() => {
     openSettingsWindow("savePath");
   }, []);

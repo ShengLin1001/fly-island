@@ -66,7 +66,7 @@ const root = createRoot(fixture);
 
 /** The collapsed bar's center slot as useCollapsedSlots fills it from the plugin's settings. */
 function Slot({ agents = [], paused = false }: { agents?: AgentActivity[]; paused?: boolean }) {
-  const slots = useCollapsedSlots({ paused, agents });
+  const slots = useCollapsedSlots({ paused, agents, agentsOn: false, onOpenAgents: () => {} });
   return <div className="cp-island cp-slot">
     {slots.center ? <span className="island__center-slot">{slots.center}</span> : null}
     {slots.agentIcon ? <span className="cp-agent-icon">{slots.agentIcon}</span> : null}
