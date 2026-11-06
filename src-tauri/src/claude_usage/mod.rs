@@ -84,6 +84,8 @@ pub struct ClaudeUsage {
     /// When the numbers were read (Unix ms).
     pub updated_at: Option<u64>,
     pub error: Option<UsageError>,
+    /// Goes up with every refresh that reached a source, so the window can keep the newest.
+    pub revision: u64,
 }
 
 /// The built-in plugin's settings.
@@ -106,8 +108,15 @@ struct State {
     cooldown_until: Option<Instant>,
     last_request: Option<Instant>,
     in_flight: bool,
-    /// Dropping it stops the poller.
-    poller: Option<mpsc::Sender<()>>,
+    /// Dropping the sender stops the poller; the handle tells whether it is still alive.
+    poller: Option<(mpsc::Sender<()>, thread::JoinHandle<()>)>,
+}
+
+static APP: OnceLock<AppHandle> = OnceLock::new();
+
+/// Keeps the app handle for the snapshot events; call before plugins start.
+pub fn init(app: &AppHandle) {
+    let _ = APP.set(app.clone());
 }
 
 fn state() -> MutexGuard<'static, State> {
@@ -119,47 +128,61 @@ fn state() -> MutexGuard<'static, State> {
 }
 
 /// Starts polling now, or hands a running poller new settings, which apply at
-/// once (new settings also clear the backoff).
-#[expect(dead_code, reason = "called by the built-in plugin in stage 2")]
-pub(crate) fn start(app: &AppHandle, config: UsageConfig) {
+/// once (new settings also clear the backoff). A poller whose thread has died
+/// is started again.
+pub(crate) fn start(config: UsageConfig) -> Result<(), String> {
+    let app = APP
+        .get()
+        .ok_or_else(|| "Claude usage is not initialized.".to_string())?
+        .clone();
     let mut state = state();
     if state.config != config {
         state.config = config;
         state.failures = 0;
     }
-    if let Some(poller) = &state.poller {
-        let _ = poller.send(());
-        return;
+    if let Some((wake, thread)) = &state.poller {
+        if !thread.is_finished() {
+            let _ = wake.send(());
+            return Ok(());
+        }
     }
     let (sender, receiver) = mpsc::channel();
-    let app = app.clone();
-    let spawned = thread::Builder::new()
+    let thread = thread::Builder::new()
         .name("claude-usage".into())
-        .spawn(move || poll(&app, &receiver));
-    match spawned {
-        Ok(_) => state.poller = Some(sender),
-        Err(error) => eprintln!("failed to start the Claude usage poller: {error}"),
-    }
+        .spawn(move || poll(&app, &receiver))
+        .map_err(|error| format!("Could not start the Claude usage poller: {error}"))?;
+    state.poller = Some((sender, thread));
+    Ok(())
 }
 
 /// Stops polling; a request already on its way still finishes.
-#[expect(dead_code, reason = "called by the built-in plugin in stage 2")]
 pub(crate) fn stop() {
     state().poller = None;
 }
+
+/// Shortest wait between two looks at the schedule, so the loop never spins.
+const MIN_POLL_WAIT: Duration = Duration::from_secs(1);
 
 /// Waits until the next poll is due, recomputing whenever `start` sends new
 /// settings; a manual refresh also counts as the last request.
 fn poll(app: &AppHandle, wake: &mpsc::Receiver<()>) {
     loop {
-        let wait = wait_before_poll(&state(), Instant::now());
-        if wait.is_zero() {
+        if wait_before_poll(&state(), Instant::now()).is_zero() {
             tauri::async_runtime::block_on(refresh(app, false));
-            continue;
         }
+        let wait = wait_before_poll(&state(), Instant::now()).max(MIN_POLL_WAIT);
         if let Err(mpsc::RecvTimeoutError::Disconnected) = wake.recv_timeout(wait) {
             return;
         }
+    }
+}
+
+/// Clears `in_flight` however a refresh ends, even if its future is dropped.
+struct InFlight;
+
+impl Drop for InFlight {
+    fn drop(&mut self) {
+        state().in_flight = false;
     }
 }
 
@@ -212,6 +235,7 @@ async fn refresh(app: &AppHandle, manual: bool) -> ClaudeUsage {
         state.last_request = Some(now);
         state.config.clone()
     };
+    let in_flight = InFlight;
     let now_ms = source::unix_ms(SystemTime::now());
     let api = source::fetch_api(&source::resolve_proxy(config.proxy.as_deref()), now_ms).await;
     let hud = match (&api, config.hud_path.as_deref()) {
@@ -220,10 +244,10 @@ async fn refresh(app: &AppHandle, manual: bool) -> ClaudeUsage {
     };
     let usage = {
         let mut state = state();
-        state.in_flight = false;
         apply(&mut state, api, hud, now_ms, now);
         state.usage.clone()
     };
+    drop(in_flight);
     let _ = app.emit(CLAUDE_USAGE_UPDATED_EVENT, &usage);
     usage
 }
@@ -238,18 +262,23 @@ fn apply(
     now_ms: u64,
     now: Instant,
 ) {
+    let revision = state.usage.revision + 1;
     let error = match api {
         Ok(limits) => {
             state.failures = 0;
             state.cooldown_until = None;
             state.usage = snapshot(limits, UsageSource::Api, now_ms);
+            state.usage.revision = revision;
             return;
         }
         Err(error) => error,
     };
-    if !error.kind.is_local() {
-        state.failures = state.failures.saturating_add(1);
-    }
+    // A local failure says nothing about the server; the next poll comes after the plain interval.
+    state.failures = if error.kind.is_local() {
+        0
+    } else {
+        state.failures.saturating_add(1)
+    };
     state.cooldown_until = error.retry_after.map(|delay| now + delay);
     if let Some(Ok((limits, written))) = hud {
         if state.usage.updated_at.is_none_or(|shown| written > shown) {
@@ -260,6 +289,7 @@ fn apply(
         kind: error.kind,
         message: error.message,
     });
+    state.usage.revision = revision;
 }
 
 fn snapshot(limits: Limits, source: UsageSource, updated_at: u64) -> ClaudeUsage {
@@ -269,6 +299,7 @@ fn snapshot(limits: Limits, source: UsageSource, updated_at: u64) -> ClaudeUsage
         source: Some(source),
         updated_at: Some(updated_at),
         error: None,
+        revision: 0,
     }
 }
 

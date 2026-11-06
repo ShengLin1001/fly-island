@@ -1,8 +1,8 @@
 //! Built-in plugins: optional parts of the island that are compiled in but are
 //! listed, switched on, granted permissions and configured like any plugin
 //! (runtime type "builtin"). They need no download and no "allow third-party
-//! plugins", and cannot be uninstalled. Today: the local API and the collapsed
-//! island's center pattern.
+//! plugins", and cannot be uninstalled. Today: the local API, the collapsed
+//! island's center pattern and Claude usage.
 //!
 //! A built-in plugin whose work happens in the island window (a collapsed-bar
 //! ring, say) needs only an entry in BUILTINS with `native` false: it starts and
@@ -14,7 +14,7 @@ use serde_json::{Map, Value};
 
 use super::manifest::{parse_builtin_manifest, LocalizedText, PluginManifest};
 use super::settings::InfoItem;
-use crate::local_api;
+use crate::{claude_usage, local_api};
 
 pub(super) const LOCAL_API_ID: &str = "focusd.local-api";
 pub(super) const LOCAL_API_ALLOW_WRITE: &str = "allowWrite";
@@ -89,11 +89,51 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
   }
 }"#;
 
+pub(super) const CLAUDE_USAGE_ID: &str = "focusd.claude-usage";
+
+const CLAUDE_USAGE_MANIFEST: &str = r#"{
+  "id": "focusd.claude-usage",
+  "name": { "zh-CN": "Claude 用量环", "en": "Claude usage ring" },
+  "description": {
+    "zh-CN": "在收起条上用同心双环显示 Claude 订阅用量：外环 5 小时，内环 7 天。只读取本机 Claude Code 保存的登录凭据（不刷新、不改写），经代理请求 api.anthropic.com，至少每 5 分钟一次；请求失败时可改读 claude-hud 写出的用量文件。",
+    "en": "Shows Claude subscription usage as two rings on the collapsed bar: 5 hours outside, 7 days inside. Only reads the login Claude Code saved on this computer (never renews or rewrites it) and asks api.anthropic.com through a proxy, at most every 5 minutes; when that fails it can read the usage file claude-hud writes."
+  },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "proxy",
+        "type": "string",
+        "title": { "zh-CN": "代理地址", "en": "Proxy" },
+        "description": { "zh-CN": "http:// 或 https:// 代理。留空时用 HTTPS_PROXY 环境变量，再没有就用 http://127.0.0.1:7897。不会绕过代理直连。", "en": "An http:// or https:// proxy. Empty uses the HTTPS_PROXY environment variable, else http://127.0.0.1:7897. Never connects without the proxy." }
+      },
+      {
+        "key": "hudPath",
+        "type": "string",
+        "title": { "zh-CN": "claude-hud 用量文件", "en": "claude-hud usage file" },
+        "description": { "zh-CN": "claude-hud 的 display.externalUsageWritePath（.json 完整路径）。接口请求失败时读它；留空则不读。", "en": "claude-hud's display.externalUsageWritePath (full .json path), read when the request fails. Empty: not used." }
+      },
+      {
+        "key": "intervalMinutes",
+        "type": "number",
+        "title": { "zh-CN": "刷新间隔（分钟）", "en": "Refresh every (minutes)" },
+        "min": 5,
+        "max": 120,
+        "default": 5
+      }
+    ]
+  }
+}"#;
+
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
 /// whether it has work in this process (`native`, see `start` and `stop`).
 pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     (LOCAL_API_ID, LOCAL_API_MANIFEST, true),
     ("focusd.center-pattern", CENTER_PATTERN_MANIFEST, false),
+    (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
 ];
 
 /// Every built-in plugin's id and manifest.
@@ -119,6 +159,23 @@ fn allow_write(settings: &Map<String, Value>) -> bool {
     settings.get(LOCAL_API_ALLOW_WRITE).and_then(Value::as_bool).unwrap_or(false)
 }
 
+/// The usage ring's settings; empty text means "not set".
+pub(super) fn claude_usage_config(settings: &Map<String, Value>) -> claude_usage::UsageConfig {
+    let text = |key: &str| {
+        settings
+            .get(key)
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    };
+    claude_usage::UsageConfig {
+        proxy: text("proxy"),
+        hud_path: text("hudPath").map(Into::into),
+        interval_minutes: settings.get("intervalMinutes").and_then(Value::as_u64).unwrap_or(5),
+    }
+}
+
 fn local_api_info(status: local_api::LocalApiStatus) -> Vec<InfoItem> {
     vec![
         InfoItem::new(LocalizedText::new("地址", "Address"), status.url, true, false),
@@ -135,6 +192,7 @@ pub(super) fn start(id: &str, settings: &Map<String, Value>) -> Result<Vec<InfoI
     }
     match id {
         LOCAL_API_ID => local_api::start(allow_write(settings)).map(local_api_info),
+        CLAUDE_USAGE_ID => claude_usage::start(claude_usage_config(settings)).map(|()| Vec::new()),
         _ => Err(format!("Built-in plugin {id} is marked native but has no start.")),
     }
 }
@@ -145,6 +203,10 @@ pub(super) fn stop(id: &str) -> Result<(), String> {
     }
     match id {
         LOCAL_API_ID => local_api::stop(),
+        CLAUDE_USAGE_ID => {
+            claude_usage::stop();
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
@@ -152,6 +214,7 @@ pub(super) fn stop(id: &str) -> Result<(), String> {
 pub(super) fn settings_changed(id: &str, settings: &Map<String, Value>) -> Result<(), String> {
     match id {
         LOCAL_API_ID => local_api::set_allow_write(allow_write(settings)),
+        CLAUDE_USAGE_ID => claude_usage::start(claude_usage_config(settings)),
         _ => Ok(()),
     }
 }

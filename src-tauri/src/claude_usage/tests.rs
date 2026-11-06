@@ -292,6 +292,26 @@ fn local_failures_do_not_back_off() {
         wait_after_request(&mut state, now),
         Duration::from_secs(300)
     );
+    // A network failure, then a local one: the backoff starts over.
+    apply(
+        &mut state,
+        failure(UsageErrorKind::Network, None),
+        None,
+        NOW_MS,
+        now,
+    );
+    apply(
+        &mut state,
+        failure(UsageErrorKind::TokenExpired, None),
+        None,
+        NOW_MS,
+        now,
+    );
+    assert_eq!(
+        wait_after_request(&mut state, now),
+        Duration::from_secs(300)
+    );
+    assert_eq!(state.usage.revision, 4);
 }
 
 #[test]
@@ -412,7 +432,8 @@ fn snapshot_serializes_in_camel_case() {
             "sevenDay": null,
             "source": "hud",
             "updatedAt": 7,
-            "error": null
+            "error": null,
+            "revision": 0
         })
     );
 }

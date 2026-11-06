@@ -93,6 +93,7 @@ pub fn run() {
             if let Err(error) = local_api::init(app.handle()) {
                 eprintln!("failed to initialize the local API: {error}");
             }
+            claude_usage::init(app.handle());
             if let Err(error) = plugin_host::init(app.handle()) {
                 eprintln!("failed to initialize plugins: {error}");
             }

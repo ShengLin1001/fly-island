@@ -453,7 +453,7 @@ mod settings_tests {
 mod builtin_tests {
     use std::path::PathBuf;
 
-    use super::super::builtin::{has_native_work, is_builtin, manifests, BUILTINS, LOCAL_API_ALLOW_WRITE, LOCAL_API_ID};
+    use super::super::builtin::{claude_usage_config, has_native_work, is_builtin, manifests, BUILTINS, CLAUDE_USAGE_ID, LOCAL_API_ALLOW_WRITE, LOCAL_API_ID};
     use super::super::grants::{record_builtin_start, record_builtin_stop};
     use super::super::runtime::{RuntimeInfo, RuntimeStatus};
     use super::super::manifest::{parse_manifest, PluginRuntime};
@@ -489,8 +489,26 @@ mod builtin_tests {
     }
 
     #[test]
+    fn claude_usage_settings_become_its_config() {
+        let manifest = manifests("0.3.1")
+            .into_iter()
+            .find(|(id, _)| *id == CLAUDE_USAGE_ID)
+            .and_then(|(_, manifest)| manifest.ok())
+            .expect("usage manifest");
+        let defaults = super::super::settings::resolve(&manifest.contributes.settings, &serde_json::Map::new());
+        let config = claude_usage_config(&defaults);
+        assert_eq!((config.proxy, config.hud_path, config.interval_minutes), (None, None, 5));
+        let set = serde_json::json!({ "proxy": " http://10.0.0.1:8080 ", "hudPath": "C:/hud.json", "intervalMinutes": 30 });
+        let config = claude_usage_config(set.as_object().expect("object"));
+        assert_eq!(config.proxy.as_deref(), Some("http://10.0.0.1:8080"));
+        assert_eq!(config.hud_path, Some("C:/hud.json".into()));
+        assert_eq!(config.interval_minutes, 30);
+    }
+
+    #[test]
     fn only_native_built_in_plugins_do_work_in_this_process() {
         assert_eq!(has_native_work(BUILTINS, LOCAL_API_ID), Ok(true));
+        assert_eq!(has_native_work(BUILTINS, CLAUDE_USAGE_ID), Ok(true));
         let table = [("focusd.native", "", true), ("focusd.window-only", "", false)];
         assert_eq!(has_native_work(&table, "focusd.window-only"), Ok(false));
         assert!(has_native_work(&table, "focusd.unknown").expect_err("unknown").contains("focusd.unknown"));
