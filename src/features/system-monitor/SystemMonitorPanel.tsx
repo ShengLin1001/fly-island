@@ -55,6 +55,7 @@ export function SystemMonitorPanel() {
           <div className="system-card__head">
             <span className="system-card__label">CPU</span>
             <strong className="system-card__value">{formatPercent(stats.cpu)}</strong>
+            {stats.cpuTemperature != null && <span className="system-card__extra">{Math.round(stats.cpuTemperature)}°C</span>}
           </div>
           <Sparkline values={history.cpu} max={100} tone="cpu" />
           <div className="system-cores" aria-hidden="true">

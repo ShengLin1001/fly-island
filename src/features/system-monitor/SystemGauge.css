@@ -1,0 +1,58 @@
+/* The system monitor on the collapsed bar (SystemGauge.tsx): label-over-value columns, each
+   ITEM_WIDTH px with its gap. Load figures are white, temperatures carry a degree sign; both turn
+   orange, then red, as they climb. */
+.system-gauge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.system-gauge:focus-visible {
+  outline: 2px solid var(--color-focus-ring-soft);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.system-gauge__item {
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.system-gauge__label {
+  color: var(--text-3);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.system-gauge__value {
+  margin-top: 2px;
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.system-gauge__item--cpuTemperature .system-gauge__label,
+.system-gauge__item--gpuTemperature .system-gauge__label {
+  color: var(--text-2);
+}
+
+.system-gauge__item--warm .system-gauge__value {
+  color: var(--color-warning);
+}
+
+.system-gauge__item--hot .system-gauge__value {
+  color: var(--color-danger);
+}

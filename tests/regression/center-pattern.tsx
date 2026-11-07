@@ -72,7 +72,7 @@ const NO_OP = () => {};
 
 /** The collapsed bar's center slot as useCollapsedSlots fills it from the plugin's settings. */
 function Slot({ agents = [], paused = false }: { agents?: AgentActivity[]; paused?: boolean }) {
-  const slots = useCollapsedSlots({ paused, agents, sessions: NO_SESSIONS, unseen: NO_UNSEEN, agentsOn: false, onOpenAgents: NO_OP });
+  const slots = useCollapsedSlots({ paused, agents, sessions: NO_SESSIONS, unseen: NO_UNSEEN, agentsOn: false, onOpenAgents: NO_OP, onOpenSystem: NO_OP });
   return <div className="cp-island cp-slot">
     {slots.center ? <span className="island__center-slot">{slots.center}</span> : null}
     {slots.agentIcon ? <span className="cp-agent-icon">{slots.agentIcon}</span> : null}

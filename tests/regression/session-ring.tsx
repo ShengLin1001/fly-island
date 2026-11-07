@@ -51,6 +51,7 @@ const UNSEEN: ReadonlySet<string> = new Set(["claudeCode:b2"]);
 const QUIET = [session("f6", "completed", "很久以前", 60)];
 // What the mocked host answers; each scenario sets these, then mounts a fresh island.
 let pluginOn = true;
+let ringSettings: Record<string, unknown> = {};
 let sessions: AgentSessionSummary[] = BUSY;
 mockIPC((command) => {
   if (command === "get_qq_mail_state") return [{
@@ -59,7 +60,7 @@ mockIPC((command) => {
   }];
   if (command === "list_plugins") return {
     allowThirdParty: false, nodeAvailable: false, pluginsDir: "", autoUpdate: false, trustedPublishers: [],
-    plugins: [{ id: "focusd.session-ring", builtin: true, enabled: pluginOn, status: "running", settings: {} }],
+    plugins: [{ id: "focusd.session-ring", builtin: true, enabled: pluginOn, status: "running", settings: ringSettings }],
   };
 }, { shouldMockEvents: true });
 
@@ -69,7 +70,7 @@ const OPEN_AGENTS = () => { openedPage = "agents"; };
 const NO_AGENTS: AgentActivity[] = [];
 
 function Island({ agents, count, report }: { agents: boolean; count: number; report: (slots: CollapsedSlots) => void }) {
-  const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, sessions, unseen: UNSEEN, agentsOn: agents, onOpenAgents: OPEN_AGENTS });
+  const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, sessions, unseen: UNSEEN, agentsOn: agents, onOpenAgents: OPEN_AGENTS, onOpenSystem: OPEN_AGENTS });
   report(slots);
   const qq = useQQNotifications(true);
   const wechat = useWeChatReminders(true);
@@ -128,6 +129,12 @@ async function runChecks() {
     openedPage = null;
     await act(async () => ring!.click());
     check(openedPage === "agents", "点击会话环打开 Agent 页");
+
+    ringSettings = { position: "left" };
+    [bar, slots] = await mount("位置设为左端：会话环代替状态灯", true);
+    check(bar.querySelector(".island__left-slot .session-ring") && !bar.querySelector(".island__pulse, .island-agent-count") && slots.sideWidth === 11,
+      `会话环设为左端时代替状态灯，右侧不再有蓝色数字，收起条只加宽环比灯多出的宽度：${slots.sideWidth}`);
+    ringSettings = {};
 
     [bar, slots] = await mount("AI Agent 关闭：没有会话环", false);
     check(!bar.querySelector(".session-ring") && !slots.agentCount, "AI Agent 关闭时不显示会话环");

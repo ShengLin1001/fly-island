@@ -20,6 +20,8 @@ export type GpuStats = {
 export type SystemStats = {
   cpu: number;
   cores: number[];
+  /** Degrees Celsius: the hottest ACPI thermal zone, near the CPU on laptops; null without one. */
+  cpuTemperature: number | null;
   memoryUsed: number;
   memoryTotal: number;
   /** Bytes per second. */
@@ -31,6 +33,7 @@ export type SystemStats = {
   byMemory: ProcessUsage[];
 };
 
-export function getSystemStats() {
-  return invoke<SystemStats>("get_system_stats");
+/** `processes: false` skips the busiest-program lists (the collapsed bar's gauge). */
+export function getSystemStats(processes = true) {
+  return invoke<SystemStats>("get_system_stats", { processes });
 }

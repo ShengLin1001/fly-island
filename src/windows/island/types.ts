@@ -31,8 +31,16 @@ export type CollapsedSlots = {
   agentIcon?: ReactNode;
   /** Small gauges such as rings, right before the rightmost item (tuck dot or session count). */
   gauges?: ReactNode;
-  /** Shown instead of the blue running-session count while AI Agent is on; empty keeps the count. */
+  /**
+   * Shown instead of the blue running-session count while AI Agent is on; left out keeps the
+   * count, null shows nothing there (the session ring moved to the left end).
+   */
   agentCount?: ReactNode;
+  /**
+   * At the bar's left end instead of the agent status light: the one plugin set to show on the
+   * left. Outside the open button, so it may hold a button.
+   */
+  left?: ReactNode;
   /** Px that `center` needs; the collapsed island widens by it while the centre shows. */
   centerWidth?: number;
   /** Px that `gauges` and `agentCount` need with their gaps; the collapsed island widens by it. */

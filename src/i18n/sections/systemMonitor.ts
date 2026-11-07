@@ -13,6 +13,9 @@ export type SystemMonitorText = {
   failed: (reason: string) => string;
   /** "chrome ×12": how many processes one program runs. */
   processCount: (count: number) => string;
+  /** The memory column's label on the collapsed bar, at most four characters. */
+  barMemory: string;
+  barLabel: (figures: string) => string;
 };
 
 export const zhCN: SystemMonitorText = {
@@ -29,6 +32,8 @@ export const zhCN: SystemMonitorText = {
   reading: "正在读取…",
   failed: (reason) => `读取失败：${reason}`,
   processCount: (count) => `${count} 个进程`,
+  barMemory: "内存",
+  barLabel: (figures) => `系统监控：${figures}。打开系统监控页`,
 };
 
 export const en: SystemMonitorText = {
@@ -45,4 +50,6 @@ export const en: SystemMonitorText = {
   reading: "Reading…",
   failed: (reason) => `Could not read: ${reason}`,
   processCount: (count) => (count === 1 ? "1 process" : `${count} processes`),
+  barMemory: "MEM",
+  barLabel: (figures) => `System monitor: ${figures}. Opens the monitor page`,
 };

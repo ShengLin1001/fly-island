@@ -143,6 +143,7 @@ export function IslandCollapsedBar({
         }
       }}
     >
+      {slots.left && <div className="island__left-slot">{slots.left}</div>}
       <button
         className={`island__open-button${showCenter ? " island__open-button--center" : ""}`}
         type="button"
@@ -180,7 +181,7 @@ export function IslandCollapsedBar({
           }
         }}
       >
-        <span className={pulseClassName} />
+        {!slots.left && <span className={pulseClassName} />}
         <CollapsedMessageContent preview={preview} enabled={!isExpanded && !isTucked}>
           {deviceAlert ? (
             <DeviceAlertPopup alert={deviceAlert} />
@@ -284,7 +285,7 @@ export function IslandCollapsedBar({
             onTuck();
           }}
         />
-      ) : slots.agentCount ? (
+      ) : slots.agentCount !== undefined ? (
         slots.agentCount
       ) : agentSessionCount > 0 ? (
         <button

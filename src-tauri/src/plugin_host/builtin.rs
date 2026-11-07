@@ -107,6 +107,20 @@ const CLAUDE_USAGE_MANIFEST: &str = r#"{
   "contributes": {
     "settings": [
       {
+        "key": "position",
+        "type": "select",
+        "title": { "zh-CN": "在收起条上的位置", "en": "Place on the collapsed bar" },
+        "description": {
+          "zh-CN": "放在左端时代替 Agent 状态灯。几个插件都选左端时，按会话环、用量环、系统监控的顺序只有第一个能占，其余留在右侧。",
+          "en": "At the left end it takes the place of the agent status light. When several plugins ask for the left end, the first of session ring, usage ring and system monitor gets it and the others stay on the right."
+        },
+        "default": "right",
+        "options": [
+          { "value": "right", "title": { "zh-CN": "右侧", "en": "Right" } },
+          { "value": "left", "title": { "zh-CN": "左端（代替状态灯）", "en": "Left end (instead of the status light)" } }
+        ]
+      },
+      {
         "key": "askAnthropic",
         "type": "boolean",
         "title": { "zh-CN": "直接向 Anthropic 查询", "en": "Ask Anthropic directly" },
@@ -148,20 +162,80 @@ const SESSION_RING_MANIFEST: &str = r#"{
   "version": "1.0.0",
   "apiVersion": 1,
   "author": "ShengLin1001",
-  "runtime": { "type": "builtin" }
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "position",
+        "type": "select",
+        "title": { "zh-CN": "在收起条上的位置", "en": "Place on the collapsed bar" },
+        "description": {
+          "zh-CN": "放在左端时代替 Agent 状态灯。几个插件都选左端时，按会话环、用量环、系统监控的顺序只有第一个能占，其余留在右侧。",
+          "en": "At the left end it takes the place of the agent status light. When several plugins ask for the left end, the first of session ring, usage ring and system monitor gets it and the others stay on the right."
+        },
+        "default": "right",
+        "options": [
+          { "value": "right", "title": { "zh-CN": "右侧", "en": "Right" } },
+          { "value": "left", "title": { "zh-CN": "左端（代替状态灯）", "en": "Left end (instead of the status light)" } }
+        ]
+      }
+    ]
+  }
 }"#;
 
 const SYSTEM_MONITOR_MANIFEST: &str = r#"{
   "id": "focusd.system-monitor",
   "name": { "zh-CN": "系统监控", "en": "System monitor" },
   "description": {
-    "zh-CN": "岛上多一个监控页：CPU 总占用和每个核心、NVIDIA 显卡的占用和温度、内存、网速、电池，以及最占 CPU 或内存的程序。只在打开这一页时每秒读一次。",
-    "en": "Adds a monitor page to the island: CPU in total and per core, an NVIDIA GPU's load and temperature, memory, network speed, the battery, and the programs using the most CPU or memory. Reads once a second, only while the page is open."
+    "zh-CN": "岛上多一个监控页：CPU 总占用、每个核心和温度，NVIDIA 显卡的占用和温度，内存、网速、电池，以及最占 CPU 或内存的程序；收起条上一个小表显示下面勾选的几项。打开这一页时每秒读一次，收起条上每两秒读一次（不读进程）。CPU 温度取主板 ACPI 热区里最热的一个，笔记本上贴近 CPU，不需要管理员权限。",
+    "en": "Adds a monitor page to the island: CPU in total, per core and its temperature, an NVIDIA GPU's load and temperature, memory, network speed, the battery, and the programs using the most CPU or memory; a small gauge on the collapsed bar shows the items ticked below. Reads once a second while the page is open and every two seconds for the bar (without processes). The CPU temperature is the hottest ACPI thermal zone, close to the CPU on laptops, and needs no administrator rights."
   },
   "version": "1.0.0",
   "apiVersion": 1,
   "author": "ShengLin1001",
-  "runtime": { "type": "builtin" }
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "position",
+        "type": "select",
+        "title": { "zh-CN": "在收起条上的位置", "en": "Place on the collapsed bar" },
+        "description": {
+          "zh-CN": "放在左端时代替 Agent 状态灯。几个插件都选左端时，按会话环、用量环、系统监控的顺序只有第一个能占，其余留在右侧。",
+          "en": "At the left end it takes the place of the agent status light. When several plugins ask for the left end, the first of session ring, usage ring and system monitor gets it and the others stay on the right."
+        },
+        "default": "right",
+        "options": [
+          { "value": "right", "title": { "zh-CN": "右侧", "en": "Right" } },
+          { "value": "left", "title": { "zh-CN": "左端（代替状态灯）", "en": "Left end (instead of the status light)" } }
+        ]
+      },
+      {
+        "key": "barCpu",
+        "type": "boolean",
+        "title": { "zh-CN": "收起条显示 CPU 占用", "en": "CPU load on the bar" },
+        "default": true
+      },
+      {
+        "key": "barMemory",
+        "type": "boolean",
+        "title": { "zh-CN": "收起条显示内存占用", "en": "Memory use on the bar" },
+        "default": true
+      },
+      {
+        "key": "barCpuTemperature",
+        "type": "boolean",
+        "title": { "zh-CN": "收起条显示 CPU 温度", "en": "CPU temperature on the bar" },
+        "default": true
+      },
+      {
+        "key": "barGpuTemperature",
+        "type": "boolean",
+        "title": { "zh-CN": "收起条显示 GPU 温度", "en": "GPU temperature on the bar" },
+        "default": true
+      }
+    ]
+  }
 }"#;
 
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and

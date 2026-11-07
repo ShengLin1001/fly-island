@@ -17,6 +17,7 @@ const program = (name: string, cpu: number, memory: number, count = 1) => ({ nam
 const BUSY: SystemStats = {
   cpu: 37.6,
   cores: [12, 80, 33, 5, 61, 97, 20, 44, 9, 15, 70, 28],
+  cpuTemperature: 67.4,
   memoryUsed: 12.4 * GB,
   memoryTotal: 16 * GB,
   download: 2_150_400,
@@ -51,7 +52,7 @@ try {
   const root = createRoot(fixture);
   await act(async () => { root.render(<StrictMode><I18nProvider><SystemMonitorPanel /></I18nProvider></StrictMode>); });
   await wait(60);
-  check(text(".system-card--cpu .system-card__value") === "38%" && document.querySelectorAll(".system-cores__core").length === 12, "CPU 卡片写出总占用，每个核心一根小柱");
+  check(text(".system-card--cpu .system-card__value") === "38%" && document.querySelectorAll(".system-cores__core").length === 12 && text(".system-card--cpu .system-card__extra") === "67°C", "CPU 卡片写出总占用、温度，每个核心一根小柱");
   check(text(".system-card--gpu .system-card__value") === "42%" && text(".system-card--gpu .system-card__extra") === "61°C", "GPU 卡片写出占用和温度");
   check(text(".system-card__name") === "GTX 1050 Ti" && text(".system-card__foot")?.includes("显存 1.3 / 4 GB"), `显卡名去掉厂商前缀，写出显存：${text(".system-card__foot")}`);
   check(text(".system-row__value") === "12.4 / 16 GB" && document.querySelector(".system-meter--medium"), `内存写出已用和总量，过七成变橙：${text(".system-row__value")}`);
@@ -71,9 +72,9 @@ try {
   const points = () => document.querySelector(".system-spark--cpu .system-spark__line")?.getAttribute("points")?.split(" ").length ?? 0;
   check(points() >= 2, `每秒读一次，曲线每次多一个点：${points()}`);
 
-  next = { ...BUSY, gpu: null, battery: null, memoryUsed: 15.2 * GB };
+  next = { ...BUSY, gpu: null, battery: null, cpuTemperature: null, memoryUsed: 15.2 * GB };
   await wait(1100);
-  check(text(".system-card--gpu .system-card__value") === "—" && !document.querySelector(".system-net__battery"), "没有 NVIDIA 显卡和电池时 GPU 写 —，不显示电池");
+  check(text(".system-card--gpu .system-card__value") === "—" && !document.querySelector(".system-net__battery") && !document.querySelector(".system-card--cpu .system-card__extra"), "没有 NVIDIA 显卡、电池和热区时 GPU 写 —，不显示电池和 CPU 温度");
   check(document.querySelector(".system-meter--high"), "内存过九成变红");
   root.unmount();
   const after = reads;

@@ -141,6 +141,14 @@
   overflow: hidden;
 }
 
+.island__left-slot {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 100%;
+  margin-right: var(--space-sm);
+}
+
 .island__gauge-slot {
   display: flex;
   flex: 0 0 auto;

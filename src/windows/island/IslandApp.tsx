@@ -64,6 +64,7 @@ export function IslandApp() {
   const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession, agentActivity, agentUsages } =
     useIslandAgents(settings);
   const openAgentsPage = useCallback(() => openIslandPage("agents"), [openIslandPage]);
+  const openSystemPage = useCallback(() => openIslandPage("system"), [openIslandPage]);
   const collapsedSlots = useCollapsedSlots({
     paused: mode !== "collapsed" || isTucked || game.quiet,
     agents: agentActivity,
@@ -71,6 +72,7 @@ export function IslandApp() {
     unseen: unseenAgentSessions.keys,
     agentsOn: settings.agentStatusEnabled,
     onOpenAgents: openAgentsPage,
+    onOpenSystem: openSystemPage,
   });
   const { todos, activeTodoId, todoPageMode, notebookProps } = useIslandTodos({ settings, mode, page, agentStatus, collapseIsland });
 

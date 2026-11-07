@@ -134,6 +134,11 @@ async function runChecks() {
     await set({ agents: false });
     check(!bar().querySelector(".test-sessions") && bar().querySelector(".island__quiet-button"), "AI Agent 关闭时会话槽位不显示，保留收起灰点");
 
+    await set({ agents: true, count: 2, slots: { left: <button className="test-left" />, agentCount: null } });
+    const opener = bar().querySelector(".island__open-button")!;
+    check(bar().querySelector(".island__left-slot .test-left") && !bar().querySelector(".island__pulse") && !opener.querySelector(".test-left")
+      && bar().querySelector(".island__left-slot")!.nextElementSibling === opener, "左端槽位在打开按钮之前，代替状态灯");
+    check(!bar().querySelector(".island-agent-count"), "会话环移到左端时右侧不再显示蓝色会话数");
     await set({ agentTitle: "修复登录", slots: { center: <span className="test-center" />, agentIcon: <span className="test-agent-icon" /> } });
     const session = bar().querySelector(".island__agent-session")!;
     check(session.querySelector(".test-agent-icon") && !session.querySelector(".agent-provider-icon") && !bar().querySelector(".test-center"),
