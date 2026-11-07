@@ -104,6 +104,11 @@
 }
 
 .dot-button:hover,
+.dot-button--system {
+  background: #4da3ff;
+  box-shadow: 0 0 12px rgba(77, 163, 255, 0.46);
+}
+
 .dot-button--calendar {
   background: #ff9a76;
   box-shadow: 0 0 12px rgba(255, 154, 118, 0.46);

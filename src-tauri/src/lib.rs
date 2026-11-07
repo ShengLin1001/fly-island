@@ -20,6 +20,7 @@ mod qq_notifications;
 mod settings_window;
 mod system;
 mod system_levels;
+mod system_monitor;
 mod todos;
 mod translation;
 mod tray;
@@ -141,6 +142,7 @@ pub fn run() {
             todos;
             system;
             system_levels;
+            system_monitor;
             device_events;
             agent_status;
             calendar;

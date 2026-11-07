@@ -165,6 +165,17 @@ export function IslandHeader({
             }}
           />
         )}
+        {features.system && (
+          <button
+            className={`dot-button dot-button--system ${page === "system" ? "dot-button--active" : ""}`}
+            type="button"
+            aria-label={withShortcut(t.island.system, "system")}
+            onClick={(event) => {
+              event.stopPropagation();
+              onPageChange("system");
+            }}
+          />
+        )}
         {pluginPageButtons}
       </div>
 

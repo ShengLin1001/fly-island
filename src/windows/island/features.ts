@@ -16,6 +16,8 @@ export type IslandFeatures = {
   agents: boolean;
   /** Translation is on and set to open as an island page rather than its own window. */
   translation: boolean;
+  /** The system monitor built-in plugin is on. */
+  system?: boolean;
   /** Pages of running plugins, in the order the user set; they come after the built-in pages. */
   pluginPages?: readonly PluginPageId[];
 };
@@ -24,10 +26,10 @@ export function isPluginPage(page: IslandPage): page is PluginPageId {
   return page.startsWith("plugin:");
 }
 
-const BUILTIN_PAGE_ORDER: BuiltinPage[] = ["todo", "calendar", "music", "clipboard", "shelf", "qq", "agents", "translation"];
+const BUILTIN_PAGE_ORDER: BuiltinPage[] = ["todo", "calendar", "music", "clipboard", "shelf", "qq", "agents", "translation", "system"];
 const SOURCE_ORDER: MessageSource[] = ["qq", "wechat", "qqMail"];
 // Header controls from left to right. Alt+1 is the first one that is switched on.
-const BUILTIN_SHORTCUT_ORDER: BuiltinPage[] = ["agents", "todo", "calendar", "music", "clipboard", "shelf", "qq", "translation"];
+const BUILTIN_SHORTCUT_ORDER: BuiltinPage[] = ["agents", "todo", "calendar", "music", "clipboard", "shelf", "system", "qq", "translation"];
 
 /** Every page in the order an off page falls back through. */
 function pageOrder(features: IslandFeatures): IslandPage[] {

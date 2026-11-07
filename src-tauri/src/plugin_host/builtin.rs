@@ -2,7 +2,8 @@
 //! listed, switched on, granted permissions and configured like any plugin
 //! (runtime type "builtin"). They need no download and no "allow third-party
 //! plugins", and cannot be uninstalled. Today: the local API and the collapsed
-//! island's center pattern, Claude usage ring and agent session ring.
+//! island's center pattern, Claude usage ring and agent session ring, and the
+//! system monitor page.
 //!
 //! A built-in plugin whose work happens in the island window (a collapsed-bar
 //! ring, say) needs only an entry in BUILTINS with `native` false: it starts and
@@ -150,6 +151,19 @@ const SESSION_RING_MANIFEST: &str = r#"{
   "runtime": { "type": "builtin" }
 }"#;
 
+const SYSTEM_MONITOR_MANIFEST: &str = r#"{
+  "id": "focusd.system-monitor",
+  "name": { "zh-CN": "系统监控", "en": "System monitor" },
+  "description": {
+    "zh-CN": "岛上多一个监控页：CPU 总占用和每个核心、NVIDIA 显卡的占用和温度、内存、网速、电池，以及最占 CPU 或内存的程序。只在打开这一页时每秒读一次。",
+    "en": "Adds a monitor page to the island: CPU in total and per core, an NVIDIA GPU's load and temperature, memory, network speed, the battery, and the programs using the most CPU or memory. Reads once a second, only while the page is open."
+  },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" }
+}"#;
+
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
 /// whether it has work in this process (`native`, see `start` and `stop`).
 pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
@@ -157,6 +171,7 @@ pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     ("focusd.center-pattern", CENTER_PATTERN_MANIFEST, false),
     (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
     ("focusd.session-ring", SESSION_RING_MANIFEST, false),
+    ("focusd.system-monitor", SYSTEM_MONITOR_MANIFEST, false),
 ];
 
 /// Every built-in plugin's id and manifest.

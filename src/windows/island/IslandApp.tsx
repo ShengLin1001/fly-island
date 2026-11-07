@@ -5,6 +5,8 @@ import { PluginPermissionPrompt } from "../../features/plugins/PluginPermissionP
 import { PluginContextMenus } from "../../features/plugins/PluginContextMenu";
 // The page panels; before IslandShell so their CSS keeps its place in the cascade.
 import { useCalendar } from "../../features/calendar/useCalendar";
+import { useBuiltinPlugin } from "../../features/plugins/useBuiltinPlugin";
+import { SYSTEM_MONITOR_PLUGIN_ID } from "../../features/system-monitor/api";
 import { IslandPages } from "./IslandPages";
 import { PluginStatusSlot } from "../../features/plugin-views/PluginStatusSlot";
 import { useTranslation } from "../../i18n";
@@ -96,6 +98,7 @@ export function IslandApp() {
   const clipboard = useClipboardHistory(toggleClipboardHistory);
   const calendar = useCalendar(settings.calendarEnabled, settings.calendarRemindMinutes);
   const { clipboardHistory } = clipboard;
+  const systemMonitor = useBuiltinPlugin(SYSTEM_MONITOR_PLUGIN_ID);
 
   const { features, openEnabledPage } = useIslandFeatures({
     settings,
@@ -110,6 +113,7 @@ export function IslandApp() {
     openIslandPage,
     pluginPages: pluginPages.pageIds,
     calendarAvailable: calendar.snapshot.sourceCount > 0,
+    systemMonitor: systemMonitor.enabled,
   });
   const { alertedSession, approvals: agentApprovals, agentCardHeight } = useIslandAgentAlerts({
     sessions: agentSessions,

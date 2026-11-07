@@ -23,6 +23,8 @@ type IslandFeatureOptions = {
   pluginPages?: readonly PluginPageId[];
   /** At least one calendar is added (the calendar page needs one). */
   calendarAvailable?: boolean;
+  /** The system monitor built-in plugin is on. */
+  systemMonitor?: boolean;
 };
 
 /**
@@ -44,6 +46,7 @@ export function useIslandFeatures({
   openIslandPage,
   pluginPages,
   calendarAvailable = false,
+  systemMonitor = false,
 }: IslandFeatureOptions) {
   const features = useMemo<IslandFeatures>(() => ({
     todo: settings.todoEnabled,
@@ -56,8 +59,9 @@ export function useIslandFeatures({
     qqMail: settings.mailEnabled,
     agents: settings.agentStatusEnabled,
     translation: settings.translationEnabled && settings.translationTarget === "island",
+    system: systemMonitor,
     pluginPages,
-  }), [pluginPages, clipboardEnabled, qqEnabled, settings.agentStatusEnabled, settings.calendarEnabled, calendarAvailable, settings.mailEnabled, settings.musicEnabled, settings.shelfEnabled, settings.todoEnabled, settings.translationEnabled, settings.translationTarget, wechatEnabled]);
+  }), [pluginPages, systemMonitor, clipboardEnabled, qqEnabled, settings.agentStatusEnabled, settings.calendarEnabled, calendarAvailable, settings.mailEnabled, settings.musicEnabled, settings.shelfEnabled, settings.todoEnabled, settings.translationEnabled, settings.translationTarget, wechatEnabled]);
 
   useEffect(() => {
     const next = resolveIslandPage(page, features);

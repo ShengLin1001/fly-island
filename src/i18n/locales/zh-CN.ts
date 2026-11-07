@@ -13,6 +13,7 @@ import * as notebook from "../sections/notebook.ts";
 import * as archive from "../sections/archive.ts";
 import * as music from "../sections/music.ts";
 import * as calendar from "../sections/calendar.ts";
+import * as systemMonitor from "../sections/systemMonitor.ts";
 import * as todo from "../sections/todo.ts";
 import * as clipboard from "../sections/clipboard.ts";
 import * as fileShelf from "../sections/fileShelf.ts";
@@ -45,6 +46,7 @@ const zhCN: Translations = {
 
   music: music.zhCN,
   calendar: calendar.zhCN,
+  systemMonitor: systemMonitor.zhCN,
 
   todo: todo.zhCN,
 

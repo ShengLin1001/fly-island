@@ -12,6 +12,7 @@ import type { NotebookText } from "./sections/notebook";
 import type { ArchiveText } from "./sections/archive";
 import type { MusicText } from "./sections/music";
 import type { CalendarText } from "./sections/calendar";
+import type { SystemMonitorText } from "./sections/systemMonitor";
 import type { TodoText } from "./sections/todo";
 import type { ClipboardText } from "./sections/clipboard";
 import type { FileShelfText } from "./sections/fileShelf";
@@ -45,6 +46,7 @@ export type Translations = {
 
   music: MusicText;
   calendar: CalendarText;
+  systemMonitor: SystemMonitorText;
 
   todo: TodoText;
 

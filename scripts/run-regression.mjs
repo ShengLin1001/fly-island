@@ -26,6 +26,7 @@ export const PAGES = [
   "center-pattern.html?test=1",
   "claude-usage.html?test=1",
   "session-ring.html?test=1",
+  "system-monitor.html",
   "collapsed-message-animation.html?test=1",
   "collapsed-slots.html?test=1",
   "i18n.html?test=1",

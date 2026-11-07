@@ -24,6 +24,7 @@ src-tauri/src/
 ├── calendar/                # 日历：CalDAV（caldav.rs）和 ICS 订阅链接，iCalendar 解析和重复日程展开（ics.rs，rrule），会议链接识别（meeting_link.rs），来源配置与凭据（sources.rs）
 ├── lyrics/                  # 音乐页歌词：本地 .lrc 文件夹（local.rs）、LRCLIB（lrclib.rs，用户开启才联网）、按歌名歌手时长匹配（matching.rs），在线结果缓存在 lyrics-cache/
 ├── system_levels/           # 音量、亮度变化提示：后台线程读默认输出的音量和静音、笔记本屏幕亮度（win32/brightness.rs，WMI），变化时发 system-level-changed 事件
+├── system_monitor/          # 系统监控页：CPU 总占用和每核、内存、网速、电池、最占资源的程序（sysinfo），NVIDIA 显卡（gpu.rs，nvidia-smi）
 ├── device_events/           # 设备提示：后台线程列出在用的耳机和蓝牙音频输出（win32/audio_outputs.rs）、读蓝牙电量（win32/devnode.rs）和电源（win32/power.rs），变化时发 device-alert 事件；判断规则在 tracker.rs
 ├── device_use/              # 摄像头、麦克风正在被哪些程序使用（读注册表 CapabilityAccessManager\ConsentStore），打开系统隐私设置
 ├── mail/                    # 邮箱（命令名仍为 *_qq_mail）：附件（attachments.rs）、命令、每个邮箱一个后台服务（accounts.rs）及其崩溃后重启（supervisor.rs）、IMAP 会话、正文与内嵌图片解析、凭据

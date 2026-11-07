@@ -1,0 +1,345 @@
+/* The system monitor page (SystemMonitorPanel.tsx). Ink follows the island's background like the
+   other pages; cards take the radius of the island's inner panels, which follows Settings. */
+.system-monitor {
+  --sys-ink: var(--island-ink-rgb, 241, 240, 246);
+  --sys-1: rgba(var(--sys-ink), 0.96);
+  --sys-2: rgba(var(--sys-ink), 0.72);
+  --sys-3: rgba(var(--sys-ink), 0.5);
+  --sys-card: rgba(var(--sys-ink), 0.045);
+  --sys-line: rgba(var(--sys-ink), 0.09);
+  --sys-cpu: #4da3ff;
+  --sys-gpu: #34c759;
+  --sys-memory: #bf5af2;
+  --sys-down: #64d2ff;
+  --sys-up: #ff9f0a;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 0 4px;
+  color: var(--sys-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.system-monitor--empty {
+  display: grid;
+  place-items: center;
+  color: var(--sys-3);
+  font-size: 13px;
+}
+
+.system-monitor__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.system-card,
+.system-row,
+.system-net,
+.system-processes {
+  background: var(--sys-card);
+  border: 1px solid var(--sys-line);
+  border-radius: var(--island-panel-radius, 10px);
+}
+
+.system-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px 10px;
+}
+
+.system-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.system-card__label {
+  color: var(--sys-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.system-card__value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.system-card--cpu .system-card__value {
+  color: var(--sys-cpu);
+}
+
+.system-card--gpu .system-card__value {
+  color: var(--sys-gpu);
+}
+
+.system-card__extra {
+  margin-left: auto;
+  color: var(--sys-2);
+  font-size: 12px;
+}
+
+.system-card__foot {
+  height: 16px;
+  display: flex;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--sys-3);
+  font-size: 11.5px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.system-card__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A minute of samples, the newest on the right. */
+.system-spark {
+  --spark: var(--sys-cpu);
+  display: block;
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+
+.system-spark--gpu {
+  --spark: var(--sys-gpu);
+}
+
+.system-spark--down {
+  --spark: var(--sys-down);
+}
+
+.system-spark--up {
+  --spark: var(--sys-up);
+}
+
+.system-spark__line {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.system-spark__fill {
+  fill: color-mix(in srgb, var(--spark) 18%, transparent);
+}
+
+/* One bar per logical core. */
+.system-cores {
+  height: 16px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.system-cores__core {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: rgba(var(--sys-ink), 0.07);
+  border-radius: 2px;
+}
+
+.system-cores__core > span {
+  width: 100%;
+  background: var(--sys-cpu);
+  border-radius: 2px;
+  transition: height 600ms ease;
+}
+
+.system-row {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.system-row__label {
+  flex: none;
+  color: var(--sys-2);
+  font-weight: 600;
+}
+
+.system-row__value {
+  flex: none;
+  color: var(--sys-2);
+}
+
+.system-meter {
+  --meter: var(--sys-cpu);
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  background: rgba(var(--sys-ink), 0.08);
+  border-radius: 3px;
+}
+
+.system-meter--memory {
+  --meter: var(--sys-memory);
+}
+
+.system-meter--medium {
+  --meter: #ff9f0a;
+}
+
+.system-meter--high {
+  --meter: #ff453a;
+}
+
+.system-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--meter);
+  border-radius: inherit;
+  transition: width 600ms ease;
+}
+
+.system-net {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.system-net__item {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.system-net__item--down svg:first-child {
+  color: var(--sys-down);
+}
+
+.system-net__item--up svg:first-child {
+  color: var(--sys-up);
+}
+
+.system-net__rate {
+  flex: none;
+  width: 72px;
+}
+
+.system-net__item .system-spark {
+  min-width: 0;
+  flex: 1;
+  height: 22px;
+}
+
+.system-net__battery {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--sys-2);
+}
+
+.system-processes {
+  padding: 6px 12px 8px;
+}
+
+.system-processes__head {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--sys-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.system-processes__toggle {
+  display: flex;
+  padding: 2px;
+  background: rgba(var(--sys-ink), 0.07);
+  border-radius: var(--radius-pill, 999px);
+}
+
+.system-processes__toggle button {
+  height: 20px;
+  padding: 0 10px;
+  color: var(--sys-3);
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.system-processes__toggle button[aria-pressed="true"] {
+  color: var(--sys-1);
+  background: rgba(var(--sys-ink), 0.14);
+}
+
+.system-processes__list {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.system-processes__list li {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.system-processes__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-processes__count {
+  flex: none;
+  color: var(--sys-3);
+  font-size: 11.5px;
+}
+
+.system-processes__cpu,
+.system-processes__memory {
+  flex: none;
+  color: var(--sys-3);
+  text-align: right;
+}
+
+.system-processes__cpu {
+  width: 52px;
+}
+
+.system-processes__memory {
+  width: 68px;
+}
+
+.system-processes__sorted {
+  color: var(--sys-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .system-cores__core > span,
+  .system-meter > span {
+    transition: none;
+  }
+}

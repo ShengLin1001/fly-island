@@ -20,6 +20,7 @@ import { MusicPlayerPanel } from "../../features/media/MusicPlayerPanel";
 import type { useMediaState } from "../../features/media/useMediaState";
 import { FileShelfPanel } from "../../features/file-shelf/FileShelfPanel";
 import { CalendarPanel } from "../../features/calendar/CalendarPanel";
+import { SystemMonitorPanel } from "../../features/system-monitor/SystemMonitorPanel";
 import type { CalendarState } from "../../features/calendar/useCalendar";
 import type { useFileShelf } from "../../features/file-shelf/useFileShelf";
 import { getTodoScrollStartRows } from "./layout";
@@ -123,6 +124,7 @@ export function IslandPages({
       {page === "agents" && <AgentSessionsPanel sessions={agentSessions} hostDisplay={settings.agentHostDisplay} showElapsed={settings.agentShowElapsed} showModel={settings.agentShowModel} showActivity={settings.agentShowActivity} unseen={unseenAgentSessions} removal={agentRemoval} reveal={alertedSession} showUsage={settings.agentShowUsage} usages={agentUsages} approvals={agentApprovals} />}
       {pluginPages.entry && <PluginViewPage entry={pluginPages.entry} isOpen={mode === "expanded"} onRowsChange={pluginPages.setRows} />}
       {page === "translation" && <TranslationPanel isOpen={mode === "expanded"} onOpenSettings={() => openSettingsWindow("translation")} />}
+      {page === "system" && <SystemMonitorPanel />}
       {page === "calendar" && (
         <CalendarPanel snapshot={calendar.snapshot} now={calendar.now} onRefresh={calendar.refresh} onOpenSettings={() => openSettingsWindow("calendar")} />
       )}
