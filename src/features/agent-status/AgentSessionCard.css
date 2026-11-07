@@ -1,0 +1,389 @@
+/* A session card on the Agent page (AgentSessionCard.tsx). Every card is 62px tall: two lines
+   in fixed heights, because getAgentPageExpandedHeight (windows/island/layout.ts) sizes the
+   island by it; only an alert's card grows, by the reply it shows. The frame takes the light's
+   colour (sessionLight.ts) and the radius of the island's inner panels, which follows Settings. */
+.agent-session {
+  --card-color: var(--color-light-done);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 62px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+  padding: 0 12px;
+  color: inherit;
+  text-align: left;
+  background: rgba(var(--agent-ink), 0.035);
+  border: 1px solid rgba(var(--agent-ink), 0.09);
+  border-radius: var(--island-panel-radius, 10px);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.agent-session--light-working {
+  --card-color: var(--color-light-working);
+}
+
+.agent-session--light-stale {
+  --card-color: rgba(52, 199, 89, 0.45);
+}
+
+.agent-session--light-needs,
+.agent-session--light-failed {
+  --card-color: var(--color-light-needs);
+}
+
+.agent-session--light-yourTurn {
+  --card-color: var(--color-light-your-turn);
+}
+
+/* Working or waiting on the user: framed and faintly lit in its colour. */
+.agent-session--lively,
+.agent-session--light-failed {
+  border-color: color-mix(in srgb, var(--card-color) 62%, transparent);
+  box-shadow:
+    0 0 14px -6px color-mix(in srgb, var(--card-color) 70%, transparent),
+    inset 0 0 18px -10px color-mix(in srgb, var(--card-color) 60%, transparent);
+}
+
+.agent-session--light-stale {
+  border-color: color-mix(in srgb, var(--color-light-working) 30%, transparent);
+}
+
+/* Finished but not looked at yet: a brighter frame until clicked. */
+.agent-session--unseen.agent-session--light-done {
+  border-color: rgba(var(--agent-ink), 0.32);
+}
+
+/* Lights up only once the cursor rests on a card, not on the way to the header buttons. */
+.agent-session:hover,
+li:has(> .agent-session__remove:hover) > .agent-session {
+  background: rgba(var(--agent-ink), 0.075);
+  transition-delay: 80ms;
+}
+
+.agent-session:focus-visible {
+  outline: 2px solid var(--color-focus-ring-soft);
+  outline-offset: -2px;
+}
+
+/* An alert's card shows the reply under the two lines. */
+.agent-session:has(.agent-session__message--card) {
+  height: auto;
+  padding-block: 10px;
+}
+
+/* The sparkle band: two layers of sparse noise in the card's colour drift past at different
+   speeds and twinkle, fading out towards the card's middle. Transforms only, so it stays on the
+   compositor. */
+.agent-session__band {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.55) 32%, transparent 64%);
+  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.55) 32%, transparent 64%);
+}
+
+.agent-session__band::before,
+.agent-session__band::after {
+  --sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 10 0 0 0 -6.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -140px;
+  width: calc(100% + 280px);
+  background: var(--card-color);
+  -webkit-mask: var(--sparkle) 0 0 / 140px 140px repeat;
+  mask: var(--sparkle) 0 0 / 140px 140px repeat;
+  animation: agent-band-drift 9s linear infinite;
+  will-change: transform;
+}
+
+.agent-session__band::after {
+  -webkit-mask-size: 90px 90px;
+  mask-size: 90px 90px;
+  -webkit-mask-position: 37px 21px;
+  mask-position: 37px 21px;
+  opacity: 0.8;
+  animation:
+    agent-band-drift-back 6s linear infinite,
+    agent-band-twinkle 1.8s ease-in-out infinite;
+}
+
+@keyframes agent-band-drift {
+  to {
+    transform: translate3d(140px, 0, 0);
+  }
+}
+
+@keyframes agent-band-drift-back {
+  from {
+    transform: translate3d(90px, 0, 0);
+  }
+}
+
+@keyframes agent-band-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Windows asked for less motion: the band stays, still. */
+@media (prefers-reduced-motion: reduce) {
+  .agent-session__band::before,
+  .agent-session__band::after {
+    animation: none;
+  }
+}
+
+/* First line: title, then model · effort | time, where it runs and the agent's icon. */
+.agent-session__heading {
+  min-width: 0;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-session__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-1);
+  /* Semibold, not heavier: 800 picks Segoe UI Black for Latin text. */
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Finished sessions recede by colour alone; one not looked at yet stays bright. */
+.agent-session--completed:not(.agent-session--unseen) .agent-session__title,
+.agent-session--failed:not(.agent-session--unseen) .agent-session__title {
+  color: var(--text-2);
+}
+
+.agent-session__project {
+  color: inherit;
+}
+
+.agent-session__meta,
+.agent-session__not-found {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.agent-session__not-found {
+  color: var(--color-warning);
+}
+
+.agent-session__model {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-session__divider {
+  width: 1px;
+  height: 10px;
+  background: rgba(var(--agent-ink), 0.22);
+}
+
+/* Modes that act without asking; skipping every check is marked in the waiting orange. */
+.agent-session__mode {
+  padding: 1px 6px;
+  color: var(--text-2);
+  background: rgba(var(--agent-ink), 0.1);
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.agent-session__mode--bypass {
+  color: rgb(255, 159, 67);
+  background: rgba(255, 159, 67, 0.16);
+}
+
+.agent-session__host {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.agent-session__host-icon {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.agent-session__host--unknown {
+  width: 13px;
+  height: 13px;
+}
+
+/* Second line: the state in its colour, what the session does, and the context size. */
+.agent-session__status-line {
+  min-width: 0;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.agent-session__status {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.agent-session__status > * + *::before {
+  content: "·";
+  margin: 0 6px;
+  color: var(--text-3);
+}
+
+.agent-session__state {
+  flex: none;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.agent-session--lively .agent-session__state,
+.agent-session--light-failed .agent-session__state {
+  color: var(--card-color);
+}
+
+/* The running green reads as plain text on a card already framed green. */
+.agent-session--light-working .agent-session__state {
+  color: var(--text-1);
+}
+
+.agent-session__subagents {
+  flex: none;
+  color: var(--text-2);
+}
+
+.agent-session__message,
+.agent-session__prompt,
+.agent-session__tool {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-session__tool {
+  display: flex;
+  gap: 6px;
+}
+
+.agent-session__tool::before {
+  flex: none;
+}
+
+.agent-session__tool-name {
+  flex: none;
+  color: var(--color-agent-running);
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
+.agent-session__tool-detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-3);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  text-overflow: ellipsis;
+}
+
+.agent-session__tokens {
+  flex: none;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A finished or failed session's reply on an alert's card: its summary, up to three lines. */
+.agent-session__message--card {
+  display: -webkit-box;
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 19px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* The x sits over the card's right end and shows only while the cursor is on it. */
+.agent-sessions__list > li {
+  position: relative;
+}
+
+.agent-session__remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: rgba(var(--agent-ink), 0.8);
+  background: transparent;
+  border: 0;
+  border-radius: 0 var(--island-panel-radius, 10px) var(--island-panel-radius, 10px) 0;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.agent-session__remove svg {
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--agent-ink), 0.14);
+}
+
+.agent-session__remove:hover,
+.agent-session__remove:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.agent-session__remove:hover svg,
+.agent-session__remove:focus-visible svg {
+  color: #fff;
+  background: rgba(235, 87, 87, 0.9);
+}

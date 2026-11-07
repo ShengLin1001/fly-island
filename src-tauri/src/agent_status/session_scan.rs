@@ -326,6 +326,7 @@ fn summary_from(
         // Set by `list_sessions`.
         compacting: false,
         remote_host: None,
+        context_tokens: parsed.context_tokens,
     }
 }
 

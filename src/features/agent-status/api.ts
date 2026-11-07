@@ -90,6 +90,8 @@ export type AgentSessionSummary = {
   remoteHost?: string;
   /** Compacting its context now (Claude Code PreCompact / PostCompact hooks). Missing from older builds. */
   compacting?: boolean;
+  /** Tokens in the context at the newest model call; missing when unknown or from older builds. */
+  contextTokens?: number | null;
 };
 
 /** Mirrors ReplyMarker::name in src-tauri/src/agent_status/reply_marker.rs. */

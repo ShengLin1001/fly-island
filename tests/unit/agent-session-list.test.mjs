@@ -72,10 +72,10 @@ test("the Agent page follows the AI Agent switch", () => {
 test("the Agent page fits the session rows set in Settings", async () => {
   const { getAgentPageExpandedHeight } = await import("../../src/windows/island/layout.ts");
   const { normalizeSettings, DEFAULT_SETTINGS, MIN_AGENT_VISIBLE_ROWS, MAX_AGENT_VISIBLE_ROWS } = await import("../../src/features/appearance/settings.ts");
-  // Flat rows: three full rows take far less room than the old cards (429px).
-  assert.equal(getAgentPageExpandedHeight(3), 316);
-  // Each extra session adds one full row and its gap.
-  assert.equal(getAgentPageExpandedHeight(4) - getAgentPageExpandedHeight(3), 80);
+  // Three 62px cards with 6px gaps, the page chrome and the footer.
+  assert.equal(getAgentPageExpandedHeight(3), 304);
+  // Each extra session adds one card and its gap.
+  assert.equal(getAgentPageExpandedHeight(4) - getAgentPageExpandedHeight(3), 68);
   // The tallest choice still fits the native window (656px).
   assert.ok(getAgentPageExpandedHeight(MAX_AGENT_VISIBLE_ROWS) <= 656);
 
@@ -104,4 +104,9 @@ test("sessions group by computer: this one first, then remote hosts as met", asy
   ]);
   assert.deepEqual(groupByComputer([s("x", "zcm6")]).map((group) => group.host), ["zcm6"]);
   assert.deepEqual(groupByComputer([]), []);
+});
+
+test("context sizes read like the cards show them", async () => {
+  const { formatTokens } = await import("../../src/features/agent-status/sessionList.ts");
+  assert.deepEqual([860, 8_600, 24_840, 10_000, 128_400, 1_000_000, 1_250_000].map(formatTokens), ["860", "8.6k", "24.8k", "10k", "128k", "1M", "1.3M"]);
 });

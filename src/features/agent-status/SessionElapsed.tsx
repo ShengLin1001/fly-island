@@ -6,8 +6,9 @@ import { durationParts, isActivePhase, turnElapsedMs } from "./sessionList";
 /**
  * "已运行 3 分 20 秒" while the session works, "用时 4 分 12 秒" once it is done. Only a working
  * session ticks, every second, here in the leaf so the island around it does not re-render.
+ * `compact`: the duration alone ("3 分 20 秒"), as an Agent page card shows it.
  */
-export function SessionElapsed({ session }: { session: AgentSessionSummary }) {
+export function SessionElapsed({ session, compact = false }: { session: AgentSessionSummary; compact?: boolean }) {
   const t = useTranslation();
   const active = isActivePhase(session.phase);
   const [now, setNow] = useState(() => Date.now());
@@ -23,7 +24,7 @@ export function SessionElapsed({ session }: { session: AgentSessionSummary }) {
   const duration = t.agent.sessions.duration(durationParts(elapsed));
   return (
     <span className="agent-session__elapsed">
-      {active ? t.agent.sessions.elapsedRunning(duration) : t.agent.sessions.elapsedDone(duration)}
+      {compact ? duration : active ? t.agent.sessions.elapsedRunning(duration) : t.agent.sessions.elapsedDone(duration)}
     </span>
   );
 }

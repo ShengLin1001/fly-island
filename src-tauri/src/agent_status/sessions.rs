@@ -60,6 +60,9 @@ pub struct AgentSessionSummary {
     pub(super) background_tasks: u32,
     /// Compacting its context now (PreCompact seen, PostCompact not yet; notifications.rs).
     pub(super) compacting: bool,
+    /// Tokens in the context at the newest model call (prompt, cache and reply); `None` when the
+    /// excerpt read has none.
+    pub(super) context_tokens: Option<u64>,
     /// The SSH host the session runs on, for sessions read from another computer
     /// (remote_sessions.rs); left out for local ones.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -105,6 +108,8 @@ pub(super) struct SessionTail {
     pub(super) subagents: u32,
     /// Background tasks started after the newest prompt that have not ended, however the turn ended.
     pub(super) background_tasks: u32,
+    /// Tokens in the context at the newest model call.
+    pub(super) context_tokens: Option<u64>,
 }
 
 impl SessionTail {
@@ -211,6 +216,9 @@ pub(super) fn parse_claude_tail(tail: &str) -> SessionTail {
             }
             if result.effort.is_none() && model.is_some() {
                 result.effort = string_field(&record, "effort");
+            }
+            if result.context_tokens.is_none() && model.is_some() {
+                result.context_tokens = claude_context_tokens(&message["usage"]);
             }
             if result.last_message.is_none() {
                 if let Some(text) = text_blocks(&message["content"]) {
@@ -330,6 +338,9 @@ pub(super) fn parse_codex_tail(tail: &str) -> SessionTail {
         if kind != "event_msg" {
             continue;
         }
+        if result.context_tokens.is_none() && payload_kind == "token_count" {
+            result.context_tokens = payload["info"]["last_token_usage"]["total_tokens"].as_u64();
+        }
         if result.last_prompt.is_none() && payload_kind == "user_message" {
             result.last_prompt = payload["message"].as_str().and_then(prompt_title);
         }
@@ -398,6 +409,14 @@ pub(super) fn record_cwd(line: &str) -> Option<String> {
     }
     let record = serde_json::from_str::<Value>(line).ok()?;
     string_field(&record, "cwd")
+}
+
+/// What a Claude call had in its context: the prompt, read from and written to the cache or not,
+/// plus the reply.
+fn claude_context_tokens(usage: &Value) -> Option<u64> {
+    let fields = ["input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"];
+    let total: u64 = fields.iter().filter_map(|field| usage[*field].as_u64()).sum();
+    (total > 0).then_some(total)
 }
 
 fn string_field(value: &Value, key: &str) -> Option<String> {

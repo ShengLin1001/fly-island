@@ -211,7 +211,7 @@ try {
   const row = document.querySelector<HTMLElement>("#panel .agent-sessions__list > li")!;
   check(measured > 36 && measured === row.offsetHeight, `卡片把这一行的实际高度交给岛屿（${measured}px）`);
   await act(async () => panel.render(<AgentSessionsPanel sessions={listed} hostDisplay="off" />));
-  check(!document.querySelector("#panel .agent-session--completed .agent-session__message"), "平时 Agent 页里结束的会话仍折叠成一行");
+  check(!document.querySelector("#panel .agent-session--completed .agent-session__message--card"), "平时 Agent 页里结束的会话不展开整段回复");
   const gone = session("d", "completed");
   await act(async () => panel.render(<AgentSessionsPanel sessions={listed} hostDisplay="off" reveal={card("d", gone)} />));
   check(rows().join() === "claudeCode:d", "列表里没有这个会话（只列运行中的）时，按提醒时的样子显示它");

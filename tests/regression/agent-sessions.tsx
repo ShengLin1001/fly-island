@@ -43,14 +43,14 @@ const SESSIONS: AgentSessionSummary[] = [
   {
     provider: "claudeCode", sessionId: "a", cwd: "E:\\Projects\\fly-island", title: "设置界面完善思路",
     model: "Opus 5.5", effort: "medium", phase: "running", updatedAt: now - 20_000, turnStartedAt: now - 200_000,
-    permissionMode: "bypass", subagents: 2,
+    permissionMode: "bypass", subagents: 2, contextTokens: 24_840,
     // As long as the native side sends (120 characters), so it needs more than two lines.
     host: { name: "Orca", exe: "C:\\Apps\\orca\\Orca.exe", kind: "terminal" },
     lastMessage: "24 个测试全部通过。接下来用真实数据看看列表的实际效果和耗时，再决定要不要给第一句提问加缓存，顺便检查一下项目名是不是会话开始时的目录，以及跳转窗口时能不能按项目文件夹找到对应的编辑器窗口和终端窗口…",
   },
   {
     provider: "codex", sessionId: "b", cwd: "E:\\Projects\\MioPicFlow", title: "恢复 Windows 发布机环境，顺便把代理配置也整理一遍",
-    model: "gpt-6-astra", effort: "high", phase: "waiting", updatedAt: now - 14 * 60_000, turnStartedAt: null, permissionMode: "default",
+    model: "gpt-6-astra", effort: "high", phase: "waiting", updatedAt: now - 14 * 60_000, turnStartedAt: null, permissionMode: "default", contextTokens: 8_600,
     host: { name: "Codex", exe: null, kind: "app" },
     lastMessage: "关闭系统代理后国内网站立即恢复，说明问题集中在 Clash 的代理链路。",
   },
@@ -82,24 +82,29 @@ const results = document.getElementById("results")!;
 async function runChecks() {
   try {
     check(rows().length === 3, "列出全部会话");
-    const [first, second, third] = rows();
-    check(first.textContent?.includes("fly-island · 设置界面完善思路") && first.querySelector(".agent-provider-icon--claudeCode"), "每行显示图标、项目名和标题");
-    check(first.querySelector(".agent-session__model")?.textContent === "Opus 5.5 · Medium", "显示模型和推理强度");
-    check(first.classList.contains("agent-session--running") && second.classList.contains("agent-session--waiting") && third.classList.contains("agent-session--completed"), "状态灯按会话状态着色");
-    const meta = (row: HTMLElement) => row.querySelector(".agent-session__meta")?.textContent;
-    const dot = (row: HTMLElement) => getComputedStyle(row.querySelector(".agent-session__dot")!).backgroundColor;
-    check(meta(second) === "等待确认 · 14 分" && dot(second) === "rgb(255, 69, 58)", "卡住等你的会话显示红色状态灯和状态文字");
-    check(dot(first) === "rgb(52, 199, 89)" && dot(third) === "rgb(142, 142, 147)", "在跑的会话绿色，做完的灰色");
-    check(meta(first)?.startsWith("已运行 3 分 2") && !meta(first)?.includes("刚刚") && meta(third)?.endsWith("1 小时"), "运行中的会话显示已运行多久，结束的显示多久前更新");
-    check(first.classList.contains("agent-session--full") && second.classList.contains("agent-session--full") && third.classList.contains("agent-session--compact"), "进行中的会话展开，已完成的折叠成一行");
-    check(rows().every((row) => row.firstElementChild?.classList.contains("agent-session__dot") && row.querySelector(".agent-session__heading .agent-provider-icon") && row.querySelectorAll(".agent-session__dot").length === 1), "每行都以状态灯开头，图标都在标题行右侧");
+    let [first, second, third] = rows();
+    const text = (row: HTMLElement, selector: string) => row.querySelector(selector)?.textContent;
+    const time = (row: HTMLElement) => text(row, ".agent-session__time");
+    const state = (row: HTMLElement) => text(row, ".agent-session__state");
+    const color = (row: HTMLElement, selector: string) => getComputedStyle(row.querySelector(selector)!).color;
+    check(first.textContent?.includes("fly-island · 设置界面完善思路") && first.querySelector(".agent-provider-icon--claudeCode"), "每张卡片显示图标、项目名和标题");
+    check(text(first, ".agent-session__model") === "Opus 5.5 · Medium" && text(third, ".agent-session__model") === "Opus 5.5", `所有卡片都显示模型和推理强度：${text(first, ".agent-session__model")} / ${text(third, ".agent-session__model")}`);
+    check(first.classList.contains("agent-session--running") && second.classList.contains("agent-session--waiting") && third.classList.contains("agent-session--completed"), "卡片带上会话状态");
+    check(state(second) === "等你确认" && color(second, ".agent-session__state") === "rgb(255, 69, 58)", `卡住等你的会话状态写成红色「等你确认」：${state(second)} ${color(second, ".agent-session__state")}`);
+    check(state(first) === "正在运行" && state(third) === "已完成", `运行中和已完成的状态文字：${state(first)} / ${state(third)}`);
+    const border = (row: HTMLElement) => getComputedStyle(row).borderTopColor;
+    check(border(first) !== border(third) && border(second) !== border(first) && border(second) !== border(third), `边框按状态着色：${border(first)} / ${border(second)} / ${border(third)}`);
+    check(first.querySelector(".agent-session__band") && second.querySelector(".agent-session__band") && !third.querySelector(".agent-session__band"), "运行和等你的卡片有流苏光带，做完的没有");
+    check(time(second) === "14 分", `不在运行的显示多久前更新：${time(first)} / ${time(second)} / ${time(third)}`);
+    check(text(first, ".agent-session__tokens") === "24.8k tokens" && text(second, ".agent-session__tokens") === "8.6k tokens" && !third.querySelector(".agent-session__tokens"), "第二行右侧显示上下文 tokens，没有就不显示");
+    check(first.querySelector(".agent-session__subagents") && !third.querySelector(".agent-session__subagents"), "运行中的会话写出正在跑的子 Agent 数");
+    check(first.querySelector(".agent-session__mode--bypass") && !second.querySelector(".agent-session__mode") && !third.querySelector(".agent-session__mode--bypass"), "标出跳过确认的权限模式，默认模式不标");
+    check(rows().every((row) => row.getBoundingClientRect().height === 62), `每张卡片一样高（62px）：${rows().map((row) => row.getBoundingClientRect().height)}`);
+    check(rows().every((row) => row.querySelector(".agent-session__heading")?.lastElementChild?.classList.contains("agent-provider-icon")), "Agent 图标都在标题行最右侧");
     const title = second.querySelector<HTMLElement>(".agent-session__title")!;
     const message = first.querySelector<HTMLElement>(".agent-session__message")!;
     check(title.scrollWidth > title.clientWidth, "长标题单行省略");
-    check(message.scrollHeight > message.clientHeight && message.clientHeight < 40, "最新回复最多两行");
-    check(!third.querySelector(".agent-session__message") && !third.querySelector(".agent-session__model"), "折叠行不显示回复和模型");
-    check(first.querySelector(".agent-session__mode--bypass")?.textContent === "跳过确认" && meta(first)?.includes("2 个子 Agent"), "运行中的会话标出跳过确认的权限模式和正在跑的子 Agent 数");
-    check(!second.querySelector(".agent-session__mode") && !third.querySelector(".agent-session__mode") && !meta(third)?.includes("子 Agent"), "默认权限模式和已结束的会话不显示这两项");
+    check(message.scrollWidth > message.clientWidth && message.clientHeight < 20, "最新回复在第二行单行省略");
     const titleTone = (row: HTMLElement) => getComputedStyle(row.querySelector(".agent-session__title")!).color;
     const dimTitle = titleTone(third);
     const seenKeys: string[] = [];
@@ -125,7 +130,7 @@ async function runChecks() {
     const firstRow = rows()[0].getBoundingClientRect();
     const firstRemove = removeButtons[0].getBoundingClientRect();
     check(removeButtons.length === 3 && getComputedStyle(removeButtons[0]).opacity === "0"
-      && Math.abs(firstRemove.right - firstRow.right) < 1 && firstRemove.width < 50, "每行右端有一个平时看不见的移除按钮");
+      && Math.abs(firstRemove.right - firstRow.right) < 1 && firstRemove.width < 50, "每张卡片右端有一个平时看不见的移除按钮");
     check(removeButtons[0].getAttribute("aria-label") === "从列表移除「设置界面完善思路」", "移除按钮的读屏文字说明移除哪个会话");
     const focusesBefore = focusCalls.length;
     removeButtons[2].click();
@@ -139,12 +144,12 @@ async function runChecks() {
     const panel = document.querySelector<HTMLElement>(".agent-sessions")!;
     check(panel.scrollWidth <= panel.clientWidth, "面板没有横向溢出");
     const list = document.querySelector<HTMLElement>(".agent-sessions__list")!;
-    const rowHeights = rows().map((row) => row.getBoundingClientRect().height);
-    check(rowHeights[0] === 78 && rowHeights[1] < rowHeights[0] - 10 && rowHeights[2] < rowHeights[1], "展开行随回复行数变高（两行 78px，一行更矮，不留空行），折叠行最矮");
     const font = (selector: string) => { const style = getComputedStyle(first.querySelector(selector)!); return `${style.fontSize} ${style.fontWeight}`; };
-    check(font(".agent-session__title") === "14px 600" && font(".agent-session__message") === "13px 400" && font(".agent-session__meta") === "12px 400" && font(".agent-session__model") === "11px 400", "字号字重：标题 14/600，回复 13/400，状态 12/400，模型 11/400");
+    check(font(".agent-session__title") === "14px 600" && font(".agent-session__state") === "12.5px 500" && font(".agent-session__meta") === "12px 400",
+      `字号字重：标题 ${font(".agent-session__title")}，状态 ${font(".agent-session__state")}，右上信息 ${font(".agent-session__meta")}`);
     check(list.scrollHeight <= list.clientHeight, "设为 3 条时放下 3 个会话，不滚动");
-    check(Math.abs(list.getBoundingClientRect().bottom - (fixture.getBoundingClientRect().bottom + 20)) < 1, "列表一直延伸到岛屿底边，底部不留空白条");
+    const footer = document.querySelector<HTMLElement>(".agent-sessions__footer");
+    check(footer?.textContent?.startsWith("3 个会话"), `底部写出会话数和各状态的数量：${footer?.textContent}`);
     const afterLayout = () => act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
     await afterLayout();
     const masked = () => getComputedStyle(list).maskImage !== "none";
@@ -163,25 +168,20 @@ async function runChecks() {
     sizeFor(3);
 
     check(first.querySelector(".agent-session__host")?.textContent?.startsWith("Orca") && first.querySelector("img.agent-session__host-icon"), "来源显示程序名和它自己的图标");
-    check(first.querySelector(".agent-session__meta")?.nextElementSibling?.classList.contains("agent-session__host") && first.querySelector(".agent-session__heading")?.lastElementChild?.classList.contains("agent-provider-icon"), "标题行右侧依次是状态、来源、Agent 图标");
+    check(first.querySelector(".agent-session__meta")?.nextElementSibling?.classList.contains("agent-session__host"), "标题行右侧依次是模型和时间、来源、Agent 图标");
     check(second.querySelector("svg.agent-session__host-icon") && second.querySelector(".agent-session__host")?.textContent === "Codex", "没有程序文件的来源用通用图标");
     check(!third.querySelector(".agent-session__host"), "不知道来源时不显示");
     await render("icon");
     check(first.querySelector(".agent-session__host img") && !first.querySelector(".agent-session__host-name") && document.querySelectorAll("[title]").length === 0, "只显示图标，不弹悬停提示");
-    check(third.querySelector(".agent-session__host--unknown"), "只显示图标时，不知道来源也留出图标位");
     await render("icon", { showElapsed: false });
     const iconRight = (row: HTMLElement) => row.querySelector(".agent-provider-icon")!.getBoundingClientRect().right;
-    check(meta(first) === "2 个子 Agent · 刚刚" && meta(third) === "1 小时" && Math.abs(iconRight(first) - iconRight(third)) < 0.5 && Math.abs(iconRight(first) - iconRight(second)) < 0.5, "时间长短不同、有无来源时，右侧图标仍在同一列");
-    // The fixture is the island's content box; the island's edge is its 20px side padding further out.
-    const dotGap = first.querySelector(".agent-session__dot")!.getBoundingClientRect().left - (fixture.getBoundingClientRect().left - 20);
-    check(dotGap > 8 && dotGap < 16, "列表两侧只留很窄的边距（距岛屿边缘约 12px）");
+    check(Math.abs(iconRight(first) - iconRight(third)) < 0.5 && Math.abs(iconRight(first) - iconRight(second)) < 0.5, "时间长短不同、有无来源时，右侧图标仍在同一列");
     await render("name");
     check(first.querySelector(".agent-session__host-name")?.textContent === "Orca" && !first.querySelector(".agent-session__host-icon"), "只显示名称");
     await render("off");
     check(!document.querySelector(".agent-session__host"), "设为不显示时隐藏来源");
     await render("both");
-    check(meta(third) === "用时 4 分 12 秒 · 1 小时", "结束的会话显示这一轮用时");
-    check(!second.querySelector(".agent-session__elapsed"), "不知道这一轮何时开始时不显示时长");
+    check(!second.querySelector(".agent-session__elapsed") && !third.querySelector(".agent-session__elapsed"), "不知道这一轮何时开始或已结束时不显示时长");
     const before = first.querySelector(".agent-session__elapsed")?.textContent;
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1100)); });
     check(first.querySelector(".agent-session__elapsed")?.textContent !== before, "进行中的会话时长每秒更新");
@@ -191,19 +191,18 @@ async function runChecks() {
       const turnJustStarted = [{ ...SESSIONS[0], lastMessage: null }, ...SESSIONS.slice(1)];
       root.render(<StrictMode><I18nProvider><AgentSessionsPanel sessions={turnJustStarted} hostDisplay="both" /></I18nProvider></StrictMode>);
     });
-    check(rows()[0].classList.contains("agent-session--compact") && rows()[0].querySelector(".agent-session__model") && rows()[0].getBoundingClientRect().height < 40, "刚开始一轮、还没有回复的会话不留空白第二行");
-    await render("both");
+    check(!rows()[0].querySelector(".agent-session__message") && rows()[0].getBoundingClientRect().height === 62, "刚开始一轮、还没有回复的会话只写状态，卡片不变矮");
     await render("both");
     const titleColor = () => getComputedStyle(rows()[0].querySelector(".agent-session__title")!).color;
-    check(titleColor() === "rgba(241, 240, 246, 0.96)", "深色岛屿背景上标题是浅色字");
+    check(titleColor() === "rgba(241, 240, 246, 0.96)", `深色岛屿背景上标题是浅色字：${titleColor()}`);
     fixture.style.setProperty("--island-ink-rgb", "24, 24, 30");
-    check(titleColor() === "rgba(24, 24, 30, 0.96)", "浅色岛屿背景上标题换成深色字");
+    check(titleColor() === "rgba(24, 24, 30, 0.96)", `浅色岛屿背景上标题换成深色字：${titleColor()}`);
     fixture.style.removeProperty("--island-ink-rgb");
 
     const withActivity: AgentSessionSummary[] = [
       { ...SESSIONS[0], lastPrompt: "发个 0.5.3 补丁版并升级线上", currentTool: { name: "Bash", detail: "git push origin main && gh run watch --exit-status" } },
       { ...SESSIONS[1], lastPrompt: "恢复发布机环境" },
-      SESSIONS[2],
+      { ...SESSIONS[0], sessionId: "p", lastMessage: null, lastPrompt: "整理一下发布说明" },
     ];
     const renderActivity = async (showActivity: boolean) => {
       await act(async () => {
@@ -211,14 +210,11 @@ async function runChecks() {
       });
     };
     await renderActivity(true);
-    const [running, waiting] = rows();
-    check(running.querySelector(".agent-session__prompt")?.textContent === "你：发个 0.5.3 补丁版并升级线上"
-      && running.querySelector(".agent-session__tool-name")?.textContent === "Bash"
-      && running.querySelector(".agent-session__tool-detail")?.textContent?.startsWith("git push")
-      && !running.querySelector(".agent-session__message"), "运行中的会话显示最近提问和正在调用的工具");
-    const reply = waiting.querySelector<HTMLElement>(".agent-session__message");
-    check(waiting.querySelector(".agent-session__prompt") && reply && reply.clientHeight < 25 && !waiting.querySelector(".agent-session__tool"), "没有工具时提问下面接一行回复");
-    check(running.getBoundingClientRect().height === 78 && waiting.getBoundingClientRect().height === 78, "提问加一行内容的行和两行回复一样高（78px）");
+    const [running, waiting, prompted] = rows();
+    check(text(running, ".agent-session__tool-name") === "Bash" && text(running, ".agent-session__tool-detail")?.startsWith("git push")
+      && !running.querySelector(".agent-session__message"), "运行中的会话第二行写正在调用的工具");
+    check(waiting.querySelector(".agent-session__message") && !waiting.querySelector(".agent-session__prompt"), "没有工具时写最新回复");
+    check(prompted.querySelector(".agent-session__prompt")?.textContent?.includes("整理一下发布说明"), "还没有回复时写最近的提问");
     await renderActivity(false);
     check(!document.querySelector(".agent-session__prompt") && !document.querySelector(".agent-session__tool") && rows()[0].querySelector(".agent-session__message"), "关掉后只显示回复");
 
@@ -277,6 +273,8 @@ async function runChecks() {
     sizeFor(3);
     await render("both");
 
+    // The activity checks above swapped the third session out, so its card is a new one now.
+    [first, second, third] = rows();
     await act(async () => { first.click(); await Promise.resolve(); });
     const lastCall = focusCalls[focusCalls.length - 1];
     check(lastCall?.provider === "claudeCode" && lastCall?.title === "设置界面完善思路", "点击会话按项目和标题查找窗口");
@@ -293,14 +291,14 @@ async function runChecks() {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
     const asking = rows()[0];
-    check(asking.classList.contains("agent-session--light-yourTurn") && dot(asking) === "rgb(255, 214, 10)" && meta(asking)?.startsWith("等你回复"),
-      `回复以问句结尾的会话显示黄色状态灯和「等你回复」：${meta(asking)}`);
+    check(asking.classList.contains("agent-session--light-yourTurn") && color(asking, ".agent-session__state") === "rgb(255, 214, 10)" && state(asking) === "等你回复" && asking.querySelector(".agent-session__band"),
+      `回复以问句结尾的会话写成黄色「等你回复」并带光带：${state(asking)}`);
     await act(async () => {
       root.render(<StrictMode><I18nProvider><AgentSessionsPanel sessions={[{ ...SESSIONS[0], sessionId: "e", compacting: true }]} hostDisplay="both" /></I18nProvider></StrictMode>);
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
     const compacting = rows()[0];
-    check(meta(compacting)?.startsWith("正在压缩上下文") && dot(compacting) === "rgb(52, 199, 89)", `压缩上下文时写明，状态灯仍是绿色：${meta(compacting)}`);
+    check(state(compacting) === "正在压缩上下文" && compacting.classList.contains("agent-session--light-working"), `压缩上下文时写明，仍按运行中显示：${state(compacting)}`);
     // Last: it swaps the list for one remote row, which the checks above would not find.
     const remote: AgentSessionSummary = {
       ...sessions[0], sessionId: "local-api/r-1", provider: "codex", cwd: "/srv/app", title: "服务器上的会话",
