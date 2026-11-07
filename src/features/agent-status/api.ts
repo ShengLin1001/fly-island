@@ -92,6 +92,8 @@ export type AgentSessionSummary = {
   compacting?: boolean;
   /** Tokens in the context at the newest model call; missing when unknown or from older builds. */
   contextTokens?: number | null;
+  /** The agent has quit (SessionEnd, its process gone, or no longer in Claude Code's registry). Missing from older builds. */
+  closed?: boolean;
 };
 
 /** Mirrors ReplyMarker::name in src-tauri/src/agent_status/reply_marker.rs. */

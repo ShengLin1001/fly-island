@@ -63,6 +63,9 @@ pub struct AgentSessionSummary {
     /// Tokens in the context at the newest model call (prompt, cache and reply); `None` when the
     /// excerpt read has none.
     pub(super) context_tokens: Option<u64>,
+    /// The agent has quit: SessionEnd ran, its process is gone, or Claude Code no longer lists it
+    /// as running. Set by `list_sessions`; false while that is unknown.
+    pub(super) closed: bool,
     /// The SSH host the session runs on, for sessions read from another computer
     /// (remote_sessions.rs); left out for local ones.
     #[serde(skip_serializing_if = "Option::is_none")]
