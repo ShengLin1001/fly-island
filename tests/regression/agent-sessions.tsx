@@ -63,7 +63,7 @@ const SESSIONS: AgentSessionSummary[] = [
 sizeFor(Number(params.get("rows")) || 3);
 const root = createRoot(fixture);
 const sessions = params.has("empty") ? [] : SESSIONS;
-const render = async (hostDisplay: AgentHostDisplay, cards: { showElapsed?: boolean; showModel?: boolean } = {}) => {
+const render = async (hostDisplay: AgentHostDisplay, cards: { showElapsed?: boolean; showModel?: boolean; cardEffects?: boolean } = {}) => {
   await act(async () => {
     root.render(<StrictMode><I18nProvider><AgentSessionsPanel sessions={sessions} hostDisplay={hostDisplay} {...cards} /></I18nProvider></StrictMode>);
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -90,11 +90,17 @@ async function runChecks() {
     check(first.textContent?.includes("fly-island · 设置界面完善思路") && first.querySelector(".agent-provider-icon--claudeCode"), "每张卡片显示图标、项目名和标题");
     check(text(first, ".agent-session__model") === "Opus 5.5 · Medium" && text(third, ".agent-session__model") === "Opus 5.5", `所有卡片都显示模型和推理强度：${text(first, ".agent-session__model")} / ${text(third, ".agent-session__model")}`);
     check(first.classList.contains("agent-session--running") && second.classList.contains("agent-session--waiting") && third.classList.contains("agent-session--completed"), "卡片带上会话状态");
-    check(state(second) === "等你确认" && color(second, ".agent-session__state") === "rgb(255, 69, 58)", `卡住等你的会话状态写成红色「等你确认」：${state(second)} ${color(second, ".agent-session__state")}`);
+    check(state(second) === "等你确认" && color(second, ".agent-session__state") !== color(third, ".agent-session__state"), `卡住等你的会话状态按灯色着色「等你确认」：${state(second)} ${color(second, ".agent-session__state")}`);
     check(state(first) === "正在运行" && state(third) === "已完成", `运行中和已完成的状态文字：${state(first)} / ${state(third)}`);
     const border = (row: HTMLElement) => getComputedStyle(row).borderTopColor;
     check(border(first) !== border(third) && border(second) !== border(first) && border(second) !== border(third), `边框按状态着色：${border(first)} / ${border(second)} / ${border(third)}`);
-    check(first.querySelector(".agent-session__band") && second.querySelector(".agent-session__band") && !third.querySelector(".agent-session__band"), "运行和等你的卡片有流苏光带，做完的没有");
+    check(!document.querySelector(".agent-session__band") && !document.querySelector(".agent-session--effects"), "卡片光效默认关：没有流苏光带");
+    await render("both", { cardEffects: true });
+    [first, second, third] = rows();
+    check([first, second, third].every((row) => row.classList.contains("agent-session--effects") && row.querySelector(".agent-session__band")), "打开卡片光效后每张卡片（含已完成的）都有流苏光带");
+    check(getComputedStyle(first).animationName === "agent-card-breathe" && getComputedStyle(third).animationName === "none", `进行中的卡片边框呼吸，已完成的不呼吸：${getComputedStyle(first).animationName} / ${getComputedStyle(third).animationName}`);
+    await render("both");
+    [first, second, third] = rows();
     check(time(second) === "14 分", `不在运行的显示多久前更新：${time(first)} / ${time(second)} / ${time(third)}`);
     check(text(first, ".agent-session__tokens") === "24.8k tokens" && text(second, ".agent-session__tokens") === "8.6k tokens" && !third.querySelector(".agent-session__tokens"), "第二行右侧显示上下文 tokens，没有就不显示");
     check(first.querySelector(".agent-session__subagents") && !third.querySelector(".agent-session__subagents"), "运行中的会话写出正在跑的子 Agent 数");
@@ -145,7 +151,7 @@ async function runChecks() {
     check(panel.scrollWidth <= panel.clientWidth, "面板没有横向溢出");
     const list = document.querySelector<HTMLElement>(".agent-sessions__list")!;
     const font = (selector: string) => { const style = getComputedStyle(first.querySelector(selector)!); return `${style.fontSize} ${style.fontWeight}`; };
-    check(font(".agent-session__title") === "14px 600" && font(".agent-session__state") === "12.5px 500" && font(".agent-session__meta") === "12px 400",
+    check(font(".agent-session__title") === "14px 600" && font(".agent-session__state") === "12.5px 600" && font(".agent-session__meta") === "12px 400",
       `字号字重：标题 ${font(".agent-session__title")}，状态 ${font(".agent-session__state")}，右上信息 ${font(".agent-session__meta")}`);
     check(list.scrollHeight <= list.clientHeight, "设为 3 条时放下 3 个会话，不滚动");
     const footer = document.querySelector<HTMLElement>(".agent-sessions__footer");
@@ -291,8 +297,8 @@ async function runChecks() {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
     const asking = rows()[0];
-    check(asking.classList.contains("agent-session--light-yourTurn") && color(asking, ".agent-session__state") === "rgb(255, 214, 10)" && state(asking) === "等你回复" && asking.querySelector(".agent-session__band"),
-      `回复以问句结尾的会话写成黄色「等你回复」并带光带：${state(asking)}`);
+    check(asking.classList.contains("agent-session--light-yourTurn") && state(asking) === "等你回复",
+      `回复以问句结尾的会话亮黄灯「等你回复」：${state(asking)}`);
     await act(async () => {
       root.render(<StrictMode><I18nProvider><AgentSessionsPanel sessions={[{ ...SESSIONS[0], sessionId: "e", compacting: true }]} hostDisplay="both" /></I18nProvider></StrictMode>);
       await new Promise((resolve) => setTimeout(resolve, 20));

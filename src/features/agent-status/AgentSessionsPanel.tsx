@@ -32,6 +32,7 @@ export function AgentSessionsPanel({
   showElapsed = true,
   showModel = true,
   showActivity = true,
+  cardEffects = false,
   unseen,
   removal,
   reveal,
@@ -46,6 +47,8 @@ export function AgentSessionsPanel({
   showModel?: boolean;
   /** The latest prompt and the tool in use, on working rows. */
   showActivity?: boolean;
+  /** Glowing, breathing frames and the sparkle band (Settings, off by default). */
+  cardEffects?: boolean;
   /** Finished sessions not looked at yet; they stand out until clicked. */
   unseen?: UnseenSessions;
   /** Removing a session from the page (an x at a row's right end), and undoing it. */
@@ -169,6 +172,7 @@ export function AgentSessionsPanel({
               showElapsed={showElapsed}
               showModel={showModel}
               showActivity={showActivity}
+              effects={cardEffects}
               unseen={Boolean(unseen?.keys.has(sessionKey(session)))}
               notFound={notFoundId === session.sessionId}
               // On an alert's card a finished or failed session shows its last reply (its summary).

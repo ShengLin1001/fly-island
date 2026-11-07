@@ -16,8 +16,8 @@
   padding: 0 12px;
   color: inherit;
   text-align: left;
-  background: rgba(var(--agent-ink), 0.035);
-  border: 1px solid rgba(var(--agent-ink), 0.09);
+  background: rgba(var(--agent-ink), 0.07);
+  border: 1px solid rgba(var(--agent-ink), 0.14);
   border-radius: var(--island-panel-radius, 10px);
   cursor: pointer;
   transition:
@@ -42,13 +42,11 @@
   --card-color: var(--color-light-your-turn);
 }
 
-/* Working or waiting on the user: framed and faintly lit in its colour. */
+/* Working or waiting on the user: framed in its colour, mixed with the ink so it reads on a light
+   island too. */
 .agent-session--lively,
 .agent-session--light-failed {
-  border-color: color-mix(in srgb, var(--card-color) 62%, transparent);
-  box-shadow:
-    0 0 14px -6px color-mix(in srgb, var(--card-color) 70%, transparent),
-    inset 0 0 18px -10px color-mix(in srgb, var(--card-color) 60%, transparent);
+  border-color: color-mix(in srgb, var(--card-color) 70%, rgba(var(--agent-ink), 0.2));
 }
 
 .agent-session--light-stale {
@@ -63,8 +61,34 @@
 /* Lights up only once the cursor rests on a card, not on the way to the header buttons. */
 .agent-session:hover,
 li:has(> .agent-session__remove:hover) > .agent-session {
-  background: rgba(var(--agent-ink), 0.075);
+  background: rgba(var(--agent-ink), 0.11);
   transition-delay: 80ms;
+}
+
+/* Card effects (Settings, off by default): every card glows in its colour, and a lively one's
+   frame breathes. */
+.agent-session--effects {
+  --glow: color-mix(in srgb, var(--card-color) 70%, transparent);
+  border-color: color-mix(in srgb, var(--card-color) 55%, transparent);
+  box-shadow: 0 0 12px -6px var(--glow);
+}
+
+.agent-session--effects.agent-session--lively,
+.agent-session--effects.agent-session--light-failed {
+  animation: agent-card-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes agent-card-breathe {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--card-color) 50%, transparent);
+    box-shadow: 0 0 8px -5px var(--glow);
+  }
+
+  50% {
+    border-color: color-mix(in srgb, var(--card-color) 95%, transparent);
+    box-shadow: 0 0 18px -4px var(--glow);
+  }
 }
 
 .agent-session:focus-visible {
@@ -78,8 +102,9 @@ li:has(> .agent-session__remove:hover) > .agent-session {
   padding-block: 10px;
 }
 
-/* The sparkle band: two layers of sparse noise in the card's colour drift past at different
-   speeds and twinkle, fading out towards the card's middle. Transforms only, so it stays on the
+/* The sparkle band (card effects): sparks of three sizes in the card's colour, each a bright core
+   with a halo, stream out of a soft glow at the left edge in two layers at different speeds and
+   twinkle, fading out towards the card's middle. Transforms and opacity only, so it stays on the
    compositor. */
 .agent-session__band {
   position: absolute;
@@ -88,65 +113,107 @@ li:has(> .agent-session__remove:hover) > .agent-session {
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.55) 32%, transparent 64%);
-  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.55) 32%, transparent 64%);
+  background: radial-gradient(ellipse 38% 110% at 0% 50%, color-mix(in srgb, var(--card-color) 20%, transparent), transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000, rgba(0, 0, 0, 0.8) 14%, rgba(0, 0, 0, 0.38) 34%, rgba(0, 0, 0, 0.1) 52%, transparent 66%);
+  mask-image: linear-gradient(90deg, #000, rgba(0, 0, 0, 0.8) 14%, rgba(0, 0, 0, 0.38) 34%, rgba(0, 0, 0, 0.1) 52%, transparent 66%);
+}
+
+/* Finished cards keep a quieter band. */
+.agent-session--light-done .agent-session__band,
+.agent-session--light-stale .agent-session__band {
+  opacity: 0.6;
 }
 
 .agent-session__band::before,
 .agent-session__band::after {
-  --sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 10 0 0 0 -6.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* The core leans to the ink: near white on a dark island, darker on a light one. */
+  --hot: color-mix(in srgb, var(--card-color) 40%, rgb(var(--agent-ink)));
+  --halo: color-mix(in srgb, var(--card-color) 75%, transparent);
+  --mist: color-mix(in srgb, var(--card-color) 22%, transparent);
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -140px;
-  width: calc(100% + 280px);
-  background: var(--card-color);
-  -webkit-mask: var(--sparkle) 0 0 / 140px 140px repeat;
-  mask: var(--sparkle) 0 0 / 140px 140px repeat;
-  animation: agent-band-drift 9s linear infinite;
-  will-change: transform;
+  left: -240px;
+  width: calc(100% + 240px);
+  background:
+    radial-gradient(circle at 52px 30px, var(--hot) 0 1.1px, var(--halo) 1.8px, var(--mist) 3.2px, transparent 5px) 0 0 / 80px 41px,
+    radial-gradient(circle at 7px 9px, var(--hot) 0 0.8px, var(--halo) 1.3px, transparent 3px) 0 0 / 48px 31px,
+    radial-gradient(circle at 31px 17px, var(--hot) 0 0.6px, var(--halo) 1px, transparent 2.2px) 0 0 / 40px 23px,
+    radial-gradient(circle at 44px 21px, var(--hot) 0 0.6px, transparent 1.6px) 0 0 / 60px 37px,
+    radial-gradient(circle at 13px 5px, var(--halo) 0 0.7px, transparent 1.6px) 0 0 / 24px 13px;
+  animation:
+    agent-band-drift-a 16s linear infinite,
+    agent-band-twinkle 2.6s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .agent-session__band::after {
-  -webkit-mask-size: 90px 90px;
-  mask-size: 90px 90px;
-  -webkit-mask-position: 37px 21px;
-  mask-position: 37px 21px;
-  opacity: 0.8;
+  left: -180px;
+  width: calc(100% + 180px);
+  background:
+    radial-gradient(circle at 41px 26px, var(--hot) 0 1px, var(--halo) 1.7px, var(--mist) 3px, transparent 4.6px) 0 0 / 90px 43px,
+    radial-gradient(circle at 22px 14px, var(--hot) 0 0.8px, var(--halo) 1.3px, transparent 3px) 0 0 / 36px 27px,
+    radial-gradient(circle at 9px 4px, var(--hot) 0 0.6px, var(--halo) 1px, transparent 2.2px) 0 0 / 45px 19px,
+    radial-gradient(circle at 5px 33px, var(--hot) 0 0.6px, transparent 1.6px) 0 0 / 60px 37px,
+    radial-gradient(circle at 18px 9px, var(--halo) 0 0.7px, transparent 1.6px) 0 0 / 20px 11px;
   animation:
-    agent-band-drift-back 6s linear infinite,
-    agent-band-twinkle 1.8s ease-in-out infinite;
+    agent-band-drift-b 9s linear infinite,
+    agent-band-twinkle 2.6s ease-in-out -1.3s infinite;
 }
 
-@keyframes agent-band-drift {
+/* Neighbouring cards do not move in step. */
+.agent-sessions__list > li:nth-child(3n + 2) .agent-session__band::before {
+  animation-delay: -5s, -0.8s;
+}
+
+.agent-sessions__list > li:nth-child(3n) .agent-session__band::before {
+  animation-delay: -11s, -1.9s;
+}
+
+.agent-sessions__list > li:nth-child(3n + 2) .agent-session__band::after {
+  animation-delay: -3s, -2.1s;
+}
+
+.agent-sessions__list > li:nth-child(3n) .agent-session__band::after {
+  animation-delay: -6s, -0.4s;
+}
+
+@keyframes agent-band-drift-a {
   to {
-    transform: translate3d(140px, 0, 0);
+    transform: translate3d(240px, 0, 0);
   }
 }
 
-@keyframes agent-band-drift-back {
-  from {
-    transform: translate3d(90px, 0, 0);
+@keyframes agent-band-drift-b {
+  to {
+    transform: translate3d(180px, 0, 0);
   }
 }
 
 @keyframes agent-band-twinkle {
   0%,
   100% {
-    opacity: 0.25;
+    opacity: 1;
   }
 
   50% {
-    opacity: 0.9;
+    opacity: 0.4;
   }
 }
 
-/* Windows asked for less motion: the band stays, still. */
+/* Windows asked for less motion: the band and the frame stay, still. */
 @media (prefers-reduced-motion: reduce) {
+  .agent-session--effects.agent-session--lively,
+  .agent-session--effects.agent-session--light-failed,
   .agent-session__band::before,
   .agent-session__band::after {
     animation: none;
+  }
+
+  .agent-session__band::before,
+  .agent-session__band::after {
+    opacity: 0.8;
   }
 }
 
@@ -221,7 +288,6 @@ li:has(> .agent-session__remove:hover) > .agent-session {
 
 .agent-session__mode--bypass {
   color: rgb(255, 159, 67);
-  background: rgba(255, 159, 67, 0.16);
 }
 
 .agent-session__host {
@@ -277,14 +343,11 @@ li:has(> .agent-session__remove:hover) > .agent-session {
   font-weight: 500;
 }
 
+/* Mixed with the ink so the yellow and green still read on a light island. */
 .agent-session--lively .agent-session__state,
 .agent-session--light-failed .agent-session__state {
-  color: var(--card-color);
-}
-
-/* The running green reads as plain text on a card already framed green. */
-.agent-session--light-working .agent-session__state {
-  color: var(--text-1);
+  color: color-mix(in srgb, var(--card-color) 80%, rgb(var(--agent-ink)));
+  font-weight: 600;
 }
 
 .agent-session__subagents {

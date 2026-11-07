@@ -36,6 +36,8 @@ export type SettingsAgentText = {
   hideFinishedHint: string;
   hideClosed: string;
   hideClosedHint: string;
+  cardEffects: string;
+  cardEffectsHint: string;
   showElapsed: string;
   showElapsedHint: string;
   showModel: string;
@@ -110,6 +112,8 @@ export const zhCN: SettingsAgentText = {
   hideFinished: "只显示进行中的会话",
   hideFinishedHint: "隐藏已完成和失败的会话，只留正在运行、等待确认和可能中断的。",
   hideClosed: "隐藏已退出的会话",
+  cardEffects: "卡片光效",
+  cardEffectsHint: "会话卡片的边框按状态颜色发光，进行中和等你处理的会呼吸；左侧飘着一条粒子流苏。",
   hideClosedHint: "Claude Code 或 Codex 已经退出的会话不再列出，SessionEnd hook 没触发也算：按进程是否还在判断，远程电脑上的 Claude Code 会话同样适用。",
   showElapsed: "显示运行时长",
   showElapsedHint: "进行中的会话显示\"已运行多久\"，每秒更新；结束的显示这一轮\"用时多久\"。从最近一次提问开始算。",
@@ -182,6 +186,8 @@ export const en: SettingsAgentText = {
   hideFinished: "Only sessions in progress",
   hideFinishedHint: "Hide finished and failed sessions; keep running, waiting and possibly stalled ones.",
   hideClosed: "Hide sessions that have quit",
+  cardEffects: "Card light effects",
+  cardEffectsHint: "Session cards glow in their state's colour, breathing while working or waiting on you, with a drifting band of sparks on the left.",
   hideClosedHint: "Sessions whose Claude Code or Codex has quit are no longer listed, even when the SessionEnd hook did not run: told by whether the process still runs, for Claude Code sessions on remote computers too.",
   showElapsed: "Show how long it has run",
   showElapsedHint: "A session in progress shows how long it has been running, updated every second; a finished one shows how long its last turn took. Counted from the latest prompt.",

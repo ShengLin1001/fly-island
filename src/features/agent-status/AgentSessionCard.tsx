@@ -12,7 +12,7 @@ import { AGENT_PROVIDER_LABELS, getAgentPhaseLabel } from "./status";
 import { sessionKey } from "./unseen";
 import "./AgentSessionCard.css";
 
-/** Lights that get the drifting sparkle band: the session is working or waits on the user. */
+/** Lights whose frame is drawn in their colour (and breathes with effects on): working or waiting on the user. */
 const LIVELY: ReadonlySet<SessionLight> = new Set(["needs", "yourTurn", "working"]);
 
 export type AgentSessionCardProps = {
@@ -22,6 +22,8 @@ export type AgentSessionCardProps = {
   showElapsed: boolean;
   showModel: boolean;
   showActivity: boolean;
+  /** Glow, a breathing frame on lively cards and the sparkle band (Settings, off by default). */
+  effects: boolean;
   unseen: boolean;
   /** What a click found no window for: says so (or where a remote session runs) for a moment. */
   notFound: boolean;
@@ -35,9 +37,10 @@ export type AgentSessionCardProps = {
 /**
  * One session on the Agent page as a card framed in its light's colour: the title with model,
  * effort and time on the first line; the state and what it is doing, with the context size, on
- * the second. Working sessions and those waiting on the user carry a drifting sparkle band.
+ * the second. With effects on, every card glows and carries a drifting sparkle band, and working
+ * sessions and those waiting on the user breathe.
  */
-export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showModel, showActivity, unseen, notFound, cardReply, cardRef, onOpen, onRemove }: AgentSessionCardProps) {
+export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showModel, showActivity, effects, unseen, notFound, cardReply, cardRef, onOpen, onRemove }: AgentSessionCardProps) {
   const t = useTranslation();
   const project = sessionProject(session.cwd);
   const title = session.title ?? project ?? AGENT_PROVIDER_LABELS[session.provider];
@@ -74,11 +77,11 @@ export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showM
   return (
     <li ref={cardRef} data-session-key={sessionKey(session)}>
       <button
-        className={`agent-session agent-session--${session.phase} agent-session--light-${light}${unseen ? " agent-session--unseen" : ""}${LIVELY.has(light) ? " agent-session--lively" : ""}`}
+        className={`agent-session agent-session--${session.phase} agent-session--light-${light}${unseen ? " agent-session--unseen" : ""}${LIVELY.has(light) ? " agent-session--lively" : ""}${effects ? " agent-session--effects" : ""}`}
         type="button"
         onClick={onOpen}
       >
-        {LIVELY.has(light) && <span className="agent-session__band" aria-hidden="true" />}
+        {effects && <span className="agent-session__band" aria-hidden="true" />}
         <span className="agent-session__heading">
           <span className="agent-session__title">
             {project && project !== title ? <span className="agent-session__project">{project} · </span> : null}

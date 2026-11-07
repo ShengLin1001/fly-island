@@ -130,6 +130,10 @@
   color: var(--color-light-your-turn);
 }
 
+.agent-sessions__count--working {
+  color: var(--color-light-working);
+}
+
 .agent-sessions__removed {
   flex: none;
   display: flex;

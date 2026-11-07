@@ -77,6 +77,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   agentShowCodex: true,
   agentHideFinished: false,
   agentHideClosed: false,
+  agentCardEffects: false,
   // Off unless asked for: the age alone keeps finished rows short.
   agentShowElapsed: false,
   agentShowModel: true,
@@ -260,14 +261,13 @@ export function normalizeSettings(
     agentVisibleRows: typeof settings?.agentVisibleRows === "number" && Number.isFinite(settings.agentVisibleRows)
       ? clamp(Math.round(settings.agentVisibleRows), MIN_AGENT_VISIBLE_ROWS, MAX_AGENT_VISIBLE_ROWS)
       : LEGACY_FALLBACKS.agentVisibleRows,
-    agentHostDisplay: AGENT_HOST_DISPLAYS.includes(settings?.agentHostDisplay as AgentHostDisplay)
-      ? (settings?.agentHostDisplay as AgentHostDisplay)
-      : DEFAULT_SETTINGS.agentHostDisplay,
+    agentHostDisplay: oneOf(AGENT_HOST_DISPLAYS, settings?.agentHostDisplay, DEFAULT_SETTINGS.agentHostDisplay),
     agentSessionHours: oneOf(AGENT_SESSION_HOURS, settings?.agentSessionHours, DEFAULT_SETTINGS.agentSessionHours),
     agentShowClaudeCode: settings?.agentShowClaudeCode !== false,
     agentShowCodex: settings?.agentShowCodex !== false,
     agentHideFinished: settings?.agentHideFinished === true,
     agentHideClosed: settings?.agentHideClosed === true,
+    agentCardEffects: settings?.agentCardEffects === true,
     agentShowElapsed: settings?.agentShowElapsed === true,
     agentShowModel: settings?.agentShowModel !== false,
     agentShowActivity: settings?.agentShowActivity !== false,

@@ -50,6 +50,8 @@ export type IslandSettings = CalendarSettingValues & {
   agentHideFinished: boolean;
   /** Leave sessions whose agent has quit off the Agent page. */
   agentHideClosed: boolean;
+  /** Session cards glow in their light's colour, breathe while lively and carry a sparkle band. */
+  agentCardEffects: boolean;
   /** Show how long a session's current (or last) turn has run. */
   agentShowElapsed: boolean;
   agentShowModel: boolean;
