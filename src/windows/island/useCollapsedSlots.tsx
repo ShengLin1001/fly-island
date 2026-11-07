@@ -60,10 +60,10 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const system = useBuiltinPlugin(SYSTEM_MONITOR_PLUGIN_ID);
   const systemItems = useMemo(
     () => ({
-      cpu: system.settings.barCpu !== false,
-      memory: system.settings.barMemory !== false,
-      cpuTemperature: system.settings.barCpuTemperature !== false,
-      gpuTemperature: system.settings.barGpuTemperature !== false,
+      cpu: system.settings.barCpu === true,
+      memory: system.settings.barMemory === true,
+      cpuTemperature: system.settings.barCpuTemperature === true,
+      gpuTemperature: system.settings.barGpuTemperature === true,
     }),
     [system.settings.barCpu, system.settings.barMemory, system.settings.barCpuTemperature, system.settings.barGpuTemperature],
   );

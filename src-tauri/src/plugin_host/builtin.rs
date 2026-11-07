@@ -187,8 +187,8 @@ const SYSTEM_MONITOR_MANIFEST: &str = r#"{
   "id": "focusd.system-monitor",
   "name": { "zh-CN": "系统监控", "en": "System monitor" },
   "description": {
-    "zh-CN": "岛上多一个监控页：CPU 总占用、每个核心和温度，NVIDIA 显卡的占用和温度，内存、网速、电池，以及最占 CPU 或内存的程序；收起条上一个小表显示下面勾选的几项。打开这一页时每秒读一次，收起条上每两秒读一次（不读进程）。CPU 温度取主板 ACPI 热区里最热的一个，笔记本上贴近 CPU，不需要管理员权限。",
-    "en": "Adds a monitor page to the island: CPU in total, per core and its temperature, an NVIDIA GPU's load and temperature, memory, network speed, the battery, and the programs using the most CPU or memory; a small gauge on the collapsed bar shows the items ticked below. Reads once a second while the page is open and every two seconds for the bar (without processes). The CPU temperature is the hottest ACPI thermal zone, close to the CPU on laptops, and needs no administrator rights."
+    "zh-CN": "岛上多一个监控页：CPU 总占用、每个核心和温度，NVIDIA 显卡的占用和温度，内存、网速、电池，以及最占 CPU 或内存的程序；收起条上一个小表显示下面勾选的几项（默认都不勾，收起条上不显示）。打开这一页时每秒读一次，收起条上勾了项目时每两秒读一次（不读进程）。CPU 温度取主板 ACPI 热区里最热的一个，笔记本上贴近 CPU，不需要管理员权限。",
+    "en": "Adds a monitor page to the island: CPU in total, per core and its temperature, an NVIDIA GPU's load and temperature, memory, network speed, the battery, and the programs using the most CPU or memory; a small gauge on the collapsed bar shows the items ticked below (none by default, so the bar shows nothing). Reads once a second while the page is open and every two seconds for the bar when it shows something (without processes). The CPU temperature is the hottest ACPI thermal zone, close to the CPU on laptops, and needs no administrator rights."
   },
   "version": "1.0.0",
   "apiVersion": 1,
@@ -214,25 +214,25 @@ const SYSTEM_MONITOR_MANIFEST: &str = r#"{
         "key": "barCpu",
         "type": "boolean",
         "title": { "zh-CN": "收起条显示 CPU 占用", "en": "CPU load on the bar" },
-        "default": true
+        "default": false
       },
       {
         "key": "barMemory",
         "type": "boolean",
         "title": { "zh-CN": "收起条显示内存占用", "en": "Memory use on the bar" },
-        "default": true
+        "default": false
       },
       {
         "key": "barCpuTemperature",
         "type": "boolean",
         "title": { "zh-CN": "收起条显示 CPU 温度", "en": "CPU temperature on the bar" },
-        "default": true
+        "default": false
       },
       {
         "key": "barGpuTemperature",
         "type": "boolean",
         "title": { "zh-CN": "收起条显示 GPU 温度", "en": "GPU temperature on the bar" },
-        "default": true
+        "default": false
       }
     ]
   }
