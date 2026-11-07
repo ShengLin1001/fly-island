@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
-import type { AgentHostDisplay } from "../appearance/types";
+import type { AgentCardEffects, AgentHostDisplay } from "../appearance/types";
 import { AgentUsageBar } from "./AgentUsageBar";
 import type { AgentUsages } from "./usage";
 import { focusAgentWindow, type AgentSessionSummary } from "./api";
@@ -32,7 +32,8 @@ export function AgentSessionsPanel({
   showElapsed = true,
   showModel = true,
   showActivity = true,
-  cardEffects = false,
+  cardEffects = "off",
+  compact = false,
   unseen,
   removal,
   reveal,
@@ -47,8 +48,10 @@ export function AgentSessionsPanel({
   showModel?: boolean;
   /** The latest prompt and the tool in use, on working rows. */
   showActivity?: boolean;
-  /** Glowing, breathing frames and the sparkle band (Settings, off by default). */
-  cardEffects?: boolean;
+  /** The sparkle band with glowing, breathing frames, or a gradient wash (Settings, off by default). */
+  cardEffects?: AgentCardEffects;
+  /** One-line rows instead of two-line cards (Settings). */
+  compact?: boolean;
   /** Finished sessions not looked at yet; they stand out until clicked. */
   unseen?: UnseenSessions;
   /** Removing a session from the page (an x at a row's right end), and undoing it. */
@@ -173,6 +176,7 @@ export function AgentSessionsPanel({
               showModel={showModel}
               showActivity={showActivity}
               effects={cardEffects}
+              compact={compact}
               unseen={Boolean(unseen?.keys.has(sessionKey(session)))}
               notFound={notFoundId === session.sessionId}
               // On an alert's card a finished or failed session shows its last reply (its summary).

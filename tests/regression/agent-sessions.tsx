@@ -1,12 +1,13 @@
 // pnpm dev, then open /tests/agent-sessions.html?test=1 (without ?test=1 the page is for visual QA;
-// add &empty=1 to see the empty state, &rows=N to size it for N rows like the island does).
+// add &empty=1 to see the empty state, &rows=N to size it for N rows like the island does, &compact=1
+// for one-line rows and &effects=sparkle|gradient for the card effects).
 import { act, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import "../../src/styles/tokens.css";
 import { I18nProvider } from "../../src/i18n";
 import { AgentSessionsPanel } from "../../src/features/agent-status/AgentSessionsPanel";
-import type { AgentHostDisplay } from "../../src/features/appearance/types";
+import type { AgentCardEffects, AgentHostDisplay } from "../../src/features/appearance/types";
 import type { AgentSessionSummary } from "../../src/features/agent-status/api";
 import { getAgentPageExpandedHeight } from "../../src/windows/island/layout";
 
@@ -60,16 +61,16 @@ const SESSIONS: AgentSessionSummary[] = [
   },
 ];
 
-sizeFor(Number(params.get("rows")) || 3);
+fixture.style.height = `${getAgentPageExpandedHeight(Number(params.get("rows")) || 3, 0, params.has("compact")) - ISLAND_CHROME_HEIGHT}px`;
 const root = createRoot(fixture);
 const sessions = params.has("empty") ? [] : SESSIONS;
-const render = async (hostDisplay: AgentHostDisplay, cards: { showElapsed?: boolean; showModel?: boolean; cardEffects?: boolean } = {}) => {
+const render = async (hostDisplay: AgentHostDisplay, cards: { showElapsed?: boolean; showModel?: boolean; cardEffects?: AgentCardEffects; compact?: boolean } = {}) => {
   await act(async () => {
     root.render(<StrictMode><I18nProvider><AgentSessionsPanel sessions={sessions} hostDisplay={hostDisplay} {...cards} /></I18nProvider></StrictMode>);
     await new Promise((resolve) => setTimeout(resolve, 20));
   });
 };
-await render((params.get("host") as AgentHostDisplay | null) ?? "both");
+await render((params.get("host") as AgentHostDisplay | null) ?? "both", { compact: params.has("compact"), cardEffects: (params.get("effects") as AgentCardEffects | null) ?? "off" });
 
 const messages: string[] = [];
 function check(condition: unknown, label: string) {
@@ -77,6 +78,7 @@ function check(condition: unknown, label: string) {
   messages.push(`PASS ${label}`);
 }
 const rows = () => [...document.querySelectorAll<HTMLButtonElement>(".agent-session")];
+const afterTicks = (ms: number) => act(async () => { await new Promise((resolve) => setTimeout(resolve, ms)); });
 const results = document.getElementById("results")!;
 
 async function runChecks() {
@@ -94,11 +96,26 @@ async function runChecks() {
     check(state(first) === "正在运行" && state(third) === "已完成", `运行中和已完成的状态文字：${state(first)} / ${state(third)}`);
     const border = (row: HTMLElement) => getComputedStyle(row).borderTopColor;
     check(border(first) !== border(third) && border(second) !== border(first) && border(second) !== border(third), `边框按状态着色：${border(first)} / ${border(second)} / ${border(third)}`);
-    check(!document.querySelector(".agent-session__band") && !document.querySelector(".agent-session--effects"), "卡片光效默认关：没有流苏光带");
-    await render("both", { cardEffects: true });
+    check(!document.querySelector(".agent-session__band") && !document.querySelector(".agent-session--sparkle, .agent-session--gradient"), "卡片光效默认关：没有流苏光带");
+    await render("both", { cardEffects: "sparkle" });
     [first, second, third] = rows();
-    check([first, second, third].every((row) => row.classList.contains("agent-session--effects") && row.querySelector(".agent-session__band")), "打开卡片光效后每张卡片（含已完成的）都有流苏光带");
+    check([first, second, third].every((row) => row.classList.contains("agent-session--sparkle") && row.querySelector(".agent-session__band")), "选粒子流苏后每张卡片（含已完成的）都有流苏光带");
     check(getComputedStyle(first).animationName === "agent-card-breathe" && getComputedStyle(third).animationName === "none", `进行中的卡片边框呼吸，已完成的不呼吸：${getComputedStyle(first).animationName} / ${getComputedStyle(third).animationName}`);
+    await render("both", { cardEffects: "gradient" });
+    [first, second, third] = rows();
+    const wash = (row: HTMLElement) => getComputedStyle(row, "::before").backgroundImage;
+    check(!document.querySelector(".agent-session__band") && wash(first).startsWith("linear-gradient") && wash(first) !== wash(third),
+      `选渐变带：没有流苏，卡片从右端铺一层状态色渐变，进行中的更亮：${wash(first)} / ${wash(third)}`);
+    fixture.style.height = `${getAgentPageExpandedHeight(3, 0, true) - ISLAND_CHROME_HEIGHT}px`;
+    await render("both", { compact: true });
+    [first, second, third] = rows();
+    check(rows().every((row) => row.getBoundingClientRect().height === 34 && !row.querySelector(".agent-session__status-line") && row.querySelector(".agent-session__bar")),
+      `紧凑模式每个会话一行（34px），带状态色条、没有第二行：${rows().map((row) => row.getBoundingClientRect().height)}`);
+    check(state(second) === "等你确认" && time(second) === "14 分" && !second.querySelector(".agent-session__model"), `紧凑模式一行里写状态和时间，不写模型：${state(second)} ${time(second)}`);
+    check(getComputedStyle(first.querySelector(".agent-session__bar")!).backgroundColor !== getComputedStyle(third.querySelector(".agent-session__bar")!).backgroundColor, "状态色条按灯色着色");
+    const compactList = document.querySelector<HTMLElement>(".agent-sessions__list")!;
+    check(compactList.scrollHeight <= compactList.clientHeight && compactList.clientHeight < 3 * 62, "紧凑模式下岛按一行的高度收矮，3 条放下不滚动");
+    sizeFor(3);
     await render("both");
     [first, second, third] = rows();
     check(time(second) === "14 分", `不在运行的显示多久前更新：${time(first)} / ${time(second)} / ${time(third)}`);
@@ -140,7 +157,10 @@ async function runChecks() {
     check(removeButtons[0].getAttribute("aria-label") === "从列表移除「设置界面完善思路」", "移除按钮的读屏文字说明移除哪个会话");
     const focusesBefore = focusCalls.length;
     removeButtons[2].click();
-    check(removedIds.join() === "c" && focusCalls.length === focusesBefore, "点 × 只移除这个会话，不去切换窗口");
+    await afterTicks(20);
+    check(removedIds.length === 0 && rows()[2].classList.contains("agent-session--leaving") && rows()[2].querySelector(".agent-session__dust"), "点 × 后卡片先化成粒子散开");
+    await afterTicks(600);
+    check(removedIds.join() === "c" && focusCalls.length === focusesBefore, "散完再只移除这个会话，不去切换窗口");
     await renderRemoval(sessions[2]);
     const notice = document.querySelector<HTMLElement>(".agent-sessions__removed");
     check(notice?.textContent?.startsWith("已从列表移除") && notice.getAttribute("role") === "status", "移除后显示「已从列表移除 · 撤销」");

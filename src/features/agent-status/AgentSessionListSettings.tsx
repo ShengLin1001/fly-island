@@ -4,12 +4,13 @@ import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsSelect } from "../../components/settings/SettingsSelect";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import {
+  AGENT_CARD_EFFECTS,
   AGENT_HOST_DISPLAYS,
   AGENT_SESSION_HOURS,
   MAX_AGENT_VISIBLE_ROWS,
   MIN_AGENT_VISIBLE_ROWS,
 } from "../appearance/settings";
-import type { AgentHostDisplay, IslandSettings } from "../appearance/types";
+import type { AgentCardEffects, AgentHostDisplay, IslandSettings } from "../appearance/types";
 import { useTranslation } from "../../i18n";
 
 /** Settings → AI Agent: which sessions the island's Agent page lists, and what each card shows. */
@@ -22,7 +23,7 @@ export function AgentSessionListSettings({
 }) {
   const text = useTranslation().settings.agent;
   const update = (patch: Partial<IslandSettings>) => onSettingsChange({ ...settings, ...patch });
-  type Toggle = "agentHideFinished" | "agentHideClosed" | "agentCardEffects" | "agentShowUsage" | "agentShowElapsed" | "agentShowModel" | "agentShowActivity" | "agentShowClaudeCode" | "agentShowCodex";
+  type Toggle = "agentHideFinished" | "agentHideClosed" | "agentCompactRows" | "agentShowUsage" | "agentShowElapsed" | "agentShowModel" | "agentShowActivity" | "agentShowClaudeCode" | "agentShowCodex";
   const toggle = (key: Toggle, title: string, description?: string) => (
     <SettingsToggleRow title={title} description={description} checked={settings[key]} onChange={(value) => update({ [key]: value })} />
   );
@@ -67,10 +68,22 @@ export function AgentSessionListSettings({
             />
           }
         />
+        {toggle("agentCompactRows", text.compactRows, text.compactRowsHint)}
         {toggle("agentShowModel", text.showModel)}
         {toggle("agentShowActivity", text.showActivity, text.showActivityHint)}
         {toggle("agentShowElapsed", text.showElapsed, text.showElapsedHint)}
-        {toggle("agentCardEffects", text.cardEffects, text.cardEffectsHint)}
+        <SettingsRow
+          title={text.cardEffects}
+          description={text.cardEffectsHint}
+          control={
+            <SettingsSelect<AgentCardEffects>
+              value={settings.agentCardEffects}
+              options={AGENT_CARD_EFFECTS.map((value) => ({ value, label: text.cardEffectsOptions[value] }))}
+              ariaLabel={text.cardEffects}
+              onChange={(agentCardEffects) => update({ agentCardEffects })}
+            />
+          }
+        />
       </SettingsGroup>
       <SettingsGroup title={text.agentsSection} footer={text.showAgentsHint}>
         {toggle("agentShowClaudeCode", text.showClaudeCode)}

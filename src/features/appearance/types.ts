@@ -15,6 +15,8 @@ export type MinimizeAction = "tray" | "tuck";
 export type TuckedHoverAction = "reveal" | "expand";
 /** How the Agent page shows the program a session runs in. */
 export type AgentHostDisplay = "both" | "icon" | "name" | "off";
+/** Light effects on the Agent page's session cards: none, the sparkle band, or a gradient wash. */
+export type AgentCardEffects = "off" | "sparkle" | "gradient";
 /** Which session starts open the Agent page: every turn, a new session's first turn only, or none. */
 export type AgentAlertStarted = "everyTurn" | "newSession" | "off";
 /** What double-clicking a file shelf entry does. */
@@ -50,8 +52,13 @@ export type IslandSettings = CalendarSettingValues & {
   agentHideFinished: boolean;
   /** Leave sessions whose agent has quit off the Agent page. */
   agentHideClosed: boolean;
-  /** Session cards glow in their light's colour, breathe while lively and carry a sparkle band. */
-  agentCardEffects: boolean;
+  /**
+   * Sparkle: cards glow in their light's colour, breathe while lively and carry a sparkle band.
+   * Gradient: a wash in that colour from the right end, stronger while lively.
+   */
+  agentCardEffects: AgentCardEffects;
+  /** One-line session rows (light, title, state, time, icons) instead of two-line cards. */
+  agentCompactRows: boolean;
   /** Show how long a session's current (or last) turn has run. */
   agentShowElapsed: boolean;
   agentShowModel: boolean;

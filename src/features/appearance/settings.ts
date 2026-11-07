@@ -3,9 +3,10 @@ import { DEFAULT_LYRICS_SETTINGS, normalizeLyricsSettings } from "../media/lyric
 import { DEFAULT_CALENDAR_SETTINGS, normalizeCalendarSettings } from "../calendar/calendarSettings.ts";
 import { DEFAULT_PAGE_DIGIT_MODIFIERS, DEFAULT_PAGE_NEXT_SHORTCUT, DEFAULT_PAGE_PREVIOUS_SHORTCUT, normalizePageCycleShortcut, normalizePageDigitModifiers } from "./pageShortcuts.ts";
 import { HEX_COLOR_PATTERN, getColorSetting } from "../../utils/color.ts";
-import type { AgentHostDisplay, IslandPreset, IslandSettings, LegacyIslandSettings } from "./types";
+import type { AgentCardEffects, AgentHostDisplay, IslandPreset, IslandSettings, LegacyIslandSettings } from "./types";
 
 export const AGENT_HOST_DISPLAYS: readonly AgentHostDisplay[] = ["both", "icon", "name", "off"];
+export const AGENT_CARD_EFFECTS: readonly AgentCardEffects[] = ["off", "sparkle", "gradient"];
 /** Choices for how far back the Agent page lists sessions, in hours. */
 export const AGENT_SESSION_HOURS = [1, 2, 6, 24] as const;
 /** How long a page opened for an agent alert stays, in seconds. */
@@ -77,7 +78,8 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   agentShowCodex: true,
   agentHideFinished: false,
   agentHideClosed: false,
-  agentCardEffects: false,
+  agentCardEffects: "off",
+  agentCompactRows: false,
   // Off unless asked for: the age alone keeps finished rows short.
   agentShowElapsed: false,
   agentShowModel: true,
@@ -267,7 +269,8 @@ export function normalizeSettings(
     agentShowCodex: settings?.agentShowCodex !== false,
     agentHideFinished: settings?.agentHideFinished === true,
     agentHideClosed: settings?.agentHideClosed === true,
-    agentCardEffects: settings?.agentCardEffects === true,
+    agentCardEffects: oneOf(AGENT_CARD_EFFECTS, settings?.agentCardEffects, DEFAULT_SETTINGS.agentCardEffects),
+    agentCompactRows: settings?.agentCompactRows === true,
     agentShowElapsed: settings?.agentShowElapsed === true,
     agentShowModel: settings?.agentShowModel !== false,
     agentShowActivity: settings?.agentShowActivity !== false,
@@ -279,23 +282,14 @@ export function normalizeSettings(
     agentAlertSeconds: oneOf(AGENT_ALERT_SECONDS, settings?.agentAlertSeconds, DEFAULT_SETTINGS.agentAlertSeconds),
     agentRemindSeconds: oneOf(AGENT_REMIND_SECONDS, settings?.agentRemindSeconds, DEFAULT_SETTINGS.agentRemindSeconds),
     taskTextColor,
-    pulseColor: getColorSetting(
-      settings?.pulseColor,
-      DEFAULT_SETTINGS.pulseColor,
-    ),
+    pulseColor: getColorSetting(settings?.pulseColor, DEFAULT_SETTINGS.pulseColor),
     pulseBrightness: clamp(
       Number(settings?.pulseBrightness ?? DEFAULT_SETTINGS.pulseBrightness),
       50,
       160,
     ),
-    islandBackgroundColor: getColorSetting(
-      settings?.islandBackgroundColor,
-      DEFAULT_SETTINGS.islandBackgroundColor,
-    ),
-    todoBackgroundColor: getColorSetting(
-      settings?.todoBackgroundColor,
-      DEFAULT_SETTINGS.todoBackgroundColor,
-    ),
+    islandBackgroundColor: getColorSetting(settings?.islandBackgroundColor, DEFAULT_SETTINGS.islandBackgroundColor),
+    todoBackgroundColor: getColorSetting(settings?.todoBackgroundColor, DEFAULT_SETTINGS.todoBackgroundColor),
     showTitle:
       typeof settings?.showTitle === "boolean"
         ? settings.showTitle

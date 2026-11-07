@@ -1,7 +1,7 @@
-import type { Ref } from "react";
+import { useState, type Ref } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "../../i18n";
-import type { AgentHostDisplay } from "../appearance/types";
+import type { AgentCardEffects, AgentHostDisplay } from "../appearance/types";
 import { AgentProviderIcon } from "./AgentProviderIcon";
 import type { AgentSessionSummary } from "./api";
 import { formatTokens, isActivePhase, minutesAgo, modelLabel, sessionProject } from "./sessionList";
@@ -11,9 +11,12 @@ import { sessionLight, type SessionLight } from "./sessionLight";
 import { AGENT_PROVIDER_LABELS, getAgentPhaseLabel } from "./status";
 import { sessionKey } from "./unseen";
 import "./AgentSessionCard.css";
+import "./AgentSessionCardEffects.css";
 
 /** Lights whose frame is drawn in their colour (and breathes with effects on): working or waiting on the user. */
 const LIVELY: ReadonlySet<SessionLight> = new Set(["needs", "yourTurn", "working"]);
+/** How long a card takes to dissolve when taken off the list (agent-card-sweep in AgentSessionCardEffects.css). */
+const DISSOLVE_MS = 480;
 
 export type AgentSessionCardProps = {
   session: AgentSessionSummary;
@@ -22,8 +25,10 @@ export type AgentSessionCardProps = {
   showElapsed: boolean;
   showModel: boolean;
   showActivity: boolean;
-  /** Glow, a breathing frame on lively cards and the sparkle band (Settings, off by default). */
-  effects: boolean;
+  /** The sparkle band with a glowing, breathing frame, or a gradient wash (Settings, off by default). */
+  effects: AgentCardEffects;
+  /** One line: a bar in the light's colour, the title, state, time and icons (Settings). */
+  compact: boolean;
   unseen: boolean;
   /** What a click found no window for: says so (or where a remote session runs) for a moment. */
   notFound: boolean;
@@ -37,11 +42,14 @@ export type AgentSessionCardProps = {
 /**
  * One session on the Agent page as a card framed in its light's colour: the title with model,
  * effort and time on the first line; the state and what it is doing, with the context size, on
- * the second. With effects on, every card glows and carries a drifting sparkle band, and working
- * sessions and those waiting on the user breathe.
+ * the second; in compact rows all on one line. With the sparkle effect every card glows and
+ * carries a drifting sparkle band, and working sessions and those waiting on the user breathe; the
+ * gradient effect washes the card in its colour from the right. Taken off the list, a card
+ * dissolves into dust first.
  */
-export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showModel, showActivity, effects, unseen, notFound, cardReply, cardRef, onOpen, onRemove }: AgentSessionCardProps) {
+export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showModel, showActivity, effects, compact, unseen, notFound, cardReply, cardRef, onOpen, onRemove }: AgentSessionCardProps) {
   const t = useTranslation();
+  const [leaving, setLeaving] = useState(false);
   const project = sessionProject(session.cwd);
   const title = session.title ?? project ?? AGENT_PROVIDER_LABELS[session.provider];
   const model = showModel ? modelLabel(session.model, session.effort) : null;
@@ -73,16 +81,31 @@ export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showM
     <span className="agent-session__prompt">{t.agent.sessions.yourPrompt(prompt)}</span>
   ) : null;
   const subagents = active && session.subagents ? t.agent.sessions.subagents(session.subagents) : null;
+  const remove = onRemove && (() => {
+    if (leaving) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return onRemove();
+    setLeaving(true);
+    window.setTimeout(onRemove, DISSOLVE_MS);
+  });
+  const className = [
+    `agent-session agent-session--${session.phase} agent-session--light-${light}`,
+    unseen && "agent-session--unseen",
+    LIVELY.has(light) && "agent-session--lively",
+    effects !== "off" && `agent-session--${effects}`,
+    compact && "agent-session--compact",
+    leaving && "agent-session--leaving",
+  ].filter(Boolean).join(" ");
 
   return (
     <li ref={cardRef} data-session-key={sessionKey(session)}>
       <button
-        className={`agent-session agent-session--${session.phase} agent-session--light-${light}${unseen ? " agent-session--unseen" : ""}${LIVELY.has(light) ? " agent-session--lively" : ""}${effects ? " agent-session--effects" : ""}`}
+        className={className}
         type="button"
         onClick={onOpen}
       >
-        {effects && <span className="agent-session__band" aria-hidden="true" />}
+        {effects === "sparkle" && <span className="agent-session__band" aria-hidden="true" />}
         <span className="agent-session__heading">
+          {compact && <span className="agent-session__bar" aria-hidden="true" />}
           <span className="agent-session__title">
             {project && project !== title ? <span className="agent-session__project">{project} · </span> : null}
             {title}
@@ -90,6 +113,11 @@ export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showM
           {notFound ? (
             <span className="agent-session__not-found" role="status">
               {session.remoteHost ? t.agent.sessions.remoteOnly(session.remoteHost) : active ? t.agent.sessions.notFound : t.agent.sessions.notFoundEnded}
+            </span>
+          ) : compact ? (
+            <span className="agent-session__meta">
+              <span className="agent-session__state">{state}</span>
+              <span className="agent-session__time">{time}</span>
             </span>
           ) : (
             <span className="agent-session__meta">
@@ -102,20 +130,23 @@ export function AgentSessionCard({ session, now, hostDisplay, showElapsed, showM
           {session.host && hostDisplay !== "off" && <SessionHostLabel host={session.host} display={hostDisplay} />}
           <AgentProviderIcon provider={session.provider} size={14} />
         </span>
-        <span className="agent-session__status-line">
-          <span className="agent-session__status">
-            <span className="agent-session__state">{state}</span>
-            {subagents && <span className="agent-session__subagents">{subagents}</span>}
-            {doing}
+        {!compact && (
+          <span className="agent-session__status-line">
+            <span className="agent-session__status">
+              <span className="agent-session__state">{state}</span>
+              {subagents && <span className="agent-session__subagents">{subagents}</span>}
+              {doing}
+            </span>
+            {session.contextTokens ? <span className="agent-session__tokens">{formatTokens(session.contextTokens)} tokens</span> : null}
           </span>
-          {session.contextTokens ? <span className="agent-session__tokens">{formatTokens(session.contextTokens)} tokens</span> : null}
-        </span>
+        )}
         {cardReply && <span className="agent-session__message agent-session__message--card">{cardReply}</span>}
+        {leaving && <span className="agent-session__dust" aria-hidden="true" />}
       </button>
       {/* Over the card's right end, shown only while the cursor is there: some sessions never
           report that they ended and would otherwise stay listed as running. */}
-      {onRemove && (
-        <button className="agent-session__remove" type="button" aria-label={t.agent.sessions.remove(title)} onClick={onRemove}>
+      {remove && !leaving && (
+        <button className="agent-session__remove" type="button" aria-label={t.agent.sessions.remove(title)} onClick={remove}>
           <X size={14} strokeWidth={2.4} aria-hidden="true" />
         </button>
       )}

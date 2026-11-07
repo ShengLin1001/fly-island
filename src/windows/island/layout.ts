@@ -96,6 +96,8 @@ export function getTodoVisualRows(todoList: TodoItem[]) {
 const AGENT_PAGE_CHROME_HEIGHT = 78;
 // A session card (62, AgentSessionCard.css) plus the gap below it (AgentSessionsPanel.css).
 const AGENT_ROW_PITCH = 68;
+// A compact one-line row (34, AgentSessionCard.css) plus the same gap.
+const AGENT_COMPACT_ROW_PITCH = 40;
 const AGENT_ROW_GAP = 6;
 // The footer under the cards: the session count and the count in each light.
 const AGENT_FOOTER_HEIGHT = 28;
@@ -103,8 +105,9 @@ const AGENT_FOOTER_HEIGHT = 28;
 const AGENT_USAGE_HEIGHT = 28;
 
 /** Expanded height that fits exactly `rows` Agent session rows below `usageLines` usage lines (true: one). */
-export function getAgentPageExpandedHeight(rows: number, usageLines: number | boolean = 0) {
-  return AGENT_PAGE_CHROME_HEIGHT + Number(usageLines) * AGENT_USAGE_HEIGHT + rows * AGENT_ROW_PITCH - AGENT_ROW_GAP + AGENT_FOOTER_HEIGHT;
+export function getAgentPageExpandedHeight(rows: number, usageLines: number | boolean = 0, compact = false) {
+  const pitch = compact ? AGENT_COMPACT_ROW_PITCH : AGENT_ROW_PITCH;
+  return AGENT_PAGE_CHROME_HEIGHT + Number(usageLines) * AGENT_USAGE_HEIGHT + rows * pitch - AGENT_ROW_GAP + AGENT_FOOTER_HEIGHT;
 }
 
 /** Expanded height around an alert's one-session card, whose row measured `rowHeight`. */

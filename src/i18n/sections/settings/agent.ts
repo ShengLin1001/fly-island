@@ -38,6 +38,9 @@ export type SettingsAgentText = {
   hideClosedHint: string;
   cardEffects: string;
   cardEffectsHint: string;
+  cardEffectsOptions: { off: string; sparkle: string; gradient: string };
+  compactRows: string;
+  compactRowsHint: string;
   showElapsed: string;
   showElapsedHint: string;
   showModel: string;
@@ -113,7 +116,10 @@ export const zhCN: SettingsAgentText = {
   hideFinishedHint: "隐藏已完成和失败的会话，只留正在运行、等待确认和可能中断的。",
   hideClosed: "隐藏已退出的会话",
   cardEffects: "卡片光效",
-  cardEffectsHint: "会话卡片的边框按状态颜色发光，进行中和等你处理的会呼吸；左侧飘着一条粒子流苏。",
+  cardEffectsHint: "粒子流苏：边框按状态颜色发光，进行中和等你处理的会呼吸，左侧飘着一条粒子流苏。渐变带：从右端铺开一层状态颜色的渐变，进行中和等你处理的更亮。",
+  cardEffectsOptions: { off: "关", sparkle: "粒子流苏", gradient: "渐变带" },
+  compactRows: "紧凑模式",
+  compactRowsHint: "每个会话只占一行：状态色条、标题、状态、时间和图标，不显示模型、正在做什么和 tokens。",
   hideClosedHint: "Claude Code 或 Codex 已经退出的会话不再列出，SessionEnd hook 没触发也算：按进程是否还在判断，远程电脑上的 Claude Code 会话同样适用。",
   showElapsed: "显示运行时长",
   showElapsedHint: "进行中的会话显示\"已运行多久\"，每秒更新；结束的显示这一轮\"用时多久\"。从最近一次提问开始算。",
@@ -187,7 +193,10 @@ export const en: SettingsAgentText = {
   hideFinishedHint: "Hide finished and failed sessions; keep running, waiting and possibly stalled ones.",
   hideClosed: "Hide sessions that have quit",
   cardEffects: "Card light effects",
-  cardEffectsHint: "Session cards glow in their state's colour, breathing while working or waiting on you, with a drifting band of sparks on the left.",
+  cardEffectsHint: "Sparkle band: cards glow in their state's colour, breathing while working or waiting on you, with a drifting band of sparks on the left. Gradient: a wash in that colour from the right end, brighter while working or waiting on you.",
+  cardEffectsOptions: { off: "Off", sparkle: "Sparkle band", gradient: "Gradient" },
+  compactRows: "Compact rows",
+  compactRowsHint: "One line per session: the state bar, title, state, time and icons, without the model, what it is doing or tokens.",
   hideClosedHint: "Sessions whose Claude Code or Codex has quit are no longer listed, even when the SessionEnd hook did not run: told by whether the process still runs, for Claude Code sessions on remote computers too.",
   showElapsed: "Show how long it has run",
   showElapsedHint: "A session in progress shows how long it has been running, updated every second; a finished one shows how long its last turn took. Counted from the latest prompt.",

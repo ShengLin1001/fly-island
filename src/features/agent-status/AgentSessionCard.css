@@ -1,4 +1,5 @@
-/* A session card on the Agent page (AgentSessionCard.tsx). Every card is 62px tall: two lines
+/* A session card on the Agent page (AgentSessionCard.tsx). Every card is 62px tall (34 in
+   compact rows): two lines
    in fixed heights, because getAgentPageExpandedHeight (windows/island/layout.ts) sizes the
    island by it; only an alert's card grows, by the reply it shows. The frame takes the light's
    colour (sessionLight.ts) and the radius of the island's inner panels, which follows Settings. */
@@ -65,156 +66,34 @@ li:has(> .agent-session__remove:hover) > .agent-session {
   transition-delay: 80ms;
 }
 
-/* Card effects (Settings, off by default): every card glows in its colour, and a lively one's
-   frame breathes. */
-.agent-session--effects {
-  --glow: color-mix(in srgb, var(--card-color) 70%, transparent);
-  border-color: color-mix(in srgb, var(--card-color) 55%, transparent);
-  box-shadow: 0 0 12px -6px var(--glow);
-}
-
-.agent-session--effects.agent-session--lively,
-.agent-session--effects.agent-session--light-failed {
-  animation: agent-card-breathe 2.8s ease-in-out infinite;
-}
-
-@keyframes agent-card-breathe {
-  0%,
-  100% {
-    border-color: color-mix(in srgb, var(--card-color) 50%, transparent);
-    box-shadow: 0 0 8px -5px var(--glow);
-  }
-
-  50% {
-    border-color: color-mix(in srgb, var(--card-color) 95%, transparent);
-    box-shadow: 0 0 18px -4px var(--glow);
-  }
-}
-
 .agent-session:focus-visible {
   outline: 2px solid var(--color-focus-ring-soft);
   outline-offset: -2px;
 }
 
-/* An alert's card shows the reply under the two lines. */
+/* An alert's card shows the reply under its lines. */
 .agent-session:has(.agent-session__message--card) {
   height: auto;
   padding-block: 10px;
 }
 
-/* The sparkle band (card effects): sparks of three sizes in the card's colour, each a bright core
-   with a halo, stream out of a soft glow at the left edge in two layers at different speeds and
-   twinkle, fading out towards the card's middle. Transforms and opacity only, so it stays on the
-   compositor. */
-.agent-session__band {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(ellipse 38% 110% at 0% 50%, color-mix(in srgb, var(--card-color) 20%, transparent), transparent);
-  -webkit-mask-image: linear-gradient(90deg, #000, rgba(0, 0, 0, 0.8) 14%, rgba(0, 0, 0, 0.38) 34%, rgba(0, 0, 0, 0.1) 52%, transparent 66%);
-  mask-image: linear-gradient(90deg, #000, rgba(0, 0, 0, 0.8) 14%, rgba(0, 0, 0, 0.38) 34%, rgba(0, 0, 0, 0.1) 52%, transparent 66%);
+/* Compact rows (Settings): one 34px line, as claude-sessions lists its sessions: a bar in the
+   light's colour, the title, the state and time, and the icons. */
+.agent-session--compact {
+  height: 34px;
+  padding: 0 10px;
 }
 
-/* Finished cards keep a quieter band. */
-.agent-session--light-done .agent-session__band,
-.agent-session--light-stale .agent-session__band {
-  opacity: 0.6;
+.agent-session__bar {
+  flex: none;
+  width: 3px;
+  height: 16px;
+  border-radius: 1.5px;
+  background: var(--card-color);
 }
 
-.agent-session__band::before,
-.agent-session__band::after {
-  /* The core leans to the ink: near white on a dark island, darker on a light one. */
-  --hot: color-mix(in srgb, var(--card-color) 40%, rgb(var(--agent-ink)));
-  --halo: color-mix(in srgb, var(--card-color) 75%, transparent);
-  --mist: color-mix(in srgb, var(--card-color) 22%, transparent);
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -240px;
-  width: calc(100% + 240px);
-  background:
-    radial-gradient(circle at 52px 30px, var(--hot) 0 1.1px, var(--halo) 1.8px, var(--mist) 3.2px, transparent 5px) 0 0 / 80px 41px,
-    radial-gradient(circle at 7px 9px, var(--hot) 0 0.8px, var(--halo) 1.3px, transparent 3px) 0 0 / 48px 31px,
-    radial-gradient(circle at 31px 17px, var(--hot) 0 0.6px, var(--halo) 1px, transparent 2.2px) 0 0 / 40px 23px,
-    radial-gradient(circle at 44px 21px, var(--hot) 0 0.6px, transparent 1.6px) 0 0 / 60px 37px,
-    radial-gradient(circle at 13px 5px, var(--halo) 0 0.7px, transparent 1.6px) 0 0 / 24px 13px;
-  animation:
-    agent-band-drift-a 16s linear infinite,
-    agent-band-twinkle 2.6s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-
-.agent-session__band::after {
-  left: -180px;
-  width: calc(100% + 180px);
-  background:
-    radial-gradient(circle at 41px 26px, var(--hot) 0 1px, var(--halo) 1.7px, var(--mist) 3px, transparent 4.6px) 0 0 / 90px 43px,
-    radial-gradient(circle at 22px 14px, var(--hot) 0 0.8px, var(--halo) 1.3px, transparent 3px) 0 0 / 36px 27px,
-    radial-gradient(circle at 9px 4px, var(--hot) 0 0.6px, var(--halo) 1px, transparent 2.2px) 0 0 / 45px 19px,
-    radial-gradient(circle at 5px 33px, var(--hot) 0 0.6px, transparent 1.6px) 0 0 / 60px 37px,
-    radial-gradient(circle at 18px 9px, var(--halo) 0 0.7px, transparent 1.6px) 0 0 / 20px 11px;
-  animation:
-    agent-band-drift-b 9s linear infinite,
-    agent-band-twinkle 2.6s ease-in-out -1.3s infinite;
-}
-
-/* Neighbouring cards do not move in step. */
-.agent-sessions__list > li:nth-child(3n + 2) .agent-session__band::before {
-  animation-delay: -5s, -0.8s;
-}
-
-.agent-sessions__list > li:nth-child(3n) .agent-session__band::before {
-  animation-delay: -11s, -1.9s;
-}
-
-.agent-sessions__list > li:nth-child(3n + 2) .agent-session__band::after {
-  animation-delay: -3s, -2.1s;
-}
-
-.agent-sessions__list > li:nth-child(3n) .agent-session__band::after {
-  animation-delay: -6s, -0.4s;
-}
-
-@keyframes agent-band-drift-a {
-  to {
-    transform: translate3d(240px, 0, 0);
-  }
-}
-
-@keyframes agent-band-drift-b {
-  to {
-    transform: translate3d(180px, 0, 0);
-  }
-}
-
-@keyframes agent-band-twinkle {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.4;
-  }
-}
-
-/* Windows asked for less motion: the band and the frame stay, still. */
-@media (prefers-reduced-motion: reduce) {
-  .agent-session--effects.agent-session--lively,
-  .agent-session--effects.agent-session--light-failed,
-  .agent-session__band::before,
-  .agent-session__band::after {
-    animation: none;
-  }
-
-  .agent-session__band::before,
-  .agent-session__band::after {
-    opacity: 0.8;
-  }
+.agent-session--compact .agent-session__title {
+  font-size: 13px;
 }
 
 /* First line: title, then model · effort | time, where it runs and the agent's icon. */
