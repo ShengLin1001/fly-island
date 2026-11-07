@@ -60,6 +60,10 @@ pub struct AgentSessionSummary {
     pub(super) background_tasks: u32,
     /// Compacting its context now (PreCompact seen, PostCompact not yet; notifications.rs).
     pub(super) compacting: bool,
+    /// The SSH host the session runs on, for sessions read from another computer
+    /// (remote_sessions.rs); left out for local ones.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) remote_host: Option<String>,
 }
 
 /// Where the newest turn of a session stands, before the age of the file is considered.

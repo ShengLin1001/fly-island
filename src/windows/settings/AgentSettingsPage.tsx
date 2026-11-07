@@ -2,6 +2,7 @@ import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import { AgentSessionListSettings } from "../../features/agent-status/AgentSessionListSettings";
 import { AgentAlertSettings } from "../../features/agent-status/AgentAlertSettings";
+import { AgentRemoteHostsSettings } from "../../features/agent-status/AgentRemoteHostsSettings";
 import { AgentApprovalSettings } from "../../features/agent-status/approvals/AgentApprovalSettings";
 import { AgentReplyMarkerSettings } from "../../features/agent-status/AgentReplyMarkerSettings";
 import { AgentHooksSettingsSection } from "../../features/agent-status/AgentHooksSettingsSection";
@@ -39,6 +40,7 @@ export function AgentSettingsPage({
         />
       </SettingsGroup>
       <AgentSessionListSettings settings={settings} onSettingsChange={onSettingsChange} />
+      <AgentRemoteHostsSettings />
       <AgentAlertSettings settings={settings} onSettingsChange={onSettingsChange} />
       <AgentApprovalSettings />
       <AgentReplyMarkerSettings />

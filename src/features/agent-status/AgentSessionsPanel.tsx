@@ -6,7 +6,7 @@ import { AgentProviderIcon } from "./AgentProviderIcon";
 import { AgentUsageBar } from "./AgentUsageBar";
 import type { AgentUsages } from "./usage";
 import { focusAgentWindow, type AgentSessionSummary } from "./api";
-import { isActivePhase, minutesAgo, modelLabel, sessionProject } from "./sessionList";
+import { groupByComputer, isActivePhase, minutesAgo, modelLabel, sessionProject } from "./sessionList";
 import { SessionBody } from "./SessionBody";
 import { SessionElapsed } from "./SessionElapsed";
 import { SessionHostLabel } from "./SessionHostLabel";
@@ -159,7 +159,14 @@ export function AgentSessionsPanel({
         data-fade-bottom={list.fade.bottom || undefined}
         onScroll={list.onScroll}
       >
-        {sessions.map((session) => {
+        {groupByComputer(sessions).flatMap(({ host, sessions: members }, _, groups) => [
+          // Headings only once another computer is listed (never on an alert's card).
+          !reveal && (groups.length > 1 || host !== null) ? (
+            <li key={`computer:${host ?? ""}`} className="agent-sessions__computer" aria-hidden="true">
+              {host ?? t.agent.sessions.thisComputer}
+            </li>
+          ) : null,
+          ...members.map((session) => {
           const project = sessionProject(session.cwd);
           const title = session.title ?? project ?? AGENT_PROVIDER_LABELS[session.provider];
           const model = modelLabel(session.model, session.effort);
@@ -242,7 +249,8 @@ export function AgentSessionsPanel({
               )}
             </li>
           );
-        })}
+          }),
+        ])}
       </ul>
       {removedNotice}
     </section>

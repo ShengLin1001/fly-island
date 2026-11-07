@@ -31,6 +31,8 @@ export type AgentText = {
     subagents: (count: number) => string;
     remove: (title: string) => string;
     remoteOnly: (host: string) => string;
+    /** The Agent page's heading over this computer's sessions, when others are listed too. */
+    thisComputer: string;
     removed: string;
     undo: string;
     /** A finished session whose reply ends on the "your turn" marker. */
@@ -104,6 +106,7 @@ export const zhCN: AgentText = {
     subagents: (count) => `${count} 个子 Agent`,
     remove: (title) => `从列表移除「${title}」`,
     remoteOnly: (host) => `在 ${host} 上运行，这里没有它的窗口`,
+    thisComputer: "本机",
     removed: "已从列表移除",
     undo: "撤销",
     yourTurn: "等你回复",
@@ -170,6 +173,7 @@ export const en: AgentText = {
     subagents: (count) => (count === 1 ? "1 subagent" : `${count} subagents`),
     remove: (title) => `Remove "${title}" from the list`,
     remoteOnly: (host) => `Runs on ${host}; no window here`,
+    thisComputer: "This computer",
     removed: "Removed from the list",
     undo: "Undo",
     yourTurn: "Your turn",
