@@ -76,6 +76,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   agentShowClaudeCode: true,
   agentShowCodex: true,
   agentHideFinished: false,
+  agentHideClosed: false,
   // Off unless asked for: the age alone keeps finished rows short.
   agentShowElapsed: false,
   agentShowModel: true,
@@ -266,6 +267,7 @@ export function normalizeSettings(
     agentShowClaudeCode: settings?.agentShowClaudeCode !== false,
     agentShowCodex: settings?.agentShowCodex !== false,
     agentHideFinished: settings?.agentHideFinished === true,
+    agentHideClosed: settings?.agentHideClosed === true,
     agentShowElapsed: settings?.agentShowElapsed === true,
     agentShowModel: settings?.agentShowModel !== false,
     agentShowActivity: settings?.agentShowActivity !== false,

@@ -90,6 +90,8 @@ export type AgentSessionSummary = {
   remoteHost?: string;
   /** Compacting its context now (Claude Code PreCompact / PostCompact hooks). Missing from older builds. */
   compacting?: boolean;
+  /** The agent has quit (SessionEnd, its process gone, or no longer in Claude Code's registry). Missing from older builds. */
+  closed?: boolean;
 };
 
 /** Mirrors ReplyMarker::name in src-tauri/src/agent_status/reply_marker.rs. */

@@ -9,7 +9,7 @@ import { useUnseenSessions } from "./useUnseenSessions";
 
 type AgentSessionSettings = Pick<
   IslandSettings,
-  "agentStatusEnabled" | "agentSessionHours" | "agentShowClaudeCode" | "agentShowCodex" | "agentHideFinished"
+  "agentStatusEnabled" | "agentSessionHours" | "agentShowClaudeCode" | "agentShowCodex" | "agentHideFinished" | "agentHideClosed"
 >;
 
 /**
@@ -33,8 +33,11 @@ export function useIslandAgentSessions(settings: AgentSessionSettings, others?: 
   // Sessions removed from the Agent page leave the count and the collapsed island too.
   const { visible: agentSessions, removal: agentRemoval } = useHiddenSessions(shownAgentSessions);
   const listedAgentSessions = useMemo(
-    () => (settings.agentHideFinished ? agentSessions.filter((session) => isActivePhase(session.phase)) : agentSessions),
-    [agentSessions, settings.agentHideFinished],
+    () =>
+      agentSessions.filter(
+        (session) => (!settings.agentHideFinished || isActivePhase(session.phase)) && !(settings.agentHideClosed && session.closed),
+      ),
+    [agentSessions, settings.agentHideFinished, settings.agentHideClosed],
   );
   const activeAgentSessionCount = countActiveSessions(agentSessions);
   const unseenAgentSessions = useUnseenSessions(agentSessions, settings.agentStatusEnabled);
