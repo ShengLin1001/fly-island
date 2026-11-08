@@ -14,7 +14,7 @@ use serde_json::{Map, Value};
 
 use super::manifest::{parse_builtin_manifest, LocalizedText, PluginManifest};
 use super::settings::InfoItem;
-use crate::{claude_usage, local_api};
+use crate::{claude_usage, local_api, ssh_tunnel};
 
 pub(super) const LOCAL_API_ID: &str = "focusd.local-api";
 pub(super) const LOCAL_API_ALLOW_WRITE: &str = "allowWrite";
@@ -160,6 +160,50 @@ const SESSION_RING_MANIFEST: &str = r#"{
   "runtime": { "type": "builtin" }
 }"#;
 
+pub(super) const SSH_TUNNEL_ID: &str = "focusd.ssh-proxy-tunnel";
+
+// The hosts, their switches and ports there are not plugin settings: the plugin page lists them
+// from the SSH list (src/features/ssh-tunnel) and they live in ssh-tunnels.json (ssh_tunnel/).
+const SSH_TUNNEL_MANIFEST: &str = r#"{
+  "id": "focusd.ssh-proxy-tunnel",
+  "name": { "zh-CN": "SSH 代理隧道", "en": "SSH proxy tunnel" },
+  "description": {
+    "zh-CN": "把这台电脑的代理借给 SSH 服务器：为下面打开的每台主机常驻一条 ssh 反向隧道（服务器上的 127.0.0.1:端口 → 这里的本地代理），服务器上设好 http_proxy 就能经这里上网。主机来自 ~/.ssh/config 和 AI Agent 页添加的电脑，只用密钥登录；断开后自动重连，关闭插件或退出岛屿时隧道一起结束。",
+    "en": "Lends this computer's proxy to SSH servers: for each host switched on below, a resident ssh reverse tunnel (127.0.0.1:port on the server to the local proxy here), so the server reaches the internet through here once http_proxy is set there. Hosts come from ~/.ssh/config and the computers added on the AI Agent page, key login only; it reconnects after a drop, and the tunnels end when the plugin is switched off or the island quits."
+  },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "localProxy",
+        "type": "select",
+        "title": { "zh-CN": "本地代理", "en": "Local proxy" },
+        "description": {
+          "zh-CN": "代理软件在这台电脑上接受 HTTP 代理的端口。Clash Verge 默认混合端口 7897，v2rayN 默认 10808（7.0 之前的版本 HTTP 端口是 10809，请选自定义）。",
+          "en": "The port the proxy app on this computer takes HTTP proxy requests on. Clash Verge's mixed port is 7897 by default, v2rayN's 10808 (before 7.0 its HTTP port was 10809: pick Custom)."
+        },
+        "default": "clash-verge",
+        "options": [
+          { "value": "clash-verge", "title": { "zh-CN": "Clash Verge（7897）", "en": "Clash Verge (7897)" } },
+          { "value": "v2rayn", "title": { "zh-CN": "v2rayN（10808）", "en": "v2rayN (10808)" } },
+          { "value": "custom", "title": { "zh-CN": "自定义端口", "en": "Custom port" } }
+        ]
+      },
+      {
+        "key": "customPort",
+        "type": "number",
+        "title": { "zh-CN": "本地端口", "en": "Local port" },
+        "min": 1,
+        "max": 65535,
+        "default": 7897
+      }
+    ]
+  }
+}"#;
+
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
 /// whether it has work in this process (`native`, see `start` and `stop`).
 pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
@@ -167,6 +211,7 @@ pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     ("focusd.center-pattern", CENTER_PATTERN_MANIFEST, false),
     (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
     ("focusd.session-ring", SESSION_RING_MANIFEST, false),
+    (SSH_TUNNEL_ID, SSH_TUNNEL_MANIFEST, true),
 ];
 
 /// Every built-in plugin's id and manifest.
@@ -237,6 +282,7 @@ pub(super) fn start(id: &str, settings: &Map<String, Value>) -> Result<Vec<InfoI
     match id {
         LOCAL_API_ID => local_api::start(allow_write(settings)).map(local_api_info),
         CLAUDE_USAGE_ID => apply_claude_usage(settings).map(|()| Vec::new()),
+        SSH_TUNNEL_ID => ssh_tunnel::start(settings).map(|()| Vec::new()),
         _ => Err(format!("Built-in plugin {id} is marked native but has no start.")),
     }
 }
@@ -251,6 +297,10 @@ pub(super) fn stop(id: &str) -> Result<(), String> {
             claude_usage::stop();
             Ok(())
         }
+        SSH_TUNNEL_ID => {
+            ssh_tunnel::stop();
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
@@ -259,6 +309,7 @@ pub(super) fn settings_changed(id: &str, settings: &Map<String, Value>) -> Resul
     match id {
         LOCAL_API_ID => local_api::set_allow_write(allow_write(settings)),
         CLAUDE_USAGE_ID => apply_claude_usage(settings),
+        SSH_TUNNEL_ID => ssh_tunnel::start(settings),
         _ => Ok(()),
     }
 }

@@ -35,13 +35,13 @@ struct RemoteHostsFile {
 
 /// What ssh is given for a chosen computer.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct SshTarget {
-    pub(super) destination: String,
-    pub(super) port: Option<u16>,
+pub(crate) struct SshTarget {
+    pub(crate) destination: String,
+    pub(crate) port: Option<u16>,
 }
 
 /// Whether `alias` can be given to ssh as a host name: no option (`-`), spaces or patterns.
-pub(super) fn is_valid_alias(alias: &str) -> bool {
+pub(crate) fn is_valid_alias(alias: &str) -> bool {
     (1..=64).contains(&alias.len())
         && !alias.starts_with('-')
         && alias.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '@'))
@@ -84,29 +84,32 @@ pub(super) fn read(app_dir: &Path) -> Vec<String> {
 }
 
 /// The computers added in the island.
-pub(super) fn custom(app_dir: &Path) -> Vec<CustomHost> {
+pub(crate) fn custom(app_dir: &Path) -> Vec<CustomHost> {
     read_file(app_dir).custom
 }
 
 /// The chosen hosts with what ssh is given for each: an added computer's address, else the alias.
 pub(super) fn chosen_targets(app_dir: &Path) -> Vec<(String, SshTarget)> {
     let file = read_file(app_dir);
-    file.hosts
-        .into_iter()
-        .map(|name| {
-            let target = match file.custom.iter().find(|custom| custom.name == name) {
-                Some(custom) => SshTarget {
-                    destination: match &custom.user {
-                        Some(user) => format!("{user}@{}", custom.host),
-                        None => custom.host.clone(),
-                    },
-                    port: custom.port,
-                },
-                None => SshTarget { destination: name.clone(), port: None },
-            };
-            (name, target)
-        })
-        .collect()
+    file.hosts.iter().map(|name| (name.clone(), target_in(&file.custom, name))).collect()
+}
+
+/// What ssh is given for the computer called `name`, chosen or not (the SSH proxy tunnel's hosts).
+pub(crate) fn target(app_dir: &Path, name: &str) -> SshTarget {
+    target_in(&read_file(app_dir).custom, name)
+}
+
+fn target_in(custom: &[CustomHost], name: &str) -> SshTarget {
+    match custom.iter().find(|custom| custom.name == name) {
+        Some(custom) => SshTarget {
+            destination: match &custom.user {
+                Some(user) => format!("{user}@{}", custom.host),
+                None => custom.host.clone(),
+            },
+            port: custom.port,
+        },
+        None => SshTarget { destination: name.to_string(), port: None },
+    }
 }
 
 pub(super) fn write(app_dir: &Path, hosts: &[String]) -> Result<Vec<String>, String> {
@@ -176,7 +179,7 @@ pub(super) fn remove_custom(app_dir: &Path, name: &str) -> Result<Vec<CustomHost
 }
 
 /// The Host aliases in an ssh config, in order, without patterns (`*`, `?`, `!`).
-pub(super) fn ssh_config_hosts(config: &str) -> Vec<String> {
+pub(crate) fn ssh_config_hosts(config: &str) -> Vec<String> {
     let mut hosts: Vec<String> = Vec::new();
     for line in config.lines() {
         let line = line.trim();

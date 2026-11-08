@@ -19,6 +19,7 @@ mod plugin_host;
 mod mail;
 mod qq_notifications;
 mod settings_window;
+mod ssh_tunnel;
 mod system;
 mod system_levels;
 mod todos;
@@ -96,6 +97,9 @@ pub fn run() {
             if let Err(error) = local_api::init(app.handle()) {
                 eprintln!("failed to initialize the local API: {error}");
             }
+            if let Err(error) = ssh_tunnel::init(app.handle()) {
+                eprintln!("failed to initialize the SSH proxy tunnel: {error}");
+            }
             if let Err(error) = plugin_host::init(app.handle()) {
                 eprintln!("failed to initialize plugins: {error}");
             }
@@ -153,6 +157,7 @@ pub fn run() {
             clipboard_history;
             translation;
             settings_window;
+            ssh_tunnel;
             phone_push;
             pets;
             tray

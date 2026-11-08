@@ -35,6 +35,8 @@
 - Claude 用量环（`focusd.claude-usage`，默认关闭）：收起条上的同心双环，外环 5 小时、内环 7 天，悬停显示详情卡片。数据与 Agent 页顶部的用量相同（`get_agent_usage`）：Claude Code 经本机 magpie 网关时读它的 `/v1/magpie/quotas`（只请求本机），否则读 claude-hud 写出的用量快照；都不联网、不读登录凭据。设置「直接向 Anthropic 查询」（默认关）打开后，原生端（`src-tauri/src/claude_usage/`）只读 Claude Code 的 `~/.claude/.credentials.json` 里的 access token（不刷新、不改写，不进日志、前端和事件），经 http(s) 代理请求 `api.anthropic.com/api/oauth/usage`：代理依次取插件设置、`HTTPS_PROXY`、Windows 系统代理，都没有就不请求，**从不直连**；不跟随重定向；间隔 5–120 分钟（设置「刷新间隔」），失败时加倍退避，429 遵守 `Retry-After`。`get_agent_usage` 在两份数据中取较新的，并带上最近一次失败的原因。这个接口没有公开文档，可能随时失效。
 - Agent 会话环（`focusd.session-ring`，默认关闭）：AI Agent 开启时，在收起条上用分段小环代替蓝色会话数，按状态着色（等你确认、等你回复、运行、可能已停、刚完成），中间是会话数，悬停列出等你处理的会话，点击打开 Agent 页。数据就是 Agent 页的会话列表（Claude Code 和 Codex），只在岛屿窗口工作，没有原生部分。
 
+- SSH 代理隧道（`focusd.ssh-proxy-tunnel`，默认关闭）：把这台电脑的代理借给 SSH 服务器。插件页列出 `~/.ssh/config` 的 Host 和 AI Agent 页添加的电脑，每台可以单独打开并填服务器上的端口（1024–65535）；打开的主机各有一条常驻的 `ssh -N -R 127.0.0.1:<服务器端口>:127.0.0.1:<本地端口>`（隐藏窗口、只用密钥登录、`ExitOnForwardFailure`，和读会话的那条连接分开），断开后 5 秒起加倍退避重连（最长 2 分钟），关闭插件、关掉主机或退出岛屿时结束（ssh 在作业对象里，岛屿崩溃也不留下）。本地端口在设置里选：Clash Verge 7897、v2rayN 10808（v2rayN 7.x 的混合端口，系统代理也用它；更早的版本 HTTP 是 10809）或自定义。打开主机或改端口时先用一条短 ssh 在服务器上跑 `ss -ltn`（没有时 `netstat -ltn`）看端口是否已被占用，占用时问「仍要搭建隧道吗？」：是就照样搭（等端口空出来），否就不打开；岛屿启动或重连时不弹窗，转发被拒时显示「端口被占用，等待中」并继续重试。打开的主机下面有一行可复制的 `export http_proxy=… https_proxy=… HTTPS_PROXY=…`，在服务器上运行它。
+
 内置插件的清单写在 `src-tauri/src/plugin_host/builtin.rs` 中，`runtime.type` 为 `builtin`。插件目录里的第三方插件不能使用这个类型，也不能使用内置插件的 id。
 
 只在岛屿窗口里工作的内置插件（例如收起条上的小环）只需在 `BUILTINS` 表里加一行"id + 清单"：后端启动和停止时什么都不做；前端用 `useBuiltinPlugin(id)`（`src/features/plugins/useBuiltinPlugin.ts`）读到 `{ enabled, settings }`，插件启停或改设置时自动更新（宿主发出 `plugin-view-changed` 的 `reset` 事件），再在 `src/windows/island/useCollapsedSlots.tsx` 里填收起条槽位。

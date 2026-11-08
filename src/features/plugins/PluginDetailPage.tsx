@@ -4,6 +4,7 @@ import { SelectControl } from "../../components/controls/SelectControl";
 import { ToggleControl } from "../../components/controls/ToggleControl";
 import { useLocale, useTranslation } from "../../i18n";
 import { CENTER_PATTERN_PET_KEY, CENTER_PATTERN_PLUGIN_ID, petChoices, usePetChoices } from "../center-pattern";
+import { SSH_TUNNEL_PLUGIN_ID, SshTunnelHosts } from "../ssh-tunnel";
 import { PLUGIN_MEMORY_LIMITS_MB, type PluginInfo } from "./api";
 import type { PromptedPermission } from "./promptedPermissions";
 import { PluginCallLog } from "./PluginCallLog";
@@ -43,6 +44,10 @@ export function PluginDetailPage({
   const pets = usePetChoices(plugin.id === CENTER_PATTERN_PLUGIN_ID);
   // Clearing takes a second click, like uninstalling.
   const [confirmingClear, setConfirmingClear] = useState(false);
+  // The SSH proxy tunnel's own port field matters only with "Custom port" picked.
+  const shown = plugin.settingsSchema.filter(
+    (spec) => !(plugin.id === SSH_TUNNEL_PLUGIN_ID && spec.key === "customPort" && plugin.settings.localProxy !== "custom"),
+  );
 
   return (
     <>
@@ -85,7 +90,7 @@ export function PluginDetailPage({
         {plugin.settingsSchema.length === 0 ? (
           <p className="settings-section__hint">{t.settings.plugins.detail.noSettings}</p>
         ) : (
-          plugin.settingsSchema.map((spec) => (
+          shown.map((spec) => (
             <PluginSettingField
               key={spec.key}
               spec={spec}
@@ -101,6 +106,8 @@ export function PluginDetailPage({
           ))
         )}
       </section>
+
+      {plugin.builtin && plugin.id === SSH_TUNNEL_PLUGIN_ID ? <SshTunnelHosts /> : null}
 
       {plugin.permissions.includes("island:notify") ? (
         <section className="settings-section plugins-panel">

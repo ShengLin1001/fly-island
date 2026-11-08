@@ -179,6 +179,22 @@ export type SettingsPluginsText = {
     preReleaseAvailable: (version: string) => string;
     preReleaseOffered: (version: string) => string;
   };
+  /** The SSH proxy tunnel's hosts on its plugin page (src/features/ssh-tunnel). */
+  sshTunnel: {
+    title: string;
+    hint: string;
+    empty: string;
+    port: string;
+    portInvalid: string;
+    needsPort: string;
+    checking: string;
+    state: Record<"off" | "connecting" | "connected" | "portInUse" | "error", string>;
+    /** Shown while the plugin is off: switched-on hosts wait for it. */
+    waitingForPlugin: string;
+    confirm: (host: string, port: number) => string;
+    yes: string;
+    no: string;
+  };
 };
 
 export const zhCN: SettingsPluginsText = {
@@ -397,6 +413,26 @@ export const zhCN: SettingsPluginsText = {
     preReleaseAvailable: (version: string) => `插件市场里有预发布版本 v${version}。`,
     preReleaseOffered: (version: string) => `有预发布版本 v${version}，可在插件设置里选择接收。`,
   },
+  sshTunnel: {
+    title: "主机",
+    hint: "主机来自 ~/.ssh/config 和 AI Agent → 远程电脑里添加的电脑。每台填一个服务器上的端口（1024–65535，别和别人的隧道重复），打开后在服务器上运行下面那行 export 就能用这里的代理。",
+    empty: "没有主机：在 ~/.ssh/config 里写 Host，或在 AI Agent → 远程电脑里添加。",
+    port: "服务器端口",
+    portInvalid: "端口要是 1024–65535 的整数",
+    needsPort: "先填服务器端口",
+    checking: "正在检查服务器上的端口…",
+    state: {
+      off: "未开启",
+      connecting: "连接中…",
+      connected: "已连接",
+      portInUse: "端口被占用，等待中",
+      error: "连接失败，稍后重试",
+    },
+    waitingForPlugin: "插件开启后连接",
+    confirm: (host: string, port: number) => `${host} 上的端口 ${port} 已被占用（可能是另一个隧道），仍要搭建隧道吗？`,
+    yes: "是",
+    no: "否",
+  },
 };
 
 export const en: SettingsPluginsText = {
@@ -614,5 +650,25 @@ export const en: SettingsPluginsText = {
     preReleaseHint: "Pre-releases are new versions the author is still testing and may be unstable. Turning this off does not roll back; the plugin updates again once a release is newer than what is installed.",
     preReleaseAvailable: (version: string) => `Pre-release ${version} is in the plugin market. `,
     preReleaseOffered: (version: string) => `Pre-release ${version} is available; you can opt in from the plugin's settings.`,
+  },
+  sshTunnel: {
+    title: "Hosts",
+    hint: "Hosts come from ~/.ssh/config and the computers added under AI Agent → Remote computers. Give each a port on the server (1024–65535, not one another tunnel uses); once it is on, run the export line below on the server to use the proxy here.",
+    empty: "No hosts: add a Host to ~/.ssh/config, or a computer under AI Agent → Remote computers.",
+    port: "Server port",
+    portInvalid: "The port must be a whole number from 1024 to 65535",
+    needsPort: "Set the server port first",
+    checking: "Checking the port on the server…",
+    state: {
+      off: "Off",
+      connecting: "Connecting…",
+      connected: "Connected",
+      portInUse: "Port in use, waiting",
+      error: "Failed, retrying soon",
+    },
+    waitingForPlugin: "Connects once the plugin is on",
+    confirm: (host: string, port: number) => `Port ${port} on ${host} is already in use (maybe by another tunnel). Set up the tunnel anyway?`,
+    yes: "Yes",
+    no: "No",
   },
 };
