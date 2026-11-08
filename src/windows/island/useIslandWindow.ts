@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DEFAULT_SETTINGS } from "../../features/appearance/settings";
 import type { IslandSettings } from "../../features/appearance/types";
 import * as islandApi from "./api";
@@ -7,6 +6,7 @@ import { clearIslandPosition } from "./storage";
 import { useIslandPosition } from "./useIslandPosition";
 import { useNativeLayout } from "./useNativeLayout";
 import { useSettingsPositionReset } from "./useSettingsPositionReset";
+import { useCollapseOnBlur } from "./useCollapseOnBlur";
 import type { IslandMode, NativeGlassState } from "./types";
 
 type IslandWindowOptions = {
@@ -151,32 +151,7 @@ export function useIslandWindow({
     syncNativeInteraction,
   ]);
 
-  useEffect(() => {
-    let didCancel = false;
-    let unlisten: (() => void) | null = null;
-
-    void getCurrentWindow()
-      .onFocusChanged(({ payload: focused }) => {
-        if (!focused && mode === "expanded") {
-          onCollapse();
-        }
-      })
-      .then((nextUnlisten) => {
-        if (didCancel) {
-          nextUnlisten();
-        } else {
-          unlisten = nextUnlisten;
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to listen for island focus changes", error);
-      });
-
-    return () => {
-      didCancel = true;
-      unlisten?.();
-    };
-  }, [onCollapse, mode]);
+  useCollapseOnBlur(mode === "expanded", onCollapse);
 
   return { isPositionDetached, nativeGlassState, minimizeIsland, startIslandDrag, resetIslandPosition };
 }

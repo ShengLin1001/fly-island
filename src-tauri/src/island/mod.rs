@@ -292,6 +292,7 @@ macro_rules! tauri_commands {
             crate::island::minimize_island,
             crate::island::focus::take_island_hover_focus,
             crate::island::focus::release_island_hover_focus,
+            crate::island::focus::island_is_foreground,
             crate::island::passthrough::set_island_cursor_tracking,
             crate::island::banner_hit::set_island_banner_rect,
             crate::island::outside_click::set_island_outside_click_watch,

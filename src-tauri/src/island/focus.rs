@@ -78,3 +78,13 @@ pub fn release_island_hover_focus(app: AppHandle) -> Result<bool, String> {
     }
     Ok(true)
 }
+
+/// Whether the island window is the foreground window. A plugin page (a separate WebView2
+/// inside the island window, plugin_host/webviews.rs) taking the keyboard focus makes Tauri
+/// report the island as unfocused although it is still in front; the page asks this before
+/// treating the loss of focus as the user leaving for another window (issue #12).
+#[tauri::command]
+pub fn island_is_foreground(app: AppHandle) -> Result<bool, String> {
+    let island = main_window(&app)?.hwnd().map_err(|error| error.to_string())?;
+    Ok(win32::window::foreground_window() == island)
+}

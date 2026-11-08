@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type EventCallback, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { IslandCornerShape, IslandMonitor } from "../../features/appearance/types";
 import type { IslandPosition } from "./storage";
 import type { IslandMode, NativeGlassState } from "./types";
@@ -94,6 +95,19 @@ export function takeIslandHoverFocus() {
 /** Hands the focus back to that window unless the user has since clicked elsewhere; `false` as above. */
 export function releaseIslandHoverFocus() {
   return invoke<boolean>("release_island_hover_focus");
+}
+
+/**
+ * Whether the island window is in front. It still is while the keyboard focus sits in a plugin
+ * page, which Tauri reports as the island losing focus (issue #12).
+ */
+export function islandIsForeground() {
+  return invoke<boolean>("island_is_foreground");
+}
+
+/** Calls `handler` when the island window gains (`true`) or loses (`false`) the keyboard focus. */
+export function listenIslandFocus(handler: (focused: boolean) => void): Promise<UnlistenFn> {
+  return getCurrentWindow().onFocusChanged(({ payload }) => handler(payload));
 }
 
 // Mirrors FOREGROUND_FULLSCREEN_CHANGED_EVENT in src-tauri/src/system/fullscreen.rs.
