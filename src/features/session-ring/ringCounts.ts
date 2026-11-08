@@ -10,9 +10,6 @@ export type SessionRingState = "needs" | "yourturn" | "working" | "stale" | "don
 
 export type SessionRingCounts = Record<SessionRingState, number> & { total: number };
 
-/** Finished sessions the user has seen stay in the ring as grey for this long after their last write. */
-export const DONE_WINDOW_MS = 10 * 60_000;
-
 /** Ring order and colours, from 12 o'clock; stale is a dimmed running green. */
 export const SESSION_RING_STATES: readonly { key: SessionRingState; color: string }[] = [
   { key: "needs", color: "#FF453A" },
@@ -23,17 +20,15 @@ export const SESSION_RING_STATES: readonly { key: SessionRingState; color: strin
 ];
 
 /**
- * Where a session sits on the ring, from its light (agent-status/sessionLight.ts): waiting on the
- * user mid-turn is red, and so is a failed turn; a finished turn that asks something is yellow;
- * running is green, silent mid-turn dim green. Once the user has looked at a session that waits
- * or failed (clicked it, or had its window in front), it stops asking (roadmap B15) and counts as
- * done: grey for 10 minutes after its last write, then it leaves the ring, like a finished turn.
+ * Where a session sits on the ring: its light on the Agent page (agent-status/sessionLight.ts).
+ * Waiting on the user mid-turn is red, and so is a failed turn; a finished turn that asks
+ * something is yellow; running is green, silent mid-turn dim green, done grey. Once the user has
+ * looked at a session that waits or failed (clicked it, or had its window in front), it stops
+ * asking (roadmap B15) and is grey, as its row on the page is ("looked").
  */
-export function sessionRingState(session: AgentSessionSummary, unseen: ReadonlySet<string>, now: number): SessionRingState | null {
-  const notSeen = unseen.has(sessionKey(session));
-  const recent = notSeen || now - session.updatedAt <= DONE_WINDOW_MS;
+export function sessionRingState(session: AgentSessionSummary, unseen: ReadonlySet<string>): SessionRingState {
   const light = sessionLight(session);
-  if (!notSeen && (light === "needs" || light === "yourTurn" || light === "failed")) return recent ? "done" : null;
+  if (!unseen.has(sessionKey(session)) && (light === "needs" || light === "yourTurn" || light === "failed")) return "done";
   switch (light) {
     case "needs":
     case "failed":
@@ -45,20 +40,37 @@ export function sessionRingState(session: AgentSessionSummary, unseen: ReadonlyS
     case "stale":
       return "stale";
     case "done":
-      return recent ? "done" : null;
+      return "done";
   }
 }
 
-export function sessionRingCounts(sessions: readonly AgentSessionSummary[], unseen: ReadonlySet<string>, now: number): SessionRingCounts {
+/**
+ * Counts by state of the sessions the Agent page lists; the caller passes that list, so the ring
+ * holds exactly the page's sessions and leaves as they leave it (hidden, quit or removed).
+ */
+export function sessionRingCounts(sessions: readonly AgentSessionSummary[], unseen: ReadonlySet<string>): SessionRingCounts {
   const counts: SessionRingCounts = { needs: 0, yourturn: 0, working: 0, stale: 0, done: 0, total: 0 };
   for (const session of sessions) {
-    const state = sessionRingState(session, unseen, now);
-    if (state) {
-      counts[state] += 1;
-      counts.total += 1;
-    }
+    counts[sessionRingState(session, unseen)] += 1;
+    counts.total += 1;
   }
   return counts;
+}
+
+/** Most cells the pixel grid shows (3 × 3). */
+export const SESSION_GRID_MAX = 9;
+
+/** A pixel grid cell: one session's state, or "more" for the sessions past the ninth. */
+export type SessionGridCell = SessionRingState | "more";
+
+/**
+ * The pixel grid's lit cells, one state per session in ring order (the ones waiting on you
+ * first). Past SESSION_GRID_MAX sessions the last cell says "more" and the least urgent are left
+ * off; the hover card still counts them all.
+ */
+export function sessionGridCells(counts: SessionRingCounts): SessionGridCell[] {
+  const cells: SessionGridCell[] = SESSION_RING_STATES.flatMap(({ key }) => Array<SessionRingState>(counts[key]).fill(key));
+  return cells.length > SESSION_GRID_MAX ? [...cells.slice(0, SESSION_GRID_MAX - 1), "more"] : cells;
 }
 
 /** One segment per state that has sessions, in ring order. */
@@ -91,12 +103,11 @@ function sessionName({ title, cwd, sessionId }: AgentSessionSummary) {
 export function sessionRingCardLines(
   sessions: readonly AgentSessionSummary[],
   unseen: ReadonlySet<string>,
-  now: number,
   text: SessionRingText,
 ): string[] {
-  const states = sessions.map((session) => ({ session, state: sessionRingState(session, unseen, now) }));
+  const states = sessions.map((session) => ({ session, state: sessionRingState(session, unseen) }));
   const waiting = (["needs", "yourturn"] as const)
     .flatMap((key) => states.filter(({ state }) => state === key).map(({ session }) => text.sessionLine(text[key], sessionName(session))))
     .slice(0, CARD_SESSIONS);
-  return [sessionRingSummary(sessionRingCounts(sessions, unseen, now), text), ...waiting];
+  return [sessionRingSummary(sessionRingCounts(sessions, unseen), text), ...waiting];
 }
