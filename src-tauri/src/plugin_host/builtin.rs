@@ -66,7 +66,7 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
         "key": "pattern",
         "type": "select",
         "title": { "zh-CN": "图案", "en": "Pattern" },
-        "default": "eyes",
+        "default": "pet",
         "options": [
           { "value": "eyes", "title": { "zh-CN": "眼睛", "en": "Eyes" } },
           { "value": "bird", "title": { "zh-CN": "小鸟", "en": "Bird" } },
@@ -80,10 +80,10 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
         "type": "string",
         "title": { "zh-CN": "宠物", "en": "Pet" },
         "description": {
-          "zh-CN": "图案选「宠物」时显示哪一只。宠物包（pet.json + spritesheet）放在 ~/.codex/pets 或应用数据目录的 pets 文件夹里；找不到时显示眼睛。",
-          "en": "Which pet the Pet pattern shows. Pet packs (pet.json + spritesheet) go in ~/.codex/pets or the pets folder of the app data directory; without one the eyes show."
+          "zh-CN": "图案选「宠物」时显示哪一只，默认小八（xiaoba）。宠物包（pet.json + spritesheet）放在 ~/.codex/pets 或应用数据目录的 pets 文件夹里；找不到时显示眼睛。",
+          "en": "Which pet the Pet pattern shows; xiaoba by default. Pet packs (pet.json + spritesheet) go in ~/.codex/pets or the pets folder of the app data directory; without one the eyes show."
         },
-        "default": ""
+        "default": "xiaoba"
       }
     ]
   }
