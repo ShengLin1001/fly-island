@@ -7,6 +7,10 @@ import { emit } from "@tauri-apps/api/event";
 // Loads the island stylesheets in the same order as the app.
 import "../../src/windows/island/IslandApp";
 import { IslandShell } from "../../src/windows/island/IslandShell";
+import { useLatestMessagePreview } from "../../src/windows/island/useLatestMessagePreview";
+import type { PluginNotificationsController } from "../../src/features/plugins/usePluginNotifications";
+
+const NO_PLUGIN_NOTIFICATIONS: PluginNotificationsController = { notification: null, dismiss: () => {}, runAction: () => {} };
 import type { IslandMode } from "../../src/windows/island/types";
 import { useQQNotifications } from "../../src/features/messages/qq-notifications/QQNotifications";
 import { useWeChatReminders } from "../../src/features/messages/wechat/WeChatReminders";
@@ -102,10 +106,11 @@ function Fixture() {
   const qq = useQQNotifications(canPreview);
   const wechat = useWeChatReminders(canPreview);
   const qqMail = useMail(canPreview);
+  const preview = useLatestMessagePreview(qq, wechat, qqMail, NO_PLUGIN_NOTIFICATIONS);
   changeMode = setMode; changeTucked = setTucked; changeCount = setCount; changeTask = setTask;
   changeWidth = setWidth; changeTitle = setTitle; changeFont = setPixel; changeAgent = setAgent;
   return <div className={`stage${pixel ? " stage--font-pixel" : ""}`} style={{ "--collapsed-island-width": `${width}px` } as CSSProperties}>
-    <IslandShell deviceUse={deviceUse} levelPopup={level} meeting={meeting} deviceAlert={deviceAlert} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={{ notification: null, dismiss: () => {}, runAction: () => {} }}
+    <IslandShell deviceUse={deviceUse} levelPopup={level} meeting={meeting} deviceAlert={deviceAlert} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={NO_PLUGIN_NOTIFICATIONS} preview={preview}
       mode={mode} page="todo" isTucked={tucked} isDetached={true} showTitle={title}
       showCollapsedText={true} collapsedTaskTitle={task ?? `剩余${count}个待办`} collapsedTodoCount={null} agentSession={agent} activeAgentSessionCount={agentCount}
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"

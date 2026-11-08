@@ -2,13 +2,13 @@ import type { CollapsedMeeting } from "../../features/calendar/upcoming";
 import type { DeviceUse } from "../../features/device-use/api";
 import type { LevelChange } from "../../features/system-levels/api";
 import type { DeviceAlert } from "../../features/device-events/api";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { AgentSession } from "../../features/agent-status/session";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { AppearanceMode } from "../../features/appearance/types";
 import type { MediaState } from "../../features/media/api";
-import { latestMessagePreview, type MessageSource } from "../../features/messages/messagePreview";
+import type { MessagePreview, MessageSource } from "../../features/messages/messagePreview";
 import type { MailController } from "../../features/messages/mail/MailPanel";
 import type { QQNotificationsController } from "../../features/messages/qq-notifications/QQNotifications";
 import type { WeChatRemindersController } from "../../features/messages/wechat/WeChatReminders";
@@ -28,6 +28,8 @@ type IslandShellProps = {
   qqNotifications: QQNotificationsController;
   wechatReminders: WeChatRemindersController;
   pluginNotifications: PluginNotificationsController;
+  /** The message preview the collapsed bar shows, or null. */
+  preview: MessagePreview | null;
   onOpenMessages: (source: MessageSource) => void;
   mode: IslandMode;
   page: IslandPage;
@@ -91,6 +93,7 @@ export function IslandShell({
   qqNotifications,
   wechatReminders,
   pluginNotifications,
+  preview,
   onOpenMessages,
   mode,
   page,
@@ -141,19 +144,8 @@ export function IslandShell({
   const { handleGlassPointerMove, resetGlassPointer } = useGlassPointer(isLiquidGlass);
   const isPreparing = useIslandPreparing(isExpanded);
   const contentRef = usePageFadeIn<HTMLDivElement>(page, mode);
-  const qqPreview = qqNotifications.preview;
   const qqNotificationCount = qqNotifications.snapshot.items.length;
   const wechatPending = wechatReminders.snapshot.pending;
-  const wechatPreviewAt = wechatReminders.previewReceivedAt;
-  const pluginNotification = pluginNotifications.notification;
-  const [latestPreviewAt, setLatestPreviewAt] = useState(0);
-  const preview = latestMessagePreview([
-    qqPreview ? { ...qqPreview, source: "qq", receivedAt: qqNotifications.previewReceivedAt ?? 0 } : null,
-    wechatPreviewAt !== null ? { source: "wechat", title: t.messages.wechat, body: t.messages.newReminder, receivedAt: wechatPreviewAt } : null,
-    qqMail.preview ? { source: "qqMail", title: qqMail.preview.sender, body: qqMail.preview.subject, receivedAt: qqMail.previewReceivedAt ?? 0 } : null,
-    pluginNotification ? { source: "plugin", title: pluginNotification.title, body: pluginNotification.body, receivedAt: pluginNotification.receivedAt } : null,
-  ], latestPreviewAt);
-  if (preview && preview.receivedAt > latestPreviewAt) setLatestPreviewAt(preview.receivedAt);
   const className = [
     "island",
     `island--${mode}`,

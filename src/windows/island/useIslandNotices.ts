@@ -7,6 +7,7 @@ import { useLevelPopup } from "../../features/system-levels/useLevelPopup";
 import { useDeviceAlert } from "../../features/device-events/useDeviceAlert";
 import { usePluginPermissionPrompts } from "../../features/plugins/usePluginPermissionPrompts";
 import type { IslandSettings } from "../../features/appearance/types";
+import { useLatestMessagePreview } from "./useLatestMessagePreview";
 import type { IslandMode } from "./types";
 
 /**
@@ -29,5 +30,7 @@ export function useIslandNotices(settings: IslandSettings, { mode, isTucked, qui
   const hasMessagePreview = Boolean(
     qqNotifications.preview || wechatReminders.previewReceivedAt !== null || qqMail.preview || pluginNotifications.notification,
   );
-  return { qqNotifications, wechatReminders, qqMail, pluginNotifications, deviceUse, levelPopup, deviceAlert, permissionPrompts, hasMessagePreview };
+  const preview = useLatestMessagePreview(qqNotifications, wechatReminders, qqMail, pluginNotifications);
+  return { qqNotifications, wechatReminders, qqMail, pluginNotifications, preview, deviceUse, levelPopup, deviceAlert, permissionPrompts, hasMessagePreview };
 }
+

@@ -6,6 +6,10 @@ import "../../src/styles/tokens.css";
 // Loads the island stylesheets in the same order as the app.
 import "../../src/windows/island/IslandApp";
 import { IslandShell } from "../../src/windows/island/IslandShell";
+import { useLatestMessagePreview } from "../../src/windows/island/useLatestMessagePreview";
+import type { PluginNotificationsController } from "../../src/features/plugins/usePluginNotifications";
+
+const NO_PLUGIN_NOTIFICATIONS: PluginNotificationsController = { notification: null, dismiss: () => {}, runAction: () => {} };
 import { ClaudeUsageGauge } from "../../src/features/claude-usage/ClaudeUsageGauge";
 import type { AgentUsage } from "../../src/features/agent-status/api";
 import { CLAUDE_USAGE_GAUGE_WIDTH, USAGE_COLORS } from "../../src/features/claude-usage/usageRing";
@@ -64,8 +68,9 @@ function Fixture() {
   const qq = useQQNotifications(true);
   const wechat = useWeChatReminders(true);
   const qqMail = useMail(true);
+  const preview = useLatestMessagePreview(qq, wechat, qqMail, NO_PLUGIN_NOTIFICATIONS);
   return <div className="stage" style={{ "--collapsed-island-width": `${280 + CLAUDE_USAGE_GAUGE_WIDTH}px` } as CSSProperties}>
-    <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={{ notification: null, dismiss: () => {}, runAction: () => {} }}
+    <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={NO_PLUGIN_NOTIFICATIONS} preview={preview}
       mode="collapsed" page="todo" isTucked={false} isDetached={true} showTitle={false}
       showCollapsedText={true} collapsedTaskTitle="剩余3个待办" collapsedTodoCount={null} agentSession={null} activeAgentSessionCount={0}
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"

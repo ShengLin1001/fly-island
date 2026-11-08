@@ -212,6 +212,7 @@ export function IslandApp() {
         qqNotifications={qqNotifications}
         wechatReminders={wechatReminders}
         pluginNotifications={pluginNotifications}
+        preview={notices.preview}
         onOpenMessages={openMessages}
         mode={mode}
         page={page}

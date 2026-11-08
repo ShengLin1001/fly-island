@@ -6,6 +6,10 @@ import "../../src/styles/tokens.css";
 // Loads the island stylesheets in the same order as the app.
 import "../../src/windows/island/IslandApp";
 import { IslandShell } from "../../src/windows/island/IslandShell";
+import { useLatestMessagePreview } from "../../src/windows/island/useLatestMessagePreview";
+import type { PluginNotificationsController } from "../../src/features/plugins/usePluginNotifications";
+
+const NO_PLUGIN_NOTIFICATIONS: PluginNotificationsController = { notification: null, dismiss: () => {}, runAction: () => {} };
 import type { CollapsedSlots } from "../../src/windows/island/types";
 import { MiniRing } from "../../src/components/MiniRing";
 import { PluginStatusChip } from "../../src/features/plugin-views/PluginStatusChip";
@@ -56,8 +60,9 @@ function Fixture() {
   const qq = useQQNotifications(true);
   const wechat = useWeChatReminders(true);
   const qqMail = useMail(true);
+  const preview = useLatestMessagePreview(qq, wechat, qqMail, NO_PLUGIN_NOTIFICATIONS);
   return <div className="stage" style={{ "--collapsed-island-width": "300px" } as CSSProperties}>
-    <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={{ notification: null, dismiss: () => {}, runAction: () => {} }}
+    <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={NO_PLUGIN_NOTIFICATIONS} preview={preview}
       mode="collapsed" page="todo" isTucked={false} isDetached={true} showTitle={false}
       showCollapsedText={true} collapsedTaskTitle={state.task} collapsedTodoCount={null} agentSession={state.agentTitle ? { provider: "codex", label: "Codex", title: state.agentTitle } : null} activeAgentSessionCount={state.count}
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"
