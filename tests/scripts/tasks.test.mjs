@@ -95,8 +95,8 @@ test("check reports each broken rule", () => {
   const cases = [
     [[task("Z1")], /group Z/],
     [[{ ...task("F1"), fields: { ...task("F1").fields, section: "x" } }], /unknown field "section"/],
-    [[done("F1")], /belongs in docs\/tasks\/archive/],
-    [[task("F1"), true], /move it out of archive/],
+    [[done("F1")], /belongs in docs\/tasks\/0-archive/],
+    [[task("F1"), true], /move it out of 0-archive/],
     [[done("F1", { done: "" }), true], /done date/],
     [[{ ...done("F1"), body: "" }, true], /## 提交/],
     [[task("F1", { status: "不做" }), true], /reason/],
@@ -120,10 +120,10 @@ test("check reports each broken rule", () => {
 
 test("check reads the group folders of both trees and the README of a repo", () => {
   const root = mkdtempSync(path.join(tmpdir(), "tasks-"));
-  for (const dir of ["docs/tasks/F", "docs/tasks/archive/A"]) mkdirSync(path.join(root, dir), { recursive: true });
+  for (const dir of ["docs/tasks/F", "docs/tasks/0-archive/A"]) mkdirSync(path.join(root, dir), { recursive: true });
   writeFileSync(path.join(root, "docs/tasks/README.md"), README);
   writeFileSync(path.join(root, "docs/tasks/F/F1.md"), TEXT);
-  writeFileSync(path.join(root, "docs/tasks/archive/A/A1.md"), formatTask(done("A1")));
+  writeFileSync(path.join(root, "docs/tasks/0-archive/A/A1.md"), formatTask(done("A1")));
   assert.deepEqual(checkTasks(root), []);
   writeFileSync(path.join(root, "docs/tasks/F/F2.md"), "oops");
   assert.deepEqual(checkTasks(root), ["docs/tasks/F/F2.md: missing the --- front matter block"]);

@@ -1,5 +1,5 @@
 // `pnpm tasks`: the task board kept in docs/tasks/<group>/ (open) and
-// docs/tasks/archive/<group>/ (done or dropped), and claiming, finishing and handing over tasks. Rules and the
+// docs/tasks/0-archive/<group>/ (done or dropped), and claiming, finishing and handing over tasks. Rules and the
 // group table: docs/tasks/README.md.
 //
 //   pnpm tasks [--all] [--json]   the board (--all: closed ones too)
@@ -7,8 +7,8 @@
 //   pnpm tasks show <id>          one task with its parent, children, dependencies and linked files
 //   pnpm task:claim <id...> [--as <name>] [--scope a/,b.ts] [--takeover] [--force] [--no-land]
 //   pnpm tasks add <id> --title .. [--parent ..] [--depends a,b] [--needs user] [--issue 13] [--body ..] [--claim ...]
-//   pnpm tasks done <id> [--commit "<subject>"]...   mark done, move to archive/ (commit it with the work)
-//   pnpm tasks drop <id> --reason ..                 mark 不做, move to archive/
+//   pnpm tasks done <id> [--commit "<subject>"]...   mark done, move to 0-archive/ (commit it with the work)
+//   pnpm tasks drop <id> --reason ..                 mark 不做, move to 0-archive/
 //   pnpm tasks note <id> <text> [--as <name>]        a handoff line for whoever takes over
 //   pnpm tasks release <id> [--reason ..] [--no-land] give a claim back
 //   pnpm tasks stale | conflicts | check | landing

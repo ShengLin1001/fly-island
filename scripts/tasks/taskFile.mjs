@@ -1,5 +1,5 @@
 // One task per file: docs/tasks/<group>/<id>.md while it is open, and
-// docs/tasks/archive/<group>/<id>.md once it is done or dropped; the group is the
+// docs/tasks/0-archive/<group>/<id>.md once it is done or dropped; the group is the
 // id's first letter. A front matter block of `key: value` lines, then a body of
 // `## ` sections in a fixed order (BODY_SECTIONS). Two sessions claiming the same
 // task edit the same file, so the later land fails its rebase; different tasks never

@@ -1,5 +1,5 @@
 // Task files on disk: open ones in docs/tasks/<group>/, closed ones in
-// docs/tasks/archive/<group>/ (the group is the id's first letter), the group table in
+// docs/tasks/0-archive/<group>/ (the group is the id's first letter), the group table in
 // docs/tasks/README.md; and whether a claim still holds.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
@@ -8,10 +8,10 @@ import { CLOSED_STATUSES, formatTask, groupOf, parseTask } from "./taskFile.mjs"
 import { checkEntries, parseGroups } from "./taskRules.mjs";
 
 export const TASKS_DIR = "docs/tasks";
-export const ARCHIVE_DIR = "docs/tasks/archive";
+export const ARCHIVE_DIR = "docs/tasks/0-archive";
 const README = "docs/tasks/README.md";
 
-/** Where task `id` belongs, relative to the repo: docs/tasks/F/F15.md, or under archive/ once closed. */
+/** Where task `id` belongs, relative to the repo: docs/tasks/F/F15.md, or under 0-archive/ once closed. */
 export function taskPath(id, closed) {
   return `${closed ? ARCHIVE_DIR : TASKS_DIR}/${groupOf(id)}/${id}.md`;
 }
@@ -48,7 +48,7 @@ function readFiles(root, dir, archived, folder) {
 function readDir(root, dir, archived) {
   if (!existsSync(path.join(root, dir))) return [];
   const folders = readdirSync(path.join(root, dir))
-    .filter((name) => name !== "archive" && statSync(path.join(root, dir, name)).isDirectory());
+    .filter((name) => name !== path.basename(ARCHIVE_DIR) && statSync(path.join(root, dir, name)).isDirectory());
   return [readFiles(root, dir, archived, ""), ...folders.map((folder) => readFiles(root, `${dir}/${folder}`, archived, folder))].flat();
 }
 

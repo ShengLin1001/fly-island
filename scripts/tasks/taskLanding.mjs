@@ -2,7 +2,7 @@
 // in the landing must name commits that exist, and the lane's own claims that are still
 // open get a reminder.
 import path from "node:path";
-import { claimState, parseTask, sectionItems } from "./taskFile.mjs";
+import { claimState, groupOf, parseTask, sectionItems } from "./taskFile.mjs";
 import { commitRef } from "./taskRules.mjs";
 import { TASKS_DIR, readAll, taskPath, tryGit } from "./taskRepo.mjs";
 
@@ -12,8 +12,9 @@ function lines(text) {
 
 /** The status task `id` had on origin/main, or null when it did not exist there. */
 function statusOnMain(root, id) {
-  // Before the group folders (2026-11-09) tasks sat directly in docs/tasks/ and archive/.
-  const paths = [taskPath(id, false), taskPath(id, true), `${TASKS_DIR}/${id}.md`, `${TASKS_DIR}/archive/${id}.md`];
+  // Earlier layouts (all 2026-11-09): docs/tasks/<id>.md and archive/<id>.md, then archive/<group>/<id>.md.
+  const old = [`${TASKS_DIR}/${id}.md`, `${TASKS_DIR}/archive/${id}.md`, `${TASKS_DIR}/archive/${groupOf(id)}/${id}.md`];
+  const paths = [taskPath(id, false), taskPath(id, true), ...old];
   for (const file of paths) {
     const text = tryGit(["show", `origin/main:${file}`], root);
     if (text !== null) {

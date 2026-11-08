@@ -19,7 +19,7 @@ export function parseGroups(readme) {
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const NEEDS = ["user"];
-/** A link into the repo must start at its root (/docs/...): a task moves to archive/ when it closes. */
+/** A link into the repo must start at its root (/docs/...): a task moves to 0-archive/ when it closes. */
 const RELATIVE_LINK = /\]\((?!https?:|\/|#|mailto:)[^)]*\)/;
 
 /**
@@ -37,10 +37,10 @@ export function taskProblems(task, { fileId, archived, folder, tasks, groups, ch
   for (const key of Object.keys(fields)) if (!FIELDS.includes(key)) problems.push(`unknown field "${key}"`);
   if (!fields.title) problems.push("no title");
   if (!STATUSES.includes(fields.status)) problems.push(`status "${fields.status}" is not one of ${STATUSES.join(" / ")}`);
-  if (closed && !archived) problems.push(`status ${fields.status} belongs in docs/tasks/archive/`);
-  if (!closed && archived) problems.push(`status ${fields.status} is open; move it out of archive/`);
+  if (closed && !archived) problems.push(`status ${fields.status} belongs in docs/tasks/0-archive/`);
+  if (!closed && archived) problems.push(`status ${fields.status} is open; move it out of 0-archive/`);
   if (folder !== undefined && isTaskId(fields.id ?? "") && folder !== groupOf(fields.id)) {
-    problems.push(`belongs in the ${groupOf(fields.id)}/ folder of ${archived ? "docs/tasks/archive" : "docs/tasks"}`);
+    problems.push(`belongs in the ${groupOf(fields.id)}/ folder of ${archived ? "docs/tasks/0-archive" : "docs/tasks"}`);
   }
   const isParent = (children.get(fields.id) ?? []).length > 0;
   if (fields.status === "进行中" && !fields.owner && !isParent) problems.push("in progress without an owner");
@@ -80,7 +80,7 @@ function bodyProblems(body, title) {
 export function checkEntries(entries, groups) {
   const tasks = new Map();
   const problems = [];
-  const label = (entry) => entry.file ?? `${entry.archived ? "archive/" : ""}${entry.id}.md`;
+  const label = (entry) => entry.file ?? `${entry.archived ? "0-archive/" : ""}${entry.id}.md`;
   for (const entry of entries) {
     if (entry.error) problems.push(`${label(entry)}: ${entry.error}`);
     else if (tasks.has(entry.id)) problems.push(`${label(entry)}: id ${entry.id} is used twice`);
