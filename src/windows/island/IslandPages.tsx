@@ -2,6 +2,8 @@ import type { SessionRemoval } from "../../features/agent-status/useHiddenSessio
 import type { ReactNode } from "react";
 import { PluginViewPage } from "../../features/plugin-views/PluginViewPage";
 import { MessagesPanel } from "../../features/messages/Messages";
+import { MessageArrivalsPanel } from "../../features/messages/arrivals/MessageArrivalsPanel";
+import type { useIslandMessagePanel } from "./useIslandMessagePanel";
 import type { useQQNotifications } from "../../features/messages/qq-notifications/QQNotifications";
 import type { useWeChatReminders } from "../../features/messages/wechat/WeChatReminders";
 import type { useMail } from "../../features/messages/mail/MailPanel";
@@ -41,6 +43,8 @@ type IslandPagesProps = {
   qqNotifications: ReturnType<typeof useQQNotifications>;
   wechatReminders: ReturnType<typeof useWeChatReminders>;
   messageSource: MessageView["messageSource"];
+  /** The page opened for new messages (useIslandMessagePanel); its rows take the page's place. */
+  messagePanel?: ReturnType<typeof useIslandMessagePanel>;
   openMessages: MessageView["openMessages"];
   media: ReturnType<typeof useMediaState>;
   clipboard: ReturnType<typeof useClipboardHistory>;
@@ -67,6 +71,7 @@ export function IslandPages({
   qqNotifications,
   wechatReminders,
   messageSource,
+  messagePanel,
   openMessages,
   media,
   clipboard,
@@ -95,7 +100,9 @@ export function IslandPages({
     <>
       {page === "qq" && (
         <div className="message-panel">
-          <MessagesPanel qqMail={qqMail} qqNotifications={qqNotifications} wechatReminders={wechatReminders} source={messageSource} enabledSources={features} onSourceChange={openMessages} onOpenMailSettings={() => openSettingsWindow("mail")} />
+          {messagePanel?.arrivals ? (
+            <MessageArrivalsPanel arrivals={messagePanel.arrivals} onOpen={messagePanel.open} onAction={messagePanel.runAction} onMeasure={messagePanel.measure} />
+          ) : <MessagesPanel qqMail={qqMail} qqNotifications={qqNotifications} wechatReminders={wechatReminders} source={messageSource} enabledSources={features} onSourceChange={openMessages} onOpenMailSettings={() => openSettingsWindow("mail")} />}
         </div>
       )}
       {page === "music" && (

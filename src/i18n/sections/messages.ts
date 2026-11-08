@@ -29,6 +29,10 @@ export type MessagesText = {
     close: string;
     actions: string;
   };
+  /** The Messages page opened for new messages (roadmap C11). */
+  arrivals: {
+    title: string;
+  };
 };
 
 export const zhCN: MessagesText = {
@@ -61,6 +65,9 @@ export const zhCN: MessagesText = {
     close: "关闭通知",
     actions: "通知操作",
   },
+  arrivals: {
+    title: "新消息",
+  },
 };
 
 export const en: MessagesText = {
@@ -92,5 +99,8 @@ export const en: MessagesText = {
     more: (count) => `${count} more`,
     close: "Dismiss notification",
     actions: "Notification actions",
+  },
+  arrivals: {
+    title: "New messages",
   },
 };

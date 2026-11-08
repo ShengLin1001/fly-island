@@ -11,6 +11,9 @@ export const AGENT_CARD_EFFECTS: readonly AgentCardEffects[] = ["off", "sparkle"
 export const AGENT_SESSION_HOURS = [1, 2, 6, 24] as const;
 /** How long a page opened for an agent alert stays, in seconds. */
 export const AGENT_ALERT_SECONDS = [3, 5, 8, 15, 30] as const;
+/** The same choices as the Agent alert, for the panel new messages open (roadmap C11). */
+export const MESSAGE_PANEL_SECONDS = AGENT_ALERT_SECONDS;
+export const MESSAGE_NOTICES = ["line", "banner", "panel"] as const;
 /** Reminding again about a session still waiting on the user: after this many seconds; 0 is off. */
 export const AGENT_REMIND_SECONDS = [0, 30, 60, 120, 300] as const;
 /** Usage level (percent) that pops up an alert; 0 is off. */

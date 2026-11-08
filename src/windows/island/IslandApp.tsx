@@ -39,6 +39,7 @@ import { useIslandTranslation } from "./useIslandTranslation";
 import { usePluginPages } from "./usePluginPages";
 import { useMessageView } from "./useMessageView";
 import { useIslandBanner } from "./useIslandBanner";
+import { useIslandMessagePanel } from "./useIslandMessagePanel";
 import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
@@ -136,6 +137,11 @@ export function IslandApp() {
     openIslandPage,
     collapseIsland,
   });
+  const messagePanel = useIslandMessagePanel({
+    enabled: settings.messageNotice === "panel" && !game.quiet,
+    durationMs: settings.messagePanelSeconds * 1000,
+    notices, mode, page, openIslandPage, collapseIsland, onOpenMessages: openMessages,
+  });
   const expandedIslandHeight = getExpandedIslandHeight({
     page,
     todoPageMode,
@@ -149,6 +155,7 @@ export function IslandApp() {
     agentSessionView: settings.agentSessionView,
     agentUsageLines: settings.agentShowUsage ? usageLineCount(agentUsages) : 0,
     agentAlertRowHeight: agentCardHeight,
+    messageArrivalsHeight: messagePanel.arrivals ? messagePanel.height : undefined,
     pluginTemplate: pluginPages.entry?.template,
     pluginListRows: pluginPages.rows,
     pluginWebviewHeight: pluginPages.entry?.height,
@@ -272,6 +279,7 @@ export function IslandApp() {
           qqNotifications={qqNotifications}
           wechatReminders={wechatReminders}
           messageSource={messageSource}
+          messagePanel={messagePanel}
           openMessages={openMessages}
           media={media}
           clipboard={clipboard}

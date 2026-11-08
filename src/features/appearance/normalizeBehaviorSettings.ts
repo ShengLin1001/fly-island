@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS, LEGACY_FALLBACKS } from "./settingsDefaults.ts";
 import {
   MAX_AUTO_TUCK_RETRACT_DELAY_MS, MAX_HOVER_COLLAPSE_DELAY_MS, MAX_HOVER_EXPAND_DELAY_MS, MAX_SHELF_ITEMS,
   MIN_AUTO_TUCK_RETRACT_DELAY_MS, MIN_HOVER_COLLAPSE_DELAY_MS, MIN_HOVER_EXPAND_DELAY_MS, MIN_SHELF_ITEMS,
-  SHELF_CLEANUP_DAYS, oneOf,
+  MESSAGE_NOTICES, MESSAGE_PANEL_SECONDS, SHELF_CLEANUP_DAYS, oneOf,
 } from "./settingsLimits.ts";
 import type { IslandSettings, LegacyIslandSettings } from "./types";
 
@@ -39,7 +39,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
       ? clamp(Math.round(settings.autoTuckRetractDelayMs), MIN_AUTO_TUCK_RETRACT_DELAY_MS, MAX_AUTO_TUCK_RETRACT_DELAY_MS)
       : DEFAULT_SETTINGS.autoTuckRetractDelayMs,
     revealOnMessage: settings?.revealOnMessage !== false,
-    messageNotice: settings?.messageNotice === "banner" ? "banner" : "line",
+    messageNotice: oneOf(MESSAGE_NOTICES, settings?.messageNotice, DEFAULT_SETTINGS.messageNotice),
+    messagePanelSeconds: oneOf(MESSAGE_PANEL_SECONDS, settings?.messagePanelSeconds, DEFAULT_SETTINGS.messagePanelSeconds),
     expandTrigger: settings?.expandTrigger === "hover" ? "hover" : "click",
     hoverExpandDelayMs: typeof settings?.hoverExpandDelayMs === "number" && Number.isFinite(settings.hoverExpandDelayMs)
       ? clamp(Math.round(settings.hoverExpandDelayMs), MIN_HOVER_EXPAND_DELAY_MS, MAX_HOVER_EXPAND_DELAY_MS)

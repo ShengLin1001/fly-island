@@ -68,6 +68,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   autoTuckRetractDelayMs: DEFAULT_AUTO_TUCK_RETRACT_DELAY_MS,
   revealOnMessage: true,
   messageNotice: "line",
+  messagePanelSeconds: 8,
   expandTrigger: "hover",
   hoverExpandDelayMs: DEFAULT_HOVER_EXPAND_DELAY_MS,
   hoverCollapseDelayMs: DEFAULT_HOVER_COLLAPSE_DELAY_MS,

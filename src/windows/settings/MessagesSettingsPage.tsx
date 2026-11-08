@@ -3,6 +3,8 @@ import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton";
 import { SettingsRow } from "../../components/settings/SettingsRow";
+import { SettingsSelect } from "../../components/settings/SettingsSelect";
+import { MESSAGE_PANEL_SECONDS } from "../../features/appearance/settings";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import type { IslandSettings, MessageNotice } from "../../features/appearance/types";
 import { MailAccountList } from "../../features/messages/mail/MailAccountList";
@@ -43,11 +45,25 @@ export function MessagesSettingsPage({
             <SettingsChoice<MessageNotice>
               value={settings.messageNotice}
               ariaLabel={labels.noticeLabel}
-              options={[{ value: "line", label: labels.noticeLine }, { value: "banner", label: labels.noticeBanner }]}
+              options={[{ value: "line", label: labels.noticeLine }, { value: "banner", label: labels.noticeBanner }, { value: "panel", label: labels.noticePanel }]}
               onChange={(messageNotice) => onSettingsChange({ ...settings, messageNotice })}
             />
           }
         />
+        {settings.messageNotice === "panel" && (
+          <SettingsRow
+            title={labels.panelSeconds}
+            indent
+            control={
+              <SettingsSelect
+                value={String(settings.messagePanelSeconds)}
+                options={MESSAGE_PANEL_SECONDS.map((seconds) => ({ value: String(seconds), label: labels.panelSecondsValue(seconds) }))}
+                ariaLabel={labels.panelSeconds}
+                onChange={(value) => onSettingsChange({ ...settings, messagePanelSeconds: Number(value) })}
+              />
+            }
+          />
+        )}
       </SettingsGroup>
       <QQGroup controller={qqNotifications} title={labels.qqTitle} hint={labels.qqHint} />
       <SettingsGroup title={labels.wechatTitle} footer={<Problem error={wechatReminders.actionError || wechatReminders.snapshot.error} hint={labels.wechatHint} />}>

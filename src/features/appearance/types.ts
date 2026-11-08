@@ -14,8 +14,8 @@ export type MinimizeAction = "tray" | "tuck";
 /** What resting the pointer on an island tucked to the edge does: slide it out, or open its panel too. */
 export type TuckedHoverAction = "reveal" | "expand";
 
-/** A line on the collapsed bar, or a banner card below the island (roadmap C10). */
-export type MessageNotice = "line" | "banner";
+/** A line on the collapsed bar, a banner card below the island (roadmap C10), or the island opening on the new messages (C11). */
+export type MessageNotice = "line" | "banner" | "panel";
 /** How the Agent page shows the program a session runs in. */
 export type AgentHostDisplay = "both" | "icon" | "name" | "off";
 /** How the Agent page shows sessions: flat rows, two-line cards framed in their light, or one-line rows. */
@@ -112,6 +112,8 @@ export type IslandSettings = CalendarSettingValues & {
   revealOnMessage: boolean;
   /** How new QQ, mail and plugin messages show: a line on the collapsed bar, or a banner card below it. */
   messageNotice: MessageNotice;
+  /** How long the panel opened for new messages stays before it closes by itself (MESSAGE_PANEL_SECONDS). */
+  messagePanelSeconds: number;
   expandTrigger: ExpandTrigger;
   /** Pointer rest time (ms) before a hover opens the island. */
   hoverExpandDelayMs: number;

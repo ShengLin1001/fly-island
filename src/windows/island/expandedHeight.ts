@@ -8,6 +8,8 @@ import type { IslandPage } from "./types";
 
 // Tall enough for about four shelf rows before the list scrolls.
 const SHELF_EXPANDED_ISLAND_HEIGHT = 430;
+// The island around the new-messages rows: top padding, header and gap (66) and bottom padding (20).
+const MESSAGE_ARRIVALS_CHROME_HEIGHT = 86;
 // Header, direction bar, a few lines of source, the result and the action row.
 const TRANSLATION_EXPANDED_ISLAND_HEIGHT = 420;
 
@@ -27,6 +29,8 @@ type ExpandedHeightInput = {
   agentUsageLines: number;
   /** An alert's one-session card instead: the height its row measured, without the usage line. */
   agentAlertRowHeight?: number;
+  /** The Messages page showing only new messages (roadmap C11): the height its rows measured. */
+  messageArrivalsHeight?: number;
   /** The template of the open plugin page; null when it is not known (yet). */
   pluginTemplate?: PluginViewTemplate | null;
   /** Rows the open plugin list shows (items, group titles, search box). */
@@ -54,6 +58,7 @@ export function getExpandedIslandHeight({
   agentSessionView = "list",
   agentUsageLines,
   agentAlertRowHeight,
+  messageArrivalsHeight,
   pluginTemplate,
   pluginListRows,
   pluginWebviewHeight,
@@ -94,5 +99,7 @@ export function getExpandedIslandHeight({
           : getAgentPageExpandedHeight(agentVisibleRows, agentUsageLines, agentSessionView)
       : page === "clipboard"
         ? getClipboardExpandedHeight(clipboardVisibleRows)
-        : Math.min(messagePanelHeight(messageSource, isReadingMail), maxPanelHeight);
+        : messageArrivalsHeight !== undefined
+          ? Math.min(MESSAGE_ARRIVALS_CHROME_HEIGHT + messageArrivalsHeight, maxPanelHeight)
+          : Math.min(messagePanelHeight(messageSource, isReadingMail), maxPanelHeight);
 }

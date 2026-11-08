@@ -7,6 +7,7 @@ import { useLevelPopup } from "../../features/system-levels/useLevelPopup";
 import { useDeviceAlert } from "../../features/device-events/useDeviceAlert";
 import { usePluginPermissionPrompts } from "../../features/plugins/usePluginPermissionPrompts";
 import type { IslandSettings } from "../../features/appearance/types";
+import { useState } from "react";
 import { useLatestMessagePreview } from "./useLatestMessagePreview";
 import type { IslandMode } from "./types";
 
@@ -16,8 +17,10 @@ import type { IslandMode } from "./types";
  * permission questions.
  */
 export function useIslandNotices(settings: IslandSettings, { mode, isTucked, quiet }: { mode: IslandMode; isTucked: boolean; quiet: boolean }) {
+  // The panel opened for new messages keeps taking them while it shows (useIslandMessagePanel).
+  const [messagePanelOpen, setMessagePanelOpen] = useState(false);
   // A tucked island still takes message previews when it will slide out to show them.
-  const canPreviewMessages = !quiet && mode === "collapsed" && (!isTucked || settings.revealOnMessage);
+  const canPreviewMessages = !quiet && ((mode === "collapsed" && (!isTucked || settings.revealOnMessage)) || messagePanelOpen);
   const qqNotifications = useQQNotifications(canPreviewMessages);
   const wechatReminders = useWeChatReminders(canPreviewMessages);
   const qqMail = useMail(canPreviewMessages);
@@ -31,6 +34,6 @@ export function useIslandNotices(settings: IslandSettings, { mode, isTucked, qui
     qqNotifications.preview || wechatReminders.previewReceivedAt !== null || qqMail.preview || pluginNotifications.notification,
   );
   const preview = useLatestMessagePreview(qqNotifications, wechatReminders, qqMail, pluginNotifications);
-  return { qqNotifications, wechatReminders, qqMail, pluginNotifications, preview, deviceUse, levelPopup, deviceAlert, permissionPrompts, hasMessagePreview };
+  return { qqNotifications, wechatReminders, qqMail, pluginNotifications, preview, setMessagePanelOpen, deviceUse, levelPopup, deviceAlert, permissionPrompts, hasMessagePreview };
 }
 

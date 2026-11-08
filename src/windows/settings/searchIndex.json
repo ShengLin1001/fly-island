@@ -975,7 +975,8 @@
         "title": "提示方式",
         "options": [
           "一行预览",
-          "横幅"
+          "横幅",
+          "展开面板"
         ]
       },
       "en": {
@@ -983,7 +984,8 @@
         "title": "Show as",
         "options": [
           "One line",
-          "Banner"
+          "Banner",
+          "Open panel"
         ]
       }
     },

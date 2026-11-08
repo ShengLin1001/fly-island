@@ -106,9 +106,10 @@ export function useIslandBanner({ messageNotice, notices, mode, isTucked, quiet,
     banner,
     bannerRef,
     /** What the collapsed bar shows in place of its summary. */
-    barPreview: toBanner ? null : preview,
-    /** The bar shows a message line (as `hasMessagePreview` without banners). */
-    hasLinePreview: usesBanner ? preview !== null && !toBanner : notices.hasMessagePreview,
+    // The panel (useIslandMessagePanel) takes every source, WeChat too, so the bar shows none.
+    barPreview: toBanner || messageNotice === "panel" ? null : preview,
+    /** The bar shows a message line (as `hasMessagePreview` with neither banners nor the panel). */
+    hasLinePreview: messageNotice === "panel" ? false : usesBanner ? preview !== null && !toBanner : notices.hasMessagePreview,
     showing,
     open,
     close,
