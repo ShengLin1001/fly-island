@@ -38,6 +38,7 @@ function New-Item-Row($task) {
     if (Get-Field $task 'lane') { $parts += "lane $(Get-Field $task 'lane')" }
     if (Get-Field $task 'claimed') { $parts += Get-Field $task 'claimed' }
     if ($task.stale) { $parts += "! $($task.stale)" }
+    if (@($task.blockedBy).Count -gt 0) { $parts += "$(Text '\u7b49') $(@($task.blockedBy) -join ', ')" }
     $row = @{
         id = "task-$(Get-Field $task 'id')"
         title = "$(Get-Field $task 'id')  $(Get-Field $task 'title')"
@@ -49,21 +50,22 @@ function New-Item-Row($task) {
 }
 
 function Send-Model([bool]$Loading = $false) {
-    $waiting = @($script:Tasks | Where-Object { $_.status -eq (Text '\u5f85\u7528\u6237\u786e\u8ba4') })
+    # needsUser: waiting for the user's answer, or work only the user can do (needs: user).
+    $waiting = @($script:Tasks | Where-Object { $_.needsUser })
     $stale = @($script:Tasks | Where-Object { $_.stale })
     $active = @($script:Tasks | Where-Object { $_.status -eq (Text '\u8fdb\u884c\u4e2d') -and -not $_.stale })
-    $todo = @($script:Tasks | Where-Object { $_.status -eq (Text '\u5f85\u505a') })
+    $todo = @($script:Tasks | Where-Object { $_.status -eq (Text '\u5f85\u505a') -and -not $_.needsUser })
 
     $status = if ($waiting.Count -gt 0) { "$(Text '\u4efb\u52a1\u5f85\u5b9a') $($waiting.Count)" } else { '' }
     if ($status -ne $script:ShownStatus) {
         $script:ShownStatus = $status
-        [void](Invoke-FocusdMethod 'status.update' @{ itemId = 'waiting'; text = $status; tone = 'warning'; tooltip = (Text '\u6709\u4efb\u52a1\u7b49\u4f60\u786e\u8ba4') })
+        [void](Invoke-FocusdMethod 'status.update' @{ itemId = 'waiting'; text = $status; tone = 'warning'; tooltip = (Text '\u6709\u4efb\u52a1\u9700\u8981\u4f60') })
     }
     if (-not $script:CanShow -or -not $script:Visible) { return }
 
     $groups = @()
     foreach ($group in @(
-        @{ title = (Text '\u7b49\u4f60\u786e\u8ba4'); list = $waiting },
+        @{ title = (Text '\u9700\u8981\u4f60'); list = $waiting },
         @{ title = (Text '\u8ba4\u9886\u5df2\u5931\u6548'); list = $stale },
         @{ title = (Text '\u8fdb\u884c\u4e2d'); list = $active },
         @{ title = (Text '\u5f85\u505a'); list = $todo }

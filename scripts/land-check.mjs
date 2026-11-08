@@ -131,6 +131,8 @@ function main() {
     console.error(`[land-check] remove the Claude attribution lines from: ${attributed.join("; ")}`);
     return 1;
   }
+  // Tasks marked done must name real commits; the lane's open claims get a reminder.
+  if (run("node scripts/tasks/tasks.mjs landing") !== 0) return 1;
   const files = changedFiles();
   const { frontend, rust } = checksFor(files);
   const tree = cleanTree();
