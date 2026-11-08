@@ -23,6 +23,12 @@ export type MessagesText = {
   badge: (count: number, wechat: boolean) => string;
   label: (text: string) => string;
   qqPreview: (title: string, body: string) => string;
+  /** The banner card below the collapsed island (roadmap C10). */
+  banner: {
+    more: (count: number) => string;
+    close: string;
+    actions: string;
+  };
 };
 
 export const zhCN: MessagesText = {
@@ -50,6 +56,11 @@ export const zhCN: MessagesText = {
   badge: (count, wechat) => `QQ ${count} 条通知${wechat ? "，微信有新提醒" : ""}`,
   label: (text) => `消息：${text}`,
   qqPreview: (title, body) => `${title}：${body}`,
+  banner: {
+    more: (count) => `另有 ${count} 条`,
+    close: "关闭通知",
+    actions: "通知操作",
+  },
 };
 
 export const en: MessagesText = {
@@ -77,4 +88,9 @@ export const en: MessagesText = {
   badge: (count, wechat) => `${count} QQ notification${count === 1 ? "" : "s"}${wechat ? ", new WeChat reminder" : ""}`,
   label: (text) => `Messages: ${text}`,
   qqPreview: (title, body) => `${title}: ${body}`,
+  banner: {
+    more: (count) => `${count} more`,
+    close: "Dismiss notification",
+    actions: "Notification actions",
+  },
 };

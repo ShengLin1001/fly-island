@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton";
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
-import type { IslandSettings } from "../../features/appearance/types";
+import type { IslandSettings, MessageNotice } from "../../features/appearance/types";
 import { MailAccountList } from "../../features/messages/mail/MailAccountList";
 import { MailConnectForm } from "../../features/messages/mail/MailConnectForm";
 import { MAX_MAIL_ACCOUNTS } from "../../features/messages/mail/mailAccounts";
@@ -15,8 +16,9 @@ import { useTranslation } from "../../i18n";
 import "./MessagesSettingsPage.css";
 
 /**
- * Messages: QQ, WeChat and Mail on one page (they were three). QQ and WeChat have a receive
- * switch each; Mail its module switch, the mailboxes, and the form that adds or re-authorizes one.
+ * Messages: how new messages show, then QQ, WeChat and Mail on one page (they were three). QQ and
+ * WeChat have a receive switch each; Mail its module switch, the mailboxes, and the form that adds
+ * or re-authorizes one.
  */
 export function MessagesSettingsPage({
   settings,
@@ -34,6 +36,19 @@ export function MessagesSettingsPage({
 
   return (
     <>
+      <SettingsGroup title={labels.noticeTitle} footer={labels.noticeHint}>
+        <SettingsRow
+          title={labels.noticeLabel}
+          control={
+            <SettingsChoice<MessageNotice>
+              value={settings.messageNotice}
+              ariaLabel={labels.noticeLabel}
+              options={[{ value: "line", label: labels.noticeLine }, { value: "banner", label: labels.noticeBanner }]}
+              onChange={(messageNotice) => onSettingsChange({ ...settings, messageNotice })}
+            />
+          }
+        />
+      </SettingsGroup>
       <QQGroup controller={qqNotifications} title={labels.qqTitle} hint={labels.qqHint} />
       <SettingsGroup title={labels.wechatTitle} footer={<Problem error={wechatReminders.actionError || wechatReminders.snapshot.error} hint={labels.wechatHint} />}>
         <SettingsToggleRow

@@ -50,6 +50,7 @@
 | `island-position-cleared`（无载荷：岛屿跟随鼠标或前台窗口换了显示器，拖动保存的位置作废，主窗口清掉 `focusd-island-position`） | `island/follow.rs` | 主窗口 |
 | `island-top-attachment-changed`（载荷为 `bool`：岛屿是否贴住所在显示器顶边） | `island/top_edge.rs` | 广播（通过主窗口对象调用 `emit`） |
 | `island-hover-changed`（载荷为 `bool`：光标是否在岛屿形状内，供悬停展开使用） | `island/passthrough.rs` | 广播（通过主窗口对象调用 `emit`） |
+| `island-banner-hover-changed`（载荷为 `bool`：光标是否在新消息横幅上；只在横幅用 `set_island_banner_rect` 交出矩形期间有意义，供横幅悬停暂停计时） | `island/passthrough.rs`（常量在 `island/banner_hit.rs`） | 广播（通过主窗口对象调用 `emit`） |
 | `island-cursor-moved`（载荷 `{ x, y }`：光标在主窗口 CSS 像素中的位置，窗口外也有；只在 `set_island_cursor_tracking(true)` 后、光标移动时发，约 28 次/秒，供中心图案的眼睛跟随） | `island/passthrough.rs` | 广播（通过主窗口对象调用 `emit`） |
 | `foreground-fullscreen-changed`（载荷为 `{ active, onIslandMonitor }`：前台是否有全屏程序、是否占住岛所在的显示器，供游戏模式使用） | `system/fullscreen.rs` | 广播 |
 | `clipboard-history-changed` | `clipboard_history/service.rs`（常量在 `mod.rs`） | 广播 |
@@ -92,6 +93,7 @@
 - SSH 远程安装/修复与岛上审批（2026-11-08 起，PR #10）：应用数据目录下的 `ssh/<Host>.conf`（每次连接从 `ssh -G` 重写，岛屿自己的，不是用户的配置）和 `agent-notifications/`（钩子把每条等待、压缩通知存成一个文件 `<provider>-<时间>-<随机数>.json`，同一会话以最新的为准，超过一天删除；旧版本的单个 `agent-<provider>-notification.json` 仍然读取）。远程电脑家目录下：`~/.focusd-island/agent-notifications/`（同上，钩子以 `umask 077` 写入）、`~/.focusd-island/approval-port`（`<远程转发端口> <本机审批端口> <节点名> <令牌>`，连接打开期间存在，权限 600），以及 `~/.claude/settings.json` 里的岛屿钩子（命令里带 `focusd-agent-` 签名，安装/修复只替换这些条目；审批钩子从端口文件读令牌，`settings.json` 里不写令牌）。审批端点多了请求头 `X-FocuSD-Remote: <Host>`：带它的请求要用该主机的令牌（`SHA-256("focusd-remote:<Host>:<岛屿令牌>")` 的十六进制），卡片的 `ApprovalRequest.remoteHost` 为该主机名，本机请求没有这个字段。Tauri 命令 `install_agent_status_hooks` 与 `set_reply_marker` 的返回值多了 `remotes: { host, error }[]`。
 - 回复状态标记（2026-11-08 起换位置）：写在 Claude 配置目录（`CLAUDE_CONFIG_DIR`，默认 `~/.claude`）下的 `rules/focusd-island-reply-marker.md`，块标记 `<!-- focusd-island: reply marker v2 -->`；关掉时只删除含这个标记的文件。v1 写在 `CLAUDE.md` 里的块在打开或关掉时移除，`CLAUDE.md` 的其他内容不动；软链文件一律不写。
 - Agent 页排列（2026-11-08 起）：设置项 `agentSessionSort`（`status` / `recent` / `firstSeen`，默认 `status`；旧数据没有这个字段时按 `status`，会改变升级前的顺序）、`agentSessionGroup`（`computer` / `project` / `none`，默认 `computer`）；`agentHostDisplay` 的默认值改为 `icon`（已保存的值不变）。
+- 新消息横幅（2026-11-09 起，C10 / issue #13）：设置项 `messageNotice`（`line` / `banner`，默认 `line`，其他值按 `line` 读）；Tauri 命令 `set_island_banner_rect(rect)`（`rect` 为 `{ x, y, width, height }`，主窗口 CSS 像素，`null` 清掉；只在收起且没贴边时生效）；事件 `island-banner-hover-changed` 见上表。
 - VS Code 扩展（2026-11-06 起）：扩展 ID `tixxin.focusd-island`（源码 `packages/vscode-extension/`），岛屿打开 `<编辑器 scheme>://tixxin.focusd-island/focus?pids=<进程号,…>&title=<会话标题>`；发布后再改格式时，岛屿和扩展都要兼容旧格式，见 [docs/agent-status-hooks.md](../agent-status-hooks.md)。
 
 总览见 [overview.md](overview.md)。

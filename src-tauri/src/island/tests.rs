@@ -275,3 +275,26 @@ fn the_island_follows_only_when_asked_and_only_while_collapsed() {
     assert!(!may_move(collapsed));
     assert!(!may_move(state(IslandMode::Expanded, 1.0, DEFAULT_EXPANDED_ISLAND_HEIGHT)), "an open panel stays under the pointer");
 }
+
+#[test]
+fn banner_rect_takes_its_own_area_only() {
+    use super::banner_hit::{banner_rect, set_island_banner_rect, BannerRect};
+
+    let rect = BannerRect { x: 250.0, y: 42.0, width: 320.0, height: 72.0 };
+    assert!(rect.contains(250.0, 42.0));
+    assert!(rect.contains(410.0, 80.0));
+    assert!(rect.contains(570.0, 114.0));
+    assert!(!rect.contains(249.0, 80.0));
+    assert!(!rect.contains(410.0, 115.0));
+
+    set_island_banner_rect(Some(rect));
+    assert_eq!(banner_rect(), Some(rect));
+    // An empty or broken rectangle from the page clears it rather than taking clicks nowhere.
+    set_island_banner_rect(Some(BannerRect { width: 0.0, ..rect }));
+    assert_eq!(banner_rect(), None);
+    set_island_banner_rect(Some(BannerRect { x: f64::NAN, ..rect }));
+    assert_eq!(banner_rect(), None);
+    set_island_banner_rect(Some(rect));
+    set_island_banner_rect(None);
+    assert_eq!(banner_rect(), None);
+}

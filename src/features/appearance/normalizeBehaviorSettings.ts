@@ -39,6 +39,7 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
       ? clamp(Math.round(settings.autoTuckRetractDelayMs), MIN_AUTO_TUCK_RETRACT_DELAY_MS, MAX_AUTO_TUCK_RETRACT_DELAY_MS)
       : DEFAULT_SETTINGS.autoTuckRetractDelayMs,
     revealOnMessage: settings?.revealOnMessage !== false,
+    messageNotice: settings?.messageNotice === "banner" ? "banner" : "line",
     expandTrigger: settings?.expandTrigger === "hover" ? "hover" : "click",
     hoverExpandDelayMs: typeof settings?.hoverExpandDelayMs === "number" && Number.isFinite(settings.hoverExpandDelayMs)
       ? clamp(Math.round(settings.hoverExpandDelayMs), MIN_HOVER_EXPAND_DELAY_MS, MAX_HOVER_EXPAND_DELAY_MS)

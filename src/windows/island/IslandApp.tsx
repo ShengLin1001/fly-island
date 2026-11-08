@@ -38,6 +38,8 @@ import { useIslandHover } from "./useIslandHover";
 import { useIslandTranslation } from "./useIslandTranslation";
 import { usePluginPages } from "./usePluginPages";
 import { useMessageView } from "./useMessageView";
+import { useIslandBanner } from "./useIslandBanner";
+import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
 import { useTrayLanguage } from "./useTrayLanguage";
@@ -63,6 +65,10 @@ export function IslandApp() {
   const game = useGameMode(settings, { mode, isTucked, collapseIsland, tuckIsland, revealIsland });
   const notices = useIslandNotices(settings, { mode, isTucked, quiet: game.quiet });
   const { qqNotifications, wechatReminders, qqMail, pluginNotifications, permissionPrompts, hasMessagePreview } = notices;
+  const { messageSource, setMessageSource, openMessages } = useMessageView(qqMail.closeReader, openIslandPage);
+  const banner = useIslandBanner({ messageNotice: settings.messageNotice, notices, mode, isTucked, quiet: game.quiet, onOpenMessages: openMessages });
+  // A banner holds the island like a preview line does, but leaves the bar's summary in place.
+  const showsMessage = hasMessagePreview || banner.showing;
   const media = useMediaState(settings.musicEnabled);
   const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession, agentActivity, agentUsages } =
     useIslandAgents(settings);
@@ -87,20 +93,19 @@ export function IslandApp() {
       settings.todoEnabled ? todos : NO_TODOS,
       settings.todoEnabled ? activeTodoId : null,
       settings.todoEnabled ? settings : { ...settings, showIdleTodoCount: false },
-      mode !== "collapsed" || isTucked || !settings.showCollapsedText || hasMessagePreview,
+      mode !== "collapsed" || isTucked || !settings.showCollapsedText || banner.hasLinePreview,
       agentSession?.title ?? null,
       collapsedSlots,
-      hasMessagePreview || translationPeek !== null,
+      banner.hasLinePreview || translationPeek !== null,
     );
   useIslandTucking({
     settings,
     navigation,
-    hasMessagePreview,
+    hasMessagePreview: showsMessage,
     hasPermissionPrompt: permissionPrompts.current !== null,
     hasTranslationPeek: Boolean(translationPeek),
   });
 
-  const { messageSource, setMessageSource, openMessages } = useMessageView(qqMail.closeReader, openIslandPage);
 
   const clipboard = useClipboardHistory(toggleClipboardHistory);
   // Todos starting with a time ("15:00 周会") count down like meetings, with no calendar needed.
@@ -175,7 +180,7 @@ export function IslandApp() {
     settings,
     navigation,
     quiet: game.quiet,
-    hasMessagePreview,
+    hasMessagePreview: showsMessage,
     namesAgent: Boolean(agentSession),
     openEnabledPage,
   });
@@ -212,7 +217,7 @@ export function IslandApp() {
         qqNotifications={qqNotifications}
         wechatReminders={wechatReminders}
         pluginNotifications={pluginNotifications}
-        preview={notices.preview}
+        preview={banner.barPreview}
         onOpenMessages={openMessages}
         mode={mode}
         page={page}
@@ -283,6 +288,9 @@ export function IslandApp() {
           calendar={calendar}
         />
       </IslandShell>
+      {banner.banner && (
+        <MessageBanner banner={banner.banner} bannerRef={banner.bannerRef} onOpen={banner.open} onClose={banner.close} onAction={banner.runAction} />
+      )}
       <PluginContextMenus />
     </main>
   );

@@ -971,6 +971,25 @@
     {
       "page": "messages",
       "zh-CN": {
+        "group": "新消息提示",
+        "title": "提示方式",
+        "options": [
+          "一行预览",
+          "横幅"
+        ]
+      },
+      "en": {
+        "group": "New messages",
+        "title": "Show as",
+        "options": [
+          "One line",
+          "Banner"
+        ]
+      }
+    },
+    {
+      "page": "messages",
+      "zh-CN": {
         "group": "QQ 通知",
         "title": "接收 QQ 消息"
       },

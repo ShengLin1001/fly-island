@@ -158,3 +158,19 @@ export function listenIslandOutsideClick(handler: () => void) {
 export function setTrayLanguage(locale: string) {
   return invoke<void>("set_tray_language", { locale });
 }
+
+/** Mirrors BannerRect in src-tauri/src/island/banner_hit.rs: the stage window's CSS pixels. */
+export type IslandBannerRect = { x: number; y: number; width: number; height: number };
+
+/** Lets the message banner below the collapsed island take clicks (`null` once it is gone). */
+export function setIslandBannerRect(rect: IslandBannerRect | null) {
+  return invoke<void>("set_island_banner_rect", { rect });
+}
+
+// Mirrors ISLAND_BANNER_HOVER_CHANGED_EVENT in src-tauri/src/island/banner_hit.rs.
+export const ISLAND_BANNER_HOVER_CHANGED_EVENT = "island-banner-hover-changed";
+
+/** Calls `handler` whenever the cursor enters (`true`) or leaves (`false`) the message banner. */
+export function listenIslandBannerHover(handler: (inside: boolean) => void): Promise<UnlistenFn> {
+  return listen<boolean>(ISLAND_BANNER_HOVER_CHANGED_EVENT, ({ payload }) => handler(payload));
+}

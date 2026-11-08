@@ -10,8 +10,9 @@ use tauri::{Emitter, WebviewWindow};
 use windows::Win32::Foundation::HWND;
 
 use super::{
+    banner_hit::{banner_rect, ISLAND_BANNER_HOVER_CHANGED_EVENT},
     geometry::STAGE_WINDOW_WIDTH,
-    state::{read_window_state, CornerShape},
+    state::{read_window_state, CornerShape, IslandMode},
 };
 use crate::win32;
 
@@ -51,6 +52,7 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
     thread::spawn(move || {
         let mut ignoring_cursor = false;
         let mut was_inside = false;
+        let mut was_on_banner = false;
         let mut was_move_armed = false;
         // Asked once: every `window.hwnd()` is a round trip to the main event loop, which at
         // this loop's 83 Hz kept the main thread busy even with the cursor nowhere near. The
@@ -61,7 +63,8 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
 
         loop {
             let is_inside = hwnd.is_none_or(cursor_is_inside_island);
-            let should_ignore = !is_inside;
+            let is_on_banner = hwnd.is_some_and(cursor_is_on_banner);
+            let should_ignore = !is_inside && !is_on_banner;
 
             if should_ignore != ignoring_cursor
                 && window.set_ignore_cursor_events(should_ignore).is_ok()
@@ -72,6 +75,11 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
             if is_inside != was_inside {
                 was_inside = is_inside;
                 let _ = window.emit(ISLAND_HOVER_CHANGED_EVENT, is_inside);
+            }
+
+            if is_on_banner != was_on_banner {
+                was_on_banner = is_on_banner;
+                let _ = window.emit(ISLAND_BANNER_HOVER_CHANGED_EVENT, is_on_banner);
             }
 
             let is_move_armed =
@@ -107,6 +115,18 @@ fn cursor_in_window(hwnd: HWND) -> Option<CursorPoint> {
         x: round((cursor.x - window_rect.left) as f64 / physical_scale),
         y: round((cursor.y - window_rect.top) as f64 / physical_scale),
     })
+}
+
+/// Whether the cursor is on the message banner below the collapsed island (banner_hit.rs).
+fn cursor_is_on_banner(hwnd: HWND) -> bool {
+    let Some(rect) = banner_rect() else {
+        return false;
+    };
+    let state = read_window_state();
+    if !matches!(state.mode, IslandMode::Collapsed) || state.is_tucked {
+        return false;
+    }
+    cursor_in_window(hwnd).is_some_and(|point| rect.contains(point.x, point.y))
 }
 
 pub(super) fn cursor_is_inside_island(hwnd: HWND) -> bool {
