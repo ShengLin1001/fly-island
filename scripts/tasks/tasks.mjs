@@ -1,5 +1,5 @@
-// `pnpm tasks`: the task board kept in docs/tasks/ (open) and docs/tasks/archive/
-// (done or dropped), and claiming, finishing and handing over tasks. Rules and the
+// `pnpm tasks`: the task board kept in docs/tasks/<group>/ (open) and
+// docs/tasks/archive/<group>/ (done or dropped), and claiming, finishing and handing over tasks. Rules and the
 // group table: docs/tasks/README.md.
 //
 //   pnpm tasks [--all] [--json]   the board (--all: closed ones too)
@@ -24,7 +24,7 @@ import {
 } from "./taskFile.mjs";
 import { landingProblems, laneReminders } from "./taskLanding.mjs";
 import {
-  TASKS_DIR, checkTasks, findTask, git, laneOwners, load, nowText, readAll, readGroups, save, staleOf, todayText, tryGit,
+  checkTasks, findTask, git, laneOwners, load, nowText, readAll, readGroups, save, staleOf, taskPath, todayText, tryGit,
 } from "./taskRepo.mjs";
 
 export { checkTasks } from "./taskRepo.mjs";
@@ -127,7 +127,7 @@ async function claim(root, main, options, added = []) {
   await recordOwner(main, root);
   if (taking.length === 0) return 0;
   const verb = added.length ? "adds and takes" : "takes";
-  return commitAndLand(taking.map((id) => path.join(TASKS_DIR, `${id}.md`)), `docs(tasks): ${owner} ${verb} ${taking.join(", ")}`, options);
+  return commitAndLand(taking.map((id) => taskPath(id, false)), `docs(tasks): ${owner} ${verb} ${taking.join(", ")}`, options);
 }
 
 function add(root, main, options) {
@@ -145,7 +145,7 @@ function add(root, main, options) {
   if (options.claim) syncedLane(root, "新建并认领");
   save(root, { fields, body: options.body ? `## 说明\n\n${options.body}` : "" });
   if (options.claim) return claim(root, main, { ...options, _: [id] }, [id]);
-  console.log(`已建 ${TASKS_DIR}/${id}.md；和其他改动一起提交（马上要做就用 --claim，一次提交并 land）`);
+  console.log(`已建 ${taskPath(id, false)}；和其他改动一起提交（马上要做就用 --claim，一次提交并 land）`);
   return 0;
 }
 
@@ -190,7 +190,7 @@ function release(root, options) {
   let next = unclaimed(task, "待做");
   if (options.reason) next = { ...next, body: addLine(next.body, "交接", `${nowText()} ${task.fields.owner}：放回，${options.reason}`) };
   save(root, next);
-  return commitAndLand([path.join(TASKS_DIR, `${id}.md`)], `docs(tasks): ${task.fields.owner} gives back ${id}`, options);
+  return commitAndLand([taskPath(id, false)], `docs(tasks): ${task.fields.owner} gives back ${id}`, options);
 }
 
 function conflicts(root) {

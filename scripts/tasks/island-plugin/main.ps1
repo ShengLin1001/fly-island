@@ -133,8 +133,11 @@ while ($true) {
             }
             'view.action' {
                 $id = ([string]$message.params.itemId) -replace '^task-', ''
-                $file = Join-Path $script:Repo "docs\tasks\$id.md"
-                if ($id -match '^[A-Za-z0-9.]+$' -and (Test-Path $file)) { Invoke-Item $file }
+                if ($id -match '^[A-Z][A-Za-z0-9.]*$') {
+                    # Open tasks sit in the folder of their group, the id's first letter.
+                    $file = Join-Path $script:Repo "docs\tasks\$($id.Substring(0, 1))\$id.md"
+                    if (Test-Path $file) { Invoke-Item $file }
+                }
             }
             'command' {
                 if ($message.params.id -eq 'refresh') { Update-Tasks }

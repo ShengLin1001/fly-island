@@ -1,6 +1,6 @@
 # Agent 岛上交互：音效与实测记录
 
-方案见 [agent-island-interaction.md](agent-island-interaction.md)。任务和进度在 [B6](../tasks/B6.md) 和它的子任务里（`pnpm tasks show B6`），这里只留音效的选型和实测得出的结论；实测结论变了，同步修改方案文档里受影响的部分。
+方案见 [agent-island-interaction.md](agent-island-interaction.md)。任务和进度在 [B6](../tasks/B/B6.md) 和它的子任务里（`pnpm tasks show B6`），这里只留音效的选型和实测得出的结论；实测结论变了，同步修改方案文档里受影响的部分。
 
 ## 音效
 

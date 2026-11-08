@@ -10,8 +10,9 @@
 
 ## 目录
 
-- `docs/tasks/<编号>.md`：没结束的任务（待做 / 进行中 / 待用户确认）。
-- `docs/tasks/archive/<编号>.md`：已完成和不做的。`pnpm tasks done` / `pnpm tasks drop` 会自动移过去，不要手动挪。
+- `docs/tasks/<分组>/<编号>.md`：没结束的任务（待做 / 进行中 / 待用户确认），例如 `docs/tasks/B/B6.md`。
+- `docs/tasks/archive/<分组>/<编号>.md`：已完成和不做的。`pnpm tasks done` / `pnpm tasks drop` 会自动移过去，不要手动挪。
+- 分组文件夹就是编号的首字母（见下一节），`pnpm tasks add` 和 `pnpm tasks done` 会自动放进对应的文件夹；放错了 `pnpm check:tasks` 会报错。
 - 不删任务文件。决定不做就 `drop` 并写原因，以后有人想做时能看到当初为什么没做。
 
 ## 分组
@@ -86,7 +87,7 @@ land 时会自动检查（`scripts/land-check.mjs` 调 `pnpm tasks landing`）�
 
 ## 校验
 
-`pnpm check:tasks`（在 `pnpm check` 里）检查：编号格式和分组、文件名、未知字段、状态和所在目录是否对应、待做没有负责人、依赖和父任务存在、已完成有日期和提交、不做有原因、正文标题和顺序、没有重复标题、没有相对链接。
+`pnpm check:tasks`（在 `pnpm check` 里）检查：编号格式和分组、文件名、所在的分组文件夹、未知字段、状态和所在目录是否对应、待做没有负责人、依赖和父任务存在、已完成有日期和提交、不做有原因、正文标题和顺序、没有重复标题、没有相对链接。
 
 ## 参考
 

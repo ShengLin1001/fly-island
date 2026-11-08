@@ -118,15 +118,20 @@ test("check reports each broken rule", () => {
   assert.ok(problems([task("F1")], [done("F1"), true]).some((problem) => /used twice/.test(problem)));
 });
 
-test("check reads both folders and the README of a repo", () => {
+test("check reads the group folders of both trees and the README of a repo", () => {
   const root = mkdtempSync(path.join(tmpdir(), "tasks-"));
-  mkdirSync(path.join(root, "docs/tasks/archive"), { recursive: true });
+  for (const dir of ["docs/tasks/F", "docs/tasks/archive/A"]) mkdirSync(path.join(root, dir), { recursive: true });
   writeFileSync(path.join(root, "docs/tasks/README.md"), README);
-  writeFileSync(path.join(root, "docs/tasks/F1.md"), TEXT);
-  writeFileSync(path.join(root, "docs/tasks/archive/A1.md"), formatTask(done("A1")));
+  writeFileSync(path.join(root, "docs/tasks/F/F1.md"), TEXT);
+  writeFileSync(path.join(root, "docs/tasks/archive/A/A1.md"), formatTask(done("A1")));
   assert.deepEqual(checkTasks(root), []);
-  writeFileSync(path.join(root, "docs/tasks/F2.md"), "oops");
-  assert.equal(checkTasks(root).length, 1);
+  writeFileSync(path.join(root, "docs/tasks/F/F2.md"), "oops");
+  assert.deepEqual(checkTasks(root), ["docs/tasks/F/F2.md: missing the --- front matter block"]);
+  writeFileSync(path.join(root, "docs/tasks/F/F2.md"), formatTask(task("A2")));
+  assert.ok(checkTasks(root).some((problem) => /A2 .*file name|belongs in the A\/ folder/.test(problem)));
+  writeFileSync(path.join(root, "docs/tasks/F/F2.md"), formatTask(task("F2")));
+  writeFileSync(path.join(root, "docs/tasks/F3.md"), formatTask(task("F3")));
+  assert.deepEqual(checkTasks(root), ["docs/tasks/F3.md: belongs in the F/ folder of docs/tasks"]);
 });
 
 const stale = (t) => (t.fields.owner === "gone" ? "lane 3 已不存在" : null);

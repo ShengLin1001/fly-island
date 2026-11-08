@@ -1,14 +1,20 @@
-// Task files on disk: open ones in docs/tasks/, closed ones in docs/tasks/archive/,
-// the group table in docs/tasks/README.md; and whether a claim still holds.
+// Task files on disk: open ones in docs/tasks/<group>/, closed ones in
+// docs/tasks/archive/<group>/ (the group is the id's first letter), the group table in
+// docs/tasks/README.md; and whether a claim still holds.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { CLOSED_STATUSES, formatTask, parseTask } from "./taskFile.mjs";
+import { CLOSED_STATUSES, formatTask, groupOf, parseTask } from "./taskFile.mjs";
 import { checkEntries, parseGroups } from "./taskRules.mjs";
 
 export const TASKS_DIR = "docs/tasks";
 export const ARCHIVE_DIR = "docs/tasks/archive";
 const README = "docs/tasks/README.md";
+
+/** Where task `id` belongs, relative to the repo: docs/tasks/F/F15.md, or under archive/ once closed. */
+export function taskPath(id, closed) {
+  return `${closed ? ARCHIVE_DIR : TASKS_DIR}/${groupOf(id)}/${id}.md`;
+}
 const STALE_MS = 24 * 60 * 60 * 1000;
 
 export function git(args, options = {}) {
@@ -23,24 +29,32 @@ export function tryGit(args, cwd) {
   }
 }
 
-function readDir(dir, archived) {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".md") && name !== "README.md")
+function readFiles(root, dir, archived, folder) {
+  const full = path.join(root, dir);
+  return readdirSync(full)
+    .filter((name) => name.endsWith(".md") && !(folder === "" && name === "README.md"))
     .map((name) => {
-      const file = path.join(dir, name);
+      const file = `${dir}/${name}`;
       const id = name.slice(0, -3);
       try {
-        return { file, id, archived, task: parseTask(readFileSync(file, "utf8")) };
+        return { file, id, archived, folder, task: parseTask(readFileSync(path.join(root, file), "utf8")) };
       } catch (error) {
-        return { file, id, archived, error: error.message };
+        return { file, id, archived, folder, error: error.message };
       }
     });
 }
 
-/** Every task file as `{ file, id, archived, task?, error? }`; open ones first. */
+/** Task files in `dir` and its group folders; files directly in `dir` come back with folder "" (check flags them). */
+function readDir(root, dir, archived) {
+  if (!existsSync(path.join(root, dir))) return [];
+  const folders = readdirSync(path.join(root, dir))
+    .filter((name) => name !== "archive" && statSync(path.join(root, dir, name)).isDirectory());
+  return [readFiles(root, dir, archived, ""), ...folders.map((folder) => readFiles(root, `${dir}/${folder}`, archived, folder))].flat();
+}
+
+/** Every task file as `{ file, id, archived, folder, task?, error? }` (file relative to the repo); open ones first. */
 export function readEntries(root) {
-  return [...readDir(path.join(root, TASKS_DIR), false), ...readDir(path.join(root, ARCHIVE_DIR), true)];
+  return [...readDir(root, TASKS_DIR, false), ...readDir(root, ARCHIVE_DIR, true)];
 }
 
 /** Every task that parses. */
@@ -58,10 +72,10 @@ export function checkTasks(root) {
   return checkEntries(readEntries(root), readGroups(root));
 }
 
-/** Where task `id` is now, or null. */
+/** Where task `id` is now (absolute), or null. */
 export function findTask(root, id) {
-  for (const dir of [TASKS_DIR, ARCHIVE_DIR]) {
-    const file = path.join(root, dir, `${id}.md`);
+  for (const closed of [false, true]) {
+    const file = path.join(root, taskPath(id, closed));
     if (existsSync(file)) return file;
   }
   return null;
@@ -75,8 +89,7 @@ export function load(root, id) {
 
 /** Writes `task` to the folder its status belongs in, moving it (with git when tracked) if it was in the other. */
 export function save(root, task) {
-  const dir = CLOSED_STATUSES.includes(task.fields.status) ? ARCHIVE_DIR : TASKS_DIR;
-  const target = path.join(root, dir, `${task.fields.id}.md`);
+  const target = path.join(root, taskPath(task.fields.id, CLOSED_STATUSES.includes(task.fields.status)));
   const current = findTask(root, task.fields.id);
   mkdirSync(path.dirname(target), { recursive: true });
   if (current && path.resolve(current) !== path.resolve(target)) {
@@ -91,13 +104,6 @@ export function save(root, task) {
   return path.relative(root, target).replaceAll("\\", "/");
 }
 
-/** Removes task `id`'s file (a task added by mistake); tracked files go through git rm. */
-export function remove(root, id) {
-  const file = findTask(root, id);
-  if (!file) return;
-  const relative = path.relative(root, file).replaceAll("\\", "/");
-  if (tryGit(["-C", root, "rm", "-q", "-f", relative]) === null) unlinkSync(file);
-}
 
 export function nowText(date = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");

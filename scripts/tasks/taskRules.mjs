@@ -24,9 +24,10 @@ const RELATIVE_LINK = /\]\((?!https?:|\/|#|mailto:)[^)]*\)/;
 
 /**
  * Problems with one task; empty when it is fine.
- * `context`: { fileId, archived, tasks: Map id → task, groups: Set of codes, children: Map id → child tasks }.
+ * `context`: { fileId, archived, folder (the group folder it is in; undefined to skip), tasks: Map id → task,
+ * groups: Set of codes, children: Map id → child tasks }.
  */
-export function taskProblems(task, { fileId, archived, tasks, groups, children }) {
+export function taskProblems(task, { fileId, archived, folder, tasks, groups, children }) {
   const { fields, body } = task;
   const problems = [];
   const closed = CLOSED_STATUSES.includes(fields.status);
@@ -38,6 +39,9 @@ export function taskProblems(task, { fileId, archived, tasks, groups, children }
   if (!STATUSES.includes(fields.status)) problems.push(`status "${fields.status}" is not one of ${STATUSES.join(" / ")}`);
   if (closed && !archived) problems.push(`status ${fields.status} belongs in docs/tasks/archive/`);
   if (!closed && archived) problems.push(`status ${fields.status} is open; move it out of archive/`);
+  if (folder !== undefined && isTaskId(fields.id ?? "") && folder !== groupOf(fields.id)) {
+    problems.push(`belongs in the ${groupOf(fields.id)}/ folder of ${archived ? "docs/tasks/archive" : "docs/tasks"}`);
+  }
   const isParent = (children.get(fields.id) ?? []).length > 0;
   if (fields.status === "进行中" && !fields.owner && !isParent) problems.push("in progress without an owner");
   if ((fields.status === "待做" || closed) && (fields.lane || fields.claimed)) problems.push(`status ${fields.status} keeps a lane or claim time`);
@@ -76,7 +80,7 @@ function bodyProblems(body, title) {
 export function checkEntries(entries, groups) {
   const tasks = new Map();
   const problems = [];
-  const label = (entry) => `${entry.archived ? "archive/" : ""}${entry.id}.md`;
+  const label = (entry) => entry.file ?? `${entry.archived ? "archive/" : ""}${entry.id}.md`;
   for (const entry of entries) {
     if (entry.error) problems.push(`${label(entry)}: ${entry.error}`);
     else if (tasks.has(entry.id)) problems.push(`${label(entry)}: id ${entry.id} is used twice`);
@@ -90,7 +94,7 @@ export function checkEntries(entries, groups) {
   if (codes.size === 0) problems.push("README.md: no group table under ## 分组");
   for (const entry of entries) {
     if (!entry.task) continue;
-    const context = { fileId: entry.id, archived: entry.archived, tasks, groups: codes, children };
+    const context = { fileId: entry.id, archived: entry.archived, folder: entry.folder, tasks, groups: codes, children };
     for (const problem of taskProblems(entry.task, context)) problems.push(`${label(entry)}: ${problem}`);
   }
   return problems;

@@ -4,7 +4,7 @@
 import path from "node:path";
 import { claimState, parseTask, sectionItems } from "./taskFile.mjs";
 import { commitRef } from "./taskRules.mjs";
-import { ARCHIVE_DIR, TASKS_DIR, readAll, tryGit } from "./taskRepo.mjs";
+import { TASKS_DIR, readAll, taskPath, tryGit } from "./taskRepo.mjs";
 
 function lines(text) {
   return (text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
@@ -12,8 +12,10 @@ function lines(text) {
 
 /** The status task `id` had on origin/main, or null when it did not exist there. */
 function statusOnMain(root, id) {
-  for (const dir of [TASKS_DIR, ARCHIVE_DIR]) {
-    const text = tryGit(["show", `origin/main:${dir}/${id}.md`], root);
+  // Before the group folders (2026-11-09) tasks sat directly in docs/tasks/ and archive/.
+  const paths = [taskPath(id, false), taskPath(id, true), `${TASKS_DIR}/${id}.md`, `${TASKS_DIR}/archive/${id}.md`];
+  for (const file of paths) {
+    const text = tryGit(["show", `origin/main:${file}`], root);
     if (text !== null) {
       try {
         return parseTask(text).fields.status;
