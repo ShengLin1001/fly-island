@@ -59,6 +59,10 @@ pub enum UsageSource {
     Magpie,
     /// Codex's rollout files (codex_usage.rs).
     Codex,
+    /// GLM's coding plan quota endpoint (plan_usage.rs).
+    Glm,
+    /// Kimi For Coding's usage endpoint (plan_usage.rs).
+    Kimi,
 }
 
 /// The snapshot claude-hud reads or writes, from its config in `claude_dir`

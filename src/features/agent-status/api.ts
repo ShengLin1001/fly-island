@@ -251,8 +251,8 @@ export type AgentUsage = {
   models: UsageWindow[];
   plan: string | null;
   /** Where the windows come from. Missing from builds before direct asking. */
-  source?: "hud" | "api" | "magpie" | "codex";
-  /** Why the last direct request to Anthropic failed; null when it is off or worked. */
+  source?: "hud" | "api" | "magpie" | "codex" | "glm" | "kimi";
+  /** Why the last direct request (to Anthropic, GLM or Kimi) failed; null when it is off or worked. */
   error?: AgentUsageError | null;
 };
 
@@ -282,6 +282,27 @@ export function getAgentUsage() {
 /** Codex's usage limits from its rollout files; null when none reports them. */
 export function getCodexUsage() {
   return invoke<AgentUsage | null>("get_codex_usage");
+}
+
+/** The coding plans whose usage the island asks for with an API key the user saved. */
+export type PlanProvider = "glm" | "kimi";
+
+/**
+ * GLM's or Kimi's coding plan usage, asked with the saved API key (answers are kept for a
+ * minute; `refresh` asks again unless it just did). Without a key: no windows, error noCredentials.
+ */
+export function getPlanUsage(provider: PlanProvider, refresh = false) {
+  return invoke<AgentUsage>("get_plan_usage", { provider, refresh });
+}
+
+/** Saves the API key in the Windows Credential Manager (empty removes it); whether one is saved now. */
+export function setPlanKey(provider: PlanProvider, key: string) {
+  return invoke<boolean>("set_plan_key", { provider, key });
+}
+
+/** Whether an API key is saved; the key itself never comes back. */
+export function hasPlanKey(provider: PlanProvider) {
+  return invoke<boolean>("has_plan_key", { provider });
 }
 
 export function getAgentHooksState() {

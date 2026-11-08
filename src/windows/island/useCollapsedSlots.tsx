@@ -13,7 +13,7 @@ import {
   type AgentActivity,
 } from "../../features/center-pattern";
 import { ClaudeUsageGauge } from "../../features/claude-usage/ClaudeUsageGauge";
-import { CLAUDE_USAGE_GAUGE_WIDTH } from "../../features/claude-usage/usageRing";
+import { CLAUDE_USAGE_GAUGE_WIDTH, shownUsageProviders, type UsageProvider } from "../../features/claude-usage/usageRing";
 import { useBuiltinPlugin } from "../../features/plugins/useBuiltinPlugin";
 import type { AgentSessionSummary } from "../../features/agent-status/api";
 import { SessionRing } from "../../features/session-ring/SessionRing";
@@ -49,6 +49,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const usage = useBuiltinPlugin(CLAUDE_USAGE_PLUGIN_ID);
   const sessionRing = useBuiltinPlugin(SESSION_RING_PLUGIN_ID);
   const showRemaining = usage.settings.show === "remaining";
+  const providers = useMemo(() => shownUsageProviders(usage.settings), [usage.settings]);
   const mood = usePetMood(agents, center.enabled);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
@@ -74,16 +75,17 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
         slots.agentCount = <SessionRing sessions={sessions} unseen={unseen} counts={counts} now={now} onOpen={onOpenAgents} />;
       }
     }
-    if (usage.enabled) {
-      slots.gauges = <UsageGaugeSlot showRemaining={showRemaining} />;
-      slots.sideWidth = CLAUDE_USAGE_GAUGE_WIDTH;
+    // One ring per agent switched on, in USAGE_PROVIDERS order; all off leaves the bar as it is.
+    if (usage.enabled && providers.length > 0) {
+      slots.gauges = <UsageGaugeSlot providers={providers} showRemaining={showRemaining} />;
+      slots.sideWidth = providers.length * CLAUDE_USAGE_GAUGE_WIDTH;
     }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
-  }, [center.enabled, usage.enabled, showRemaining, sessionRing.enabled, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
+  }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
 }
 
 /** Follows the native island hover here, so the slots above stay the same object. */
-function UsageGaugeSlot({ showRemaining }: { showRemaining: boolean }) {
+function UsageGaugeSlot({ providers, showRemaining }: { providers: readonly UsageProvider[]; showRemaining: boolean }) {
   const [hovered, setHovered] = useState(true);
   useEffect(() => {
     let cancelled = false;
@@ -99,5 +101,5 @@ function UsageGaugeSlot({ showRemaining }: { showRemaining: boolean }) {
       unlisten?.();
     };
   }, []);
-  return <ClaudeUsageGauge islandHovered={hovered} showRemaining={showRemaining} />;
+  return providers.map((provider) => <ClaudeUsageGauge key={provider.id} provider={provider} islandHovered={hovered} showRemaining={showRemaining} />);
 }

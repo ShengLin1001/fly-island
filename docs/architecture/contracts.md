@@ -77,7 +77,7 @@
 
 - 窗口 label：`main`、`translation`、`settings`；前端分发参数为 `?window=translation`、`?window=settings`。
 - Tauri 命令：以 `lib.rs` 中 `generate_handler!` 列表为准，命令名即 Rust 函数名。
-- 应用标识 `com.focusd.island`，凭据服务名 `com.focusd.island.qq-mail`、`com.focusd.island.translation`、`com.focusd.island.calendar`（2026-11-07 起，账户名为日历 id，存 ICS 订阅链接或 CalDAV 密码）、`com.focusd.island.bark`（2026-11-07 起，账户名 `device-key`，存 Bark 设备 Key，`phone_push/mod.rs`）。
+- 应用标识 `com.focusd.island`，凭据服务名 `com.focusd.island.qq-mail`、`com.focusd.island.translation`、`com.focusd.island.calendar`（2026-11-07 起，账户名为日历 id，存 ICS 订阅链接或 CalDAV 密码）、`com.focusd.island.bark`（2026-11-07 起，账户名 `device-key`，存 Bark 设备 Key，`phone_push/mod.rs`）、`com.focusd.island.plan-usage`（2026-11-08 起，账户名 `glm` / `kimi`，存 Agent 用量环的 Coding Plan API Key，`agent_status/plan_usage.rs`；Tauri 命令 `get_plan_usage`、`set_plan_key`、`has_plan_key`，`AgentUsage.source` 新增 `glm` / `kimi`）。
 - 注册表值：`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 下的 `FocuSD Island`。
 - Hook 受管区块标记：`# BEGIN/END FocuSD Agent Status Hooks`，命令签名前缀 `focusd-agent-`。
 - 更新端点与 `latest.json` 格式：见 `tauri.conf.json` 和 `docs/features/updater.md`。
