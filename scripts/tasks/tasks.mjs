@@ -31,6 +31,8 @@ export { checkTasks } from "./taskRepo.mjs";
 export { staleReason } from "./taskRepo.mjs";
 
 const FLAGS = ["--all", "--json", "--takeover", "--no-land", "--claim", "--force"];
+/** Set on the run that syncedLane starts after the rebase brought newer task scripts. */
+const RERUN = "FOCUSD_TASKS_RERUN";
 
 function parseArgs(argv) {
   const options = { _: [], commit: [] };
@@ -70,8 +72,17 @@ function syncedLane(root, what) {
   const lane = laneNumber(root);
   if (lane === null) throw new Error(`${what}要在 lane 里做（../fly-island-lanes/N），主工作区留给用户`);
   if (tryGit(["status", "--porcelain", "--untracked-files=no"])) throw new Error(`工作区有未提交的改动，先提交或暂存再${what}`);
+  const scripts = () => tryGit(["rev-parse", "HEAD:scripts/tasks"]);
+  const before = scripts();
   if (run("git", ["fetch", "-q", "origin"]) !== 0 || run("git", ["rebase", "-q", "origin/main"]) !== 0) {
     throw new Error(`同步 origin/main 失败；先解决 rebase 再${what}`);
+  }
+  // This process still runs the scripts from before the rebase, which may write task files where
+  // main no longer keeps them; run the same command again with the scripts main has now.
+  if (scripts() !== before && !process.env[RERUN]) {
+    console.log("任务脚本在 main 上更新了，用新版本重新运行这条命令");
+    const result = spawnSync(process.execPath, process.argv.slice(1), { stdio: "inherit", env: { ...process.env, [RERUN]: "1" } });
+    process.exit(result.status ?? 1);
   }
   return lane;
 }
