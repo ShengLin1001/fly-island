@@ -1,6 +1,6 @@
 import qqIcon from "../../assets/brands/qq.png";
 import wechatIcon from "../../assets/brands/wechat.png";
-import qqMailIcon from "../../assets/brands/qq-mail.png";
+import mailIcon from "../../assets/brands/mail.png";
 import { Puzzle } from "lucide-react";
 import type { MessageSource, PreviewSource } from "./messagePreview";
 import "./MessageSourceIcon.css";
@@ -8,7 +8,7 @@ import "./MessageSourceIcon.css";
 const SOURCE_ICONS: Record<MessageSource, string> = {
   qq: qqIcon,
   wechat: wechatIcon,
-  qqMail: qqMailIcon,
+  qqMail: mailIcon,
 };
 
 export function MessageSourceIcon({ source, size = 16 }: { source: PreviewSource; size?: number }) {
