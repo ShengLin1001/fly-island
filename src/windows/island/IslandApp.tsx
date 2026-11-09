@@ -44,6 +44,7 @@ import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
 import { useTrayLanguage } from "./useTrayLanguage";
+import { useIslandLyrics } from "./useIslandLyrics";
 // Must stay the last import: IslandApp.css overrides the feature styles above.
 import "./IslandApp.css";
 
@@ -90,6 +91,12 @@ export function IslandApp() {
   const { todos, activeTodoId, todoPageMode, notebookProps } = useIslandTodos({ settings, mode, page, agentStatus, collapseIsland });
 
   const translationPeek = useQuickTranslation(settings.translationEnabled);
+  const { lyrics, lyricLine: currentLyric } = useIslandLyrics(settings, media.mediaState, {
+    page,
+    barShown: mode === "collapsed" && !isTucked && settings.showCollapsedText,
+  });
+  // A named agent keeps the summary's place; the lyric line shows while none is named.
+  const lyricLine = agentSession ? null : currentLyric;
   const { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth } =
     useCollapsedTodo(
       settings.todoEnabled ? todos : NO_TODOS,
@@ -99,6 +106,7 @@ export function IslandApp() {
       agentSession?.title ?? null,
       collapsedSlots,
       banner.hasLinePreview || translationPeek !== null,
+      lyricLine?.longest ?? null,
     );
   useIslandTucking({
     settings,
@@ -192,7 +200,7 @@ export function IslandApp() {
     navigation,
     quiet: game.quiet,
     hasMessagePreview: showsMessage,
-    namesAgent: Boolean(agentSession),
+    leadPage: agentSession ? "agents" : lyricLine ? "music" : null,
     openEnabledPage,
   });
 
@@ -242,6 +250,7 @@ export function IslandApp() {
         collapsedTaskTitle={collapsedTaskTitle}
         collapsedTodoCount={collapsedTodoCount}
         agentSession={agentSession}
+        lyricLine={lyricLine}
         activeAgentSessionCount={activeAgentSessionCount}
         mediaState={media.mediaState}
         agentVisualState={agentVisualState}
@@ -290,6 +299,7 @@ export function IslandApp() {
           messagePanel={messagePanel}
           openMessages={openMessages}
           media={media}
+          lyrics={lyrics}
           clipboard={clipboard}
           agentSessions={listedAgentSessions}
           unseenAgentSessions={unseenAgentSessions}

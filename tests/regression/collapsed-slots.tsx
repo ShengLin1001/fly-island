@@ -44,7 +44,7 @@ mockIPC((command) => {
   }];
 }, { shouldMockEvents: true });
 
-type State = { slots?: CollapsedSlots; task: string | null; agents: boolean; count: number; agentTitle?: string; status?: PluginStatusEntry[] };
+type State = { slots?: CollapsedSlots; task: string | null; agents: boolean; count: number; agentTitle?: string; lyric?: string; status?: PluginStatusEntry[] };
 const STATUS: PluginStatusEntry = { pluginId: "dev.test.monitor", itemId: "bar", priority: 0, text: "CPU 23% · 内存 61%", tooltip: null, tone: "neutral" };
 const usageRing = <MiniRing rings={[{ value: 0.62, color: "#7ccfff" }, { value: 0.28, color: "#b9a6ff" }]} ariaLabel="5 小时 62%，7 天 28%" title="5 小时 62%，7 天 28%" />;
 const sessionRing = <MiniRing segments={[{ value: 0.5, color: "#5ad19a" }, { value: 0.25, color: "#f5c46b" }, { value: 0.25, color: "#ff8a80" }]} size={22} label="4" ariaLabel="4 个会话" title="4 个会话：2 运行，1 等待，1 出错" />;
@@ -67,6 +67,7 @@ function Fixture() {
     <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={NO_PLUGIN_NOTIFICATIONS} preview={preview}
       mode="collapsed" page="todo" isTucked={false} isDetached={true} showTitle={false}
       showCollapsedText={true} collapsedTaskTitle={state.task} collapsedTodoCount={null} agentSession={state.agentTitle ? { provider: "codex", label: "Codex", title: state.agentTitle } : null} activeAgentSessionCount={state.count}
+      lyricLine={state.lyric ? { text: state.lyric, index: 3, longest: state.lyric } : null}
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"
       mediaState={UNAVAILABLE_MEDIA}
       features={{ todo: true, music: false, clipboard: true, shelf: true, qq: false, wechat: false, qqMail: false, agents: state.agents, translation: false }}
@@ -183,6 +184,16 @@ async function runChecks() {
     await set({ slots: {} });
     check(bar().querySelector(".island__agent-session .agent-provider-icon"), "图标槽位为空时照旧显示 Agent 图标");
     await set({ agentTitle: undefined });
+
+    // The line being sung takes the summary's place (C4e); a named agent comes first.
+    await set({ task: "剩余3个待办", lyric: "故事的小黄花" });
+    check(bar().querySelector(".island__lyric")?.textContent === "故事的小黄花" && !bar().querySelector(".island__active-task"), "有歌词时显示当前这句，代替待办");
+    openedPage = null;
+    await act(async () => bar().querySelector<HTMLElement>(".island__open-button")!.click());
+    check(openedPage === "music", "点歌词打开音乐页");
+    await set({ agentTitle: "修复登录" });
+    check(!bar().querySelector(".island__lyric") && bar().querySelector(".island__agent-session-title")?.textContent === "修复登录", "外部传来 Agent 标题时不显示歌词");
+    await set({ agentTitle: undefined, lyric: undefined, task: null });
 
     // Plugin status (status.update): text, or label-over-value cells, with an optional ring.
     const chip = () => bar().querySelector<HTMLElement>(".plugin-status-chip")!;

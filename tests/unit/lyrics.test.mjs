@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lineIndexAt, parseLrc, playbackPosition, trackKey, wordFill } from "../../src/features/media/lyrics/lrc.ts";
+import { lineIndexAt, longestLyric, lyricAt, parseLrc, playbackPosition, trackKey, wordFill } from "../../src/features/media/lyrics/lrc.ts";
 import { normalizeSettings } from "../../src/features/appearance/settings.ts";
 import { suggestsChineseSources } from "../../src/features/media/lyrics/chineseHint.ts";
 
@@ -43,6 +43,8 @@ test("lyrics settings start offline and keep the offset in range", () => {
   const settings = normalizeSettings({});
   assert.equal(settings.lyricsOnline, false);
   assert.equal(settings.lyricsFolder, "");
+  assert.equal(settings.lyricsOnIsland, false);
+  assert.equal(normalizeSettings({ lyricsOnIsland: true }).lyricsOnIsland, true);
   assert.equal(normalizeSettings({ lyricsOffsetMs: 9000 }).lyricsOffsetMs, 3000);
   assert.equal(normalizeSettings({ lyricsOffsetMs: -1234 }).lyricsOffsetMs, -1200);
   assert.equal(normalizeSettings({ lyricsFolder: " D:\\Lyrics " }).lyricsFolder, "D:\\Lyrics");
@@ -80,4 +82,14 @@ test("a Chinese song with no lyrics from LRCLIB suggests Kugou and NetEase", () 
   assert.equal(suggestsChineseSources(song, { lyricsOnline: false }, true), false);
   assert.equal(suggestsChineseSources({ title: "Yesterday", artist: "The Beatles" }, lrclibOnly, true), false);
   assert.equal(suggestsChineseSources({ title: "Song", artist: "周杰伦" }, lrclibOnly, true), true);
+});
+
+test("the collapsed island's line: none before the first line or in a break, and when it changes", () => {
+  const lines = parseLrc("[00:01.00]故事的小黄花\n[00:05.00] \n[00:07.00]从出生那年就飘着");
+  assert.deepEqual(lyricAt(lines, 500), { index: -1, text: null, nextAt: 1_000 });
+  assert.deepEqual(lyricAt(lines, 2_000), { index: 0, text: "故事的小黄花", nextAt: 5_000 });
+  assert.deepEqual(lyricAt(lines, 6_000), { index: 1, text: null, nextAt: 7_000 });
+  assert.deepEqual(lyricAt(lines, 9_000), { index: 2, text: "从出生那年就飘着", nextAt: null });
+  assert.equal(longestLyric(lines), "从出生那年就飘着");
+  assert.equal(longestLyric([]), "");
 });

@@ -4,6 +4,7 @@ import type { LevelChange } from "../../features/system-levels/api";
 import type { DeviceAlert } from "../../features/device-events/api";
 import type { ReactNode } from "react";
 import type { AgentSession } from "../../features/agent-status/session";
+import type { CurrentLyric } from "../../features/media/lyrics/useCurrentLyric";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { AppearanceMode } from "../../features/appearance/types";
@@ -46,6 +47,8 @@ type IslandShellProps = {
   collapsedTodoCount: number | null;
   /** Running agent session shown in place of the todo, or null. */
   agentSession: AgentSession | null;
+  /** The line being sung, shown in the summary's place while no agent is named. */
+  lyricLine?: CurrentLyric | null;
   /** Agent sessions still working, shown in place of the tuck dot while the AI Agent switch is on. */
   activeAgentSessionCount: number;
   mediaState: MediaState;
@@ -113,6 +116,7 @@ export function IslandShell({
   collapsedTaskTitle,
   collapsedTodoCount,
   agentSession,
+  lyricLine = null,
   activeAgentSessionCount,
   mediaState,
   agentVisualState,
@@ -174,6 +178,8 @@ export function IslandShell({
   const collapsedLabel = showCollapsedText
     ? agentSession
       ? t.island.agentSession(agentSession.label, agentSession.title)
+      : lyricLine?.text
+      ? t.island.lyricLine(lyricLine.text)
       : collapsedTaskTitle
       ? t.messages.collapsedTask(collapsedTaskTitle)
       : collapsedTodoCount !== null
@@ -187,7 +193,7 @@ export function IslandShell({
       aria-label={collapsedLabel}
       onClick={(event) => {
         if (!isExpanded && event.target === event.currentTarget) {
-          onOpenPage(agentSession ? "agents" : page);
+          onOpenPage(agentSession ? "agents" : lyricLine ? "music" : page);
         }
       }}
       onPointerMove={handleGlassPointerMove}
@@ -223,6 +229,7 @@ export function IslandShell({
           collapsedTaskTitle={collapsedTaskTitle}
           collapsedTodoCount={collapsedTodoCount}
           agentSession={agentSession}
+          lyricLine={lyricLine}
           agentSessionCount={features.agents ? activeAgentSessionCount : null}
           mediaState={mediaState}
           showMusic={features.music}

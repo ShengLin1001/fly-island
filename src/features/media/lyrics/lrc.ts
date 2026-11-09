@@ -123,3 +123,18 @@ export function withTranslations(lines: LyricLine[], translation: LyricLine[]): 
 export function wordFill(word: LyricWord, positionMs: number) {
   return { delayMs: Math.round(word.startMs - positionMs), durationMs: Math.max(1, word.endMs - word.startMs) };
 }
+
+/**
+ * The line sung at `positionMs` as one line of text for the collapsed island, or null before the
+ * first line and in breaks; `nextAt` is when that may change (null after the last line).
+ */
+export function lyricAt(lines: LyricLine[], positionMs: number): { index: number; text: string | null; nextAt: number | null } {
+  const index = lineIndexAt(lines, positionMs);
+  const text = index >= 0 ? lines[index].text.trim() || null : null;
+  return { index, text, nextAt: index + 1 < lines.length ? lines[index + 1].timeMs : null };
+}
+
+/** The song's longest line; the collapsed island is sized for it, so it keeps one width for the song. */
+export function longestLyric(lines: LyricLine[]): string {
+  return lines.reduce((longest, line) => (line.text.trim().length > longest.length ? line.text.trim() : longest), "");
+}

@@ -756,6 +756,19 @@
       "page": "music",
       "zh-CN": {
         "group": "歌词",
+        "title": "在收起的岛上显示当前歌词",
+        "description": "播放中、找到带时间轴的歌词时，收起的岛显示正在唱的那一句；暂停、间奏和没找到歌词时照常显示待办。"
+      },
+      "en": {
+        "group": "Lyrics",
+        "title": "Show the current line on the collapsed island",
+        "description": "While a song plays and synced lyrics are found, the collapsed island shows the line being sung; paused, between verses or without lyrics it shows your todo as usual."
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
+        "group": "歌词",
         "title": "歌词提前或推后",
         "description": "歌词比歌声快就往右调，慢就往左调。"
       },

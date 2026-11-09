@@ -4,14 +4,16 @@ export type LyricsSettingValues = {
   lyricsOnline: boolean;
   lyricsChinese: boolean;
   lyricsOffsetMs: number;
+  lyricsOnIsland: boolean;
 };
 
-/** No folder, nothing asked online until the user turns it on, no offset. */
+/** No folder, nothing asked online until the user turns it on, no offset, not on the collapsed island. */
 export const DEFAULT_LYRICS_SETTINGS: LyricsSettingValues = {
   lyricsFolder: "",
   lyricsOnline: false,
   lyricsChinese: false,
   lyricsOffsetMs: 0,
+  lyricsOnIsland: false,
 };
 
 /** Saved lyrics settings with anything missing or malformed set back to the default. */
@@ -21,6 +23,7 @@ export function normalizeLyricsSettings(saved: Partial<Record<keyof LyricsSettin
     lyricsFolder: typeof saved?.lyricsFolder === "string" ? saved.lyricsFolder.trim() : "",
     lyricsOnline: saved?.lyricsOnline === true,
     lyricsChinese: saved?.lyricsChinese === true,
+    lyricsOnIsland: saved?.lyricsOnIsland === true,
     lyricsOffsetMs: typeof offset === "number" && Number.isFinite(offset) ? Math.round(Math.min(3000, Math.max(-3000, offset)) / 100) * 100 : 0,
   };
 }

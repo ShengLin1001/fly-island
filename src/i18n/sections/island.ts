@@ -3,6 +3,8 @@ export type IslandText = {
   focusing: (taskTitle: string) => string;
   pendingTodos: (count: number) => string;
   agentSession: (provider: string, title: string) => string;
+  /** The collapsed island shows the line being sung. */
+  lyricLine: (text: string) => string;
   openMusic: string;
   collapse: string;
   collapseIsland: string;
@@ -39,6 +41,7 @@ export const zhCN: IslandText = {
   focusing: (taskTitle) => `正在专注：${taskTitle}`,
   pendingTodos: (count) => `剩余${count}个待办`,
   agentSession: (provider, title) => `${provider} 正在处理：${title}`,
+  lyricLine: (text) => `正在唱：${text}`,
   openMusic: "打开音乐控制",
   collapse: "收起",
   collapseIsland: "收起岛屿",
@@ -75,6 +78,7 @@ export const en: IslandText = {
   focusing: (taskTitle) => `Focusing: ${taskTitle}`,
   pendingTodos: (count) => (count === 1 ? "1 todo left" : `${count} todos left`),
   agentSession: (provider, title) => `${provider} is working on: ${title}`,
+  lyricLine: (text) => `Now singing: ${text}`,
   openMusic: "Open music controls",
   collapse: "Collapse",
   collapseIsland: "Collapse island",

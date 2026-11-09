@@ -14,17 +14,18 @@ type IslandHoverOptions = {
   quiet: boolean;
   hasMessagePreview: boolean;
   /** The island names a running agent, so opening it shows the Agent page. */
-  namesAgent: boolean;
+  /** The page the bar's text belongs to (a named agent's, a lyric's), opened in place of the current one. */
+  leadPage: IslandPage | null;
   openEnabledPage: (page: IslandPage) => void;
 };
 
 /** Opening the island by hovering it, tucked or not, and the panel preview; returns the tucked island's hover handler. */
-export function useIslandHover({ settings, navigation, quiet, hasMessagePreview, namesAgent, openEnabledPage }: IslandHoverOptions) {
+export function useIslandHover({ settings, navigation, quiet, hasMessagePreview, leadPage, openEnabledPage }: IslandHoverOptions) {
   const { mode, page, isTucked, isPeeking, collapseIsland, revealIsland, peekIsland, retractsAfterPeek, resumePeek } = navigation;
-  // While the island names a running agent, opening it shows the Agent page.
+  // While the island names a running agent, opening it shows the Agent page; a lyric, the music page.
   const openCurrentPage = useCallback(
-    () => openEnabledPage(namesAgent ? "agents" : page),
-    [namesAgent, openEnabledPage, page],
+    () => openEnabledPage(leadPage ?? page),
+    [leadPage, openEnabledPage, page],
   );
   useHoverExpand({
     enabled: settings.expandTrigger === "hover" && !quiet,

@@ -20,6 +20,7 @@ import { ClipboardHistoryPanel } from "../../features/clipboard/ClipboardHistory
 import type { useClipboardHistory } from "../../features/clipboard/useClipboardHistory";
 import { MusicPlayerPanel } from "../../features/media/MusicPlayerPanel";
 import type { useMediaState } from "../../features/media/useMediaState";
+import type { PlayingLyrics } from "../../features/media/lyrics/usePlayingLyrics";
 import { FileShelfPanel } from "../../features/file-shelf/FileShelfPanel";
 import { CalendarPanel } from "../../features/calendar/CalendarPanel";
 import type { CalendarState } from "../../features/calendar/useCalendar";
@@ -47,6 +48,8 @@ type IslandPagesProps = {
   messagePanel?: ReturnType<typeof useIslandMessagePanel>;
   openMessages: MessageView["openMessages"];
   media: ReturnType<typeof useMediaState>;
+  /** The playing track's lyrics, looked up once for this page and the collapsed bar. */
+  lyrics?: PlayingLyrics;
   clipboard: ReturnType<typeof useClipboardHistory>;
   agentSessions: AgentSessionSummary[];
   unseenAgentSessions: UnseenSessions;
@@ -74,6 +77,7 @@ export function IslandPages({
   messagePanel,
   openMessages,
   media,
+  lyrics,
   clipboard,
   agentSessions,
   unseenAgentSessions,
@@ -115,6 +119,7 @@ export function IslandPages({
           onNext={() => void runMediaCommand("media_next")}
           onPrevious={() => void runMediaCommand("media_previous")}
           lyricsSettings={settings}
+          lyrics={lyrics}
         />
       )}
       {page === "clipboard" && (

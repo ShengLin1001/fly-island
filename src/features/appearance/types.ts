@@ -169,6 +169,8 @@ export type IslandSettings = CalendarSettingValues & {
   lyricsChinese: boolean;
   /** Lyrics shown this many ms later (positive) or earlier than the position Windows reports. */
   lyricsOffsetMs: number;
+  /** The collapsed island shows the line being sung, while playing and lyrics were found. */
+  lyricsOnIsland: boolean;
   mailEnabled: boolean;
   /** Show the running agent's icon and session title on the collapsed island. */
   agentTitleEnabled: boolean;

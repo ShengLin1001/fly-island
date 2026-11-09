@@ -12,7 +12,8 @@ const AGENT_ICON_TEXT = "MM";
 /**
  * What the collapsed island shows for todos: the active (or rotating) todo
  * title, otherwise the pending count, and the width that text needs. A running
- * agent's session title (`agentTitle`) takes the place of both when given.
+ * agent's session title (`agentTitle`) or a lyric line takes the place of both when given; for
+ * lyrics `lyricWidthText` is the song's longest line, so the island keeps one width per song.
  * Filled plugin slots widen the island by the width they declare; the centre slot only while
  * it shows (no summary text, message preview or translation, `isPeeking`).
  */
@@ -24,6 +25,7 @@ export function useCollapsedTodo(
   agentTitle: string | null = null,
   slots: CollapsedSlots = {},
   isPeeking = false,
+  lyricWidthText: string | null = null,
 ) {
   const t = useTranslation();
   const pendingTodoIds = useMemo(
@@ -53,6 +55,7 @@ export function useCollapsedTodo(
   const collapsedIslandWidth = useMemo(() => {
     const text = settings.showCollapsedText
       ? (agentTitle !== null ? AGENT_ICON_TEXT + agentTitle : null) ??
+        (lyricWidthText !== null ? AGENT_ICON_TEXT + lyricWidthText : null) ??
         collapsedTaskTitle ?? (collapsedTodoCount !== null
         ? t.island.pendingTodos(collapsedTodoCount)
         : settings.showTitle ? "fly-island" : "")
@@ -64,7 +67,7 @@ export function useCollapsedTodo(
       window.innerWidth,
       window.devicePixelRatio,
     );
-  }, [agentTitle, center, centerWidth, collapsedTaskTitle, collapsedTodoCount, isPeeking, settings.showCollapsedText, settings.showTitle, sideWidth, t]);
+  }, [agentTitle, lyricWidthText, center, centerWidth, collapsedTaskTitle, collapsedTodoCount, isPeeking, settings.showCollapsedText, settings.showTitle, sideWidth, t]);
 
   return { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth };
 }
