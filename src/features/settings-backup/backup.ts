@@ -14,6 +14,8 @@ export const BACKUP_KEYS = [
   "focusd-island-music-sources",
   "focusd-island-qq-notifications-enabled",
   "focusd-island-wechat-reminders-enabled",
+  "focusd-island-wechat-expose-ui",
+  "focusd-island-wechat-hide-taskbar-button",
   "focusd-island-qq-mail-settings",
   "focusd-island-qq-mail-remote-images",
   "focusd-island-plugin-pages",

@@ -140,8 +140,8 @@ export function useIslandMessagePanel({ enabled, durationMs, notices, mode, page
       return;
     }
     const source = message.source;
-    const launch = source === "qq" ? qqNotifications.openQQ : wechatReminders.openWeChat;
-    void launch().then((opened) => {
+    const launch = source === "qq" ? qqNotifications.openQQ() : wechatReminders.openWeChat(message.chat);
+    void launch.then((opened) => {
       if (opened === false) onOpenMessages(source);
       else latest.current.collapseIsland();
     });

@@ -24,6 +24,13 @@ test("WeChat keeps a single row, moved up by a newer reminder", () => {
   assert.equal(arrivalKey(message("wechat", 1)), arrivalKey(message("wechat", 2)));
 });
 
+test("a WeChat message read from the chat list is a row of its own, as in QQ", () => {
+  let list = addArrival([], { ...message("wechat", 100, "小林"), chat: "a" });
+  list = addArrival(list, { ...message("wechat", 200, "小周"), chat: "b" });
+  list = addArrival(list, message("wechat", 300, "微信"));
+  assert.deepEqual(list.map((item) => item.title), ["微信", "小周", "小林"]);
+});
+
 test("the list keeps the newest few and drops a row on request", () => {
   let list = [];
   for (let at = 1; at <= MAX_ARRIVALS + 2; at += 1) list = addArrival(list, message("qq", at));

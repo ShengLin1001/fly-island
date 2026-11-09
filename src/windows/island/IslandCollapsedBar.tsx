@@ -225,8 +225,8 @@ export function IslandCollapsedBar({
                 void qqMail.readMail(qqMail.preview, qqMail.previewAccount);
                 return;
               }
-              const open = source === "qq" ? qqNotifications.openQQ : wechatReminders.openWeChat;
-              void open().then((opened) => {
+              const open = source === "qq" ? qqNotifications.openQQ() : wechatReminders.openWeChat(preview.chat);
+              void open.then((opened) => {
                 if (opened === false) onOpenMessages(source);
               });
             } else if (translationPeek) {

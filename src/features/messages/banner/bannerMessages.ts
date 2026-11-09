@@ -1,13 +1,10 @@
-import type { MessagePreview, PreviewSource } from "../messagePreview";
+import type { MessagePreview } from "../messagePreview";
 
 /** How long a banner stays when its message does not say (plugins give their own durationMs). */
 export const BANNER_MS = 5_000;
 
-/** Sources the banner shows; WeChat gives no text, so it keeps its one-line preview. */
-export type BannerSource = Exclude<PreviewSource, "wechat">;
-
+/** Every source shows as a banner; WeChat's says only that it has a new reminder. */
 export type BannerMessage = MessagePreview & {
-  source: BannerSource;
   durationMs: number;
   /** A plugin notification's buttons; empty for the other sources. */
   actions: { id: string; title: string }[];
@@ -20,10 +17,6 @@ export type BannerState<T extends BannerMessage = BannerMessage> = {
   /** Bumped by every arrival, so the timer restarts. */
   version: number;
 };
-
-export function isBannerSource(source: PreviewSource): source is BannerSource {
-  return source !== "wechat";
-}
 
 /** Identifies one arrival; a preview that is still the same message keeps the same key. */
 export function bannerKey(preview: MessagePreview): string {

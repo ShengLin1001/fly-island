@@ -83,6 +83,7 @@ fn run() -> Result<bool, String> {
             ReminderSignal::Activated => 1,
             ReminderSignal::Redraw => 2,
             ReminderSignal::WindowCreated => 3,
+            ReminderSignal::ActivatedElsewhere => return,
         };
         callback_counts.borrow_mut()[index] += 1;
     })?;

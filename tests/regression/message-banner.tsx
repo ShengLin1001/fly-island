@@ -70,7 +70,7 @@ function Fixture() {
   const hasMessagePreview = Boolean(qq.preview || wechat.previewReceivedAt !== null || qqMail.preview || plugins.notification);
   const banner = useIslandBanner({
     messageNotice: notice,
-    notices: { preview, hasMessagePreview, qqNotifications: qq, qqMail, pluginNotifications: plugins },
+    notices: { preview, hasMessagePreview, qqNotifications: qq, wechatReminders: wechat, qqMail, pluginNotifications: plugins },
     mode: "collapsed", isTucked: false, quiet: false,
     onOpenMessages: (source) => { openedSource = source; },
   });
@@ -95,7 +95,7 @@ async function notify(source: "qq" | "wechat" | "qqMail" | "plugin", title = "�
   const receivedAt = Date.now();
   await update(async () => {
     if (source === "wechat") await emit("wechat-reminder-changed", {
-      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null }, windowVisible: true,
+      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null, message: null }, windowVisible: true,
     });
     if (source === "qq") await emit("qq-notifications-changed", {
       snapshot: { revision: ++revision, enabled: true, status: "listening", items: [{ id: `qq-${revision}`, title, body: "下午三点一起讨论新项目的设计方案，记得带上之前整理的资料和上周的评审记录。", createdAt: receivedAt }], error: null },
@@ -160,7 +160,11 @@ async function runChecks() {
     check(rects().slice(-1)[0] === null, "横幅收回后原生端清掉它的区域");
 
     await notify("wechat");
-    check(!banner() && summary().querySelector(".message-brand-icon--wechat"), "微信不弹横幅，仍是一行提示");
+    check(banner()?.querySelector(".message-brand-icon--wechat") && banner()!.querySelector(".message-banner__title")?.textContent === "微信", "微信也弹横幅，写来源");
+    check(banner()!.querySelector(".message-banner__body")?.textContent === "有新提醒" && !summary().querySelector(".message-brand-icon--wechat"), "微信横幅只写有新提醒，收起条不再出一行");
+    await act(async () => banner()!.querySelector<HTMLButtonElement>(".message-banner__main")!.click());
+    await waitFor(() => commands.some((entry) => entry.command === "open_wechat"), "打开微信");
+    check(!banner() && openedSource === "qqMail", "点微信横幅打开微信并收回，打开成功时不切到消息页");
 
     await notify("plugin", "构建完成", 400);
     const actions = [...banner()!.querySelectorAll<HTMLButtonElement>(".message-banner__action")];

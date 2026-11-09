@@ -9,9 +9,12 @@ export type ArrivalMessage = MessagePreview & {
   actions: { id: string; title: string }[];
 };
 
-/** Identifies one arrival; WeChat has a single row, since it only says that something came. */
+/**
+ * Identifies one arrival. WeChat's plain reminder has a single row, since it only says that
+ * something came; a WeChat message read from its chat list is a row of its own, as in QQ.
+ */
 export function arrivalKey(message: MessagePreview): string {
-  return message.source === "wechat" ? "wechat" : `${message.source}:${message.receivedAt}`;
+  return message.source === "wechat" && !message.chat ? "wechat" : `${message.source}:${message.receivedAt}`;
 }
 
 /** A message arriving: it goes on top; the same arrival seen again leaves the list as it is. */

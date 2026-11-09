@@ -7,9 +7,10 @@ import { bannerClock, type BannerState } from "./bannerMessages";
 import "./MessageBanner.css";
 
 /**
- * The card below the collapsed island for a new QQ, mail or plugin message: source icon, sender
- * (or plugin title), one or two lines of text, arrival time, and "N more" for a group. Clicking
- * it does what clicking the one-line preview does; plugin notifications bring their buttons.
+ * The card below the collapsed island for a new QQ, WeChat, mail or plugin message: source icon,
+ * sender (or plugin title; WeChat's is just "WeChat"), one or two lines of text, arrival time, and
+ * "N more" for a group. Clicking it does what clicking the one-line preview does (QQ and WeChat
+ * open their app); plugin notifications bring their buttons.
  */
 export function MessageBanner({
   banner,

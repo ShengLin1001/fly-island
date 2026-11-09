@@ -17,6 +17,8 @@ const HSHELL_RUDEAPPACTIVATED: u32 = HSHELL_WINDOWACTIVATED | 0x8000;
 pub enum ReminderSignal {
     Attention,
     Activated,
+    /// Another app's window came to the front.
+    ActivatedElsewhere,
     Redraw,
     WindowCreated,
 }
@@ -57,8 +59,10 @@ pub fn installed_executable() -> Result<PathBuf, String> {
                 format!("Software\\Tencent\\{product}"),
                 format!("Software\\WOW6432Node\\Tencent\\{product}"),
             ] {
-                if let Some(path) = registry::read_string(root, &key, "InstallPath")
-                    .and_then(|folder| existing(PathBuf::from(folder.trim_matches('"')).join(name), name))
+                if let Some(path) =
+                    registry::read_string(root, &key, "InstallPath").and_then(|folder| {
+                        existing(PathBuf::from(folder.trim_matches('"')).join(name), name)
+                    })
                 {
                     return Ok(path);
                 }
@@ -134,6 +138,9 @@ impl WindowMessages for ReminderWindow {
                     (context.callback)(signal);
                 }
                 Err(()) => context.stats.metadata_errors += 1,
+                Ok(false) if signal == ReminderSignal::Activated => {
+                    (context.callback)(ReminderSignal::ActivatedElsewhere)
+                }
                 Ok(false) => {}
             }
         });

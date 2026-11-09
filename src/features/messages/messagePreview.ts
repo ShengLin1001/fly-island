@@ -18,11 +18,14 @@ export type MessagePreview = {
   inline?: boolean;
   /** A plugin message with the island's previous / play-pause / next beside it (island.notify `controls: "media"`). */
   mediaControls?: boolean;
+  /** The WeChat chat a preview read from WeChat's chat list came from, which clicking it opens. */
+  chat?: string | null;
 };
 
 export const MESSAGE_SOURCE_LABELS: Record<MessageSource, string> = zhCN.messages.sourceLabels;
 
 export function messagePreviewText(preview: MessagePreview, copy: Translations["messages"] = zhCN.messages): string {
+  if (preview.source === "wechat" && preview.chat) return copy.qqPreview(preview.title, preview.body);
   if (preview.source === "wechat") return copy.wechatPreview;
   if (preview.source === "qqMail") return preview.body.trim() || copy.newMail;
   if (preview.source === "plugin") return preview.body.trim() ? copy.qqPreview(preview.title, preview.body.trim()) : preview.title;

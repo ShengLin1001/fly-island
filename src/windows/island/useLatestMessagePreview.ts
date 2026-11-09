@@ -15,11 +15,14 @@ export function useLatestMessagePreview(
   const t = useTranslation();
   const qqPreview = qqNotifications.preview;
   const wechatPreviewAt = wechatReminders.previewReceivedAt;
+  const wechatMessage = wechatReminders.previewMessage;
   const pluginNotification = pluginNotifications.notification;
   const [latestPreviewAt, setLatestPreviewAt] = useState(0);
   const preview = latestMessagePreview([
     qqPreview ? { ...qqPreview, source: "qq", receivedAt: qqNotifications.previewReceivedAt ?? 0 } : null,
-    wechatPreviewAt !== null ? { source: "wechat", title: t.messages.wechat, body: t.messages.newReminder, receivedAt: wechatPreviewAt } : null,
+    wechatPreviewAt === null ? null
+      : wechatMessage ? { source: "wechat", title: wechatMessage.contact, body: wechatMessage.preview, receivedAt: wechatPreviewAt, chat: wechatMessage.chat }
+        : { source: "wechat", title: t.messages.wechat, body: t.messages.newReminder, receivedAt: wechatPreviewAt },
     qqMail.preview ? { source: "qqMail", title: qqMail.preview.sender, body: qqMail.preview.subject, receivedAt: qqMail.previewReceivedAt ?? 0, account: qqMail.previewAccount } : null,
     pluginNotification ? {
       source: "plugin", title: pluginNotification.title, body: pluginNotification.body, receivedAt: pluginNotification.receivedAt,
