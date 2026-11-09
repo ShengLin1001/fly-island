@@ -63,6 +63,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     musicEnabled: settings?.musicEnabled !== false,
     agentStatusEnabled: settings?.agentStatusEnabled !== false,
     agentTitleEnabled: settings?.agentTitleEnabled !== false,
+    agentTitleMode: settings?.agentTitleMode === "running" ? "running" : "changes",
+    agentLightStyle: settings?.agentLightStyle === "dot" ? "dot" : "mark",
     shelfEnabled: settings?.shelfEnabled !== false,
     translationEnabled: settings?.translationEnabled !== false,
     translationTarget: settings?.translationTarget === "island" ? "island" : "window",

@@ -54,7 +54,7 @@
 ```
 
 - 图标：Claude Code、Codex 品牌小图标，与 QQ / 微信图标同尺寸，放在 `src/assets/brands/`。标题单行，超长省略号截断，不撑宽小岛（宽度沿用待办标题的计算）。
-- 显示时机：`running` 时显示；`completed` 后保留 3 秒再退回待办；`failed` / `stale` 时显示标题并配黄灯，直到状态被清除或下一次运行。
+- 显示时机（`agentTitleMode`）：默认 `changes`，用 `useAgentInterjection`：开始新会话、一轮跑完、出错时显示 4 秒，等待确认时一直显示。`running` 是原来的规则（`useAgentSession`）：`running` 时显示；`completed` 后保留 3 秒再退回待办；`failed` / `stale` 时显示标题并配黄灯，直到状态被清除或下一次运行。
 - 优先级：消息预览 > Agent 标题 > 当前待办 / 剩余待办数。
 - 多个 Agent 同时运行时只显示最近有动静（`updatedAt` 最大）的一个。同一 Agent 的多个会话以最近一次提问的会话为准。
 - "AI Agent"设置页新增开关"运行时在小岛显示会话标题"，默认开启；AI Agent 功能总开关关闭时一并不显示。

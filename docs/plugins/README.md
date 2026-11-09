@@ -31,7 +31,7 @@
 目前的内置插件：
 
 - [本地接口](../features/local-api.md)（`focusd.local-api`）；
-- 中心图案（`focusd.center-pattern`，默认关闭）：折叠岛没有摘要文字时，在中间显示眼睛、小鸟、光点、小猫或一只 Codex Pets 宠物，宠物随 Agent 会话的状态变换动作。
+- 中心图案（`focusd.center-pattern`，默认关闭）：折叠岛没有摘要文字时，在中间显示眼睛、小鸟、光点、小猫、悬岛标志或一只 Codex Pets 宠物，悬岛标志和宠物随 Agent 会话的状态变化，岛上显示 Agent 标题时站在标题前代替 Agent 图标（状态灯已经是悬岛时，悬岛标志不再站过去）；设置「大小」调图案高度，默认 24px，和环一样高。
 - Agent 用量环（`focusd.claude-usage`，默认关闭；原名 Claude 用量环）：收起条上每个打开的 Agent 一个同心双环，外环 5 小时、内环 7 天（没有周限额时画本月），悬停显示详情卡片。设置里 Claude Code（默认开）、Codex、GLM、Kimi 各一个开关。Codex 读本机 Codex 会话记录（`get_codex_usage`，和 Agent 页相同，不联网）。GLM 和 Kimi 用插件页保存的 API Key 直连官方接口（`get_plan_usage`：`open.bigmodel.cn/api/monitor/usage/quota/limit`、`api.kimi.com/coding/v1/usages`；不走代理、不跟随重定向，答复缓存 1 分钟，点击环 10 秒内只放行一次）；Key 由 `set_plan_key` 存进 Windows 凭据管理器 `com.focusd.island.plan-usage`，`has_plan_key` 只回答有没有，Key 不回到前端、日志和插件设置。Qwen（阿里云百炼）没有公开的额度查询接口，暂不支持。Claude Code 的数据与 Agent 页顶部的用量相同（`get_agent_usage`）：Claude Code 经本机 magpie 网关时读它的 `/v1/magpie/quotas`（只请求本机），否则读 claude-hud 写出的用量快照；都不联网、不读登录凭据。设置「直接向 Anthropic 查询」（默认关）打开后，原生端（`src-tauri/src/claude_usage/`）只读 Claude Code 的 `~/.claude/.credentials.json` 里的 access token（不刷新、不改写，不进日志、前端和事件），经 http(s) 代理请求 `api.anthropic.com/api/oauth/usage`：代理依次取插件设置、`HTTPS_PROXY`、Windows 系统代理，都没有就不请求，**从不直连**；不跟随重定向；间隔 5–120 分钟（设置「刷新间隔」），失败时加倍退避，429 遵守 `Retry-After`。`get_agent_usage` 在两份数据中取较新的，并带上最近一次失败的原因。这个接口没有公开文档，可能随时失效。
 - Agent 会话环（`focusd.session-ring`，默认关闭）：AI Agent 开启时，在收起条上代替蓝色会话数，样式可选分段环（默认）、像素格、状态条和信号格，按状态着色（等你确认、等你回复、运行、可能已停、完成），分段环和状态条的会话数可以用「显示会话数」开关关掉，悬停列出等你处理的会话，点击打开 Agent 页。数据就是 Agent 页的会话列表（Claude Code 和 Codex），只在岛屿窗口工作，没有原生部分。
 
