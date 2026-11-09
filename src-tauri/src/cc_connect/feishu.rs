@@ -178,9 +178,13 @@ fn failure(output: &[String]) -> String {
         .unwrap_or_else(|| "飞书扫码没有完成。".into())
 }
 
-/// Stops a setup still waiting for the scan and takes its project out again.
+/// Stops a setup still waiting for the scan and takes its project out again. One that made the app
+/// in the second before nothing settled it yet keeps it: Feishu has the app, the config its keys.
 pub(super) fn cancel() {
     let Some(mut setup) = setup().take() else { return };
+    if setup.ended.is_none() {
+        settle(&mut setup);
+    }
     if setup.ended.is_none() {
         let _ = setup.child.kill();
         let _ = setup.child.wait();
@@ -191,7 +195,34 @@ pub(super) fn cancel() {
 
 #[cfg(test)]
 mod tests {
-    use super::{failure, worth_keeping};
+    use super::*;
+
+    #[test]
+    fn a_cancel_keeps_an_app_already_made_and_otherwise_puts_the_old_config_back() {
+        let dir = std::env::temp_dir().join(format!("focusd-cc-connect-feishu-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let config = dir.join("config.toml");
+        let begin = |program: &str, args: &[&str], said: &[&str]| {
+            fs::write(&config, "with the app").unwrap();
+            let child = Command::new(program).args(args).stdout(Stdio::null()).creation_flags(CREATE_NO_WINDOW).spawn().unwrap();
+            let output = Arc::new(Mutex::new(said.iter().map(|line| line.to_string()).collect()));
+            let qr = dir.join("qr.png");
+            *setup() = Some(Setup { child, _job: Job::new().unwrap(), output, qr, config: config.clone(), original: Some("before".into()), ended: None });
+        };
+
+        // cc-connect made the app and ended, and nothing has settled that yet.
+        begin("cmd", &["/c", "exit 0"], &["✅ Feishu app created"]);
+        setup().as_mut().unwrap().child.wait().unwrap();
+        cancel();
+        assert_eq!(fs::read_to_string(&config).unwrap(), "with the app");
+
+        // Still waiting for the scan.
+        begin("ping", &["-n", "30", "127.0.0.1"], &["URL: https://open.feishu.cn/x"]);
+        cancel();
+        assert_eq!(fs::read_to_string(&config).unwrap(), "before");
+        assert!(setup().is_none());
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn the_drawn_qr_code_and_blank_lines_are_left_out() {
