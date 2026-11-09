@@ -291,11 +291,12 @@
      margin with the layer, and the percentage is of the shell. */
   left: 50%;
   z-index: 2;
-  /* The 6px slide moves `top`, not a transform, and nothing is promoted ahead (no will-change):
-     a layer of its own would be resampled mid-slide and lose ClearType, blurring the text. */
-  transition:
-    opacity 120ms ease,
-    top 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* The layers only fade; the shell's resize is the motion. A slide, even of `top`, ends on a
+     frame that moves the layer by a hair, and text of different sizes rounds to device pixels
+     differently on it: a 12px label stepped one pixel against the 14px title beside it
+     (docs/investigations/island-jitter.md). A transform slide would blur the text instead
+     (roadmap F14). Nothing is promoted ahead (no will-change), for the same reason. */
+  transition: opacity 120ms ease;
 }
 
 .island__collapsed {
@@ -308,7 +309,7 @@
   gap: var(--space-md);
   padding: 0 18px;
   opacity: 1;
-  transition-delay: 140ms, 0s;
+  transition-delay: 140ms;
 }
 
 /* Tucked, only the island's bottom rim is on screen: show it empty, not cut-off contents.
@@ -322,7 +323,6 @@
 .island--expanded .island__collapsed {
   pointer-events: none;
   opacity: 0;
-  top: -6px;
   transition-delay: 0s;
 }
 
@@ -339,7 +339,6 @@
   padding: 18px 20px 20px;
   pointer-events: none;
   opacity: 0;
-  top: -6px;
 }
 
 .island--preparing.island--collapsed .island__surface {
@@ -354,11 +353,9 @@
 .island--expanded .island__expanded {
   pointer-events: auto;
   opacity: 1;
-  top: 0;
   /* Height follows the shell (.island) when switching between pages of different heights. */
   transition:
     opacity 260ms ease 160ms,
-    top 280ms cubic-bezier(0.16, 1, 0.3, 1) 140ms,
     height 560ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
