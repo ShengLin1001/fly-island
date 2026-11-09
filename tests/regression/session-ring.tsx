@@ -81,7 +81,7 @@ const NO_AGENTS: AgentActivity[] = [];
 let corners: CSSProperties = {};
 
 function Island({ agents, count, list, report }: { agents: boolean; count: number; list: AgentSessionSummary[]; report: (slots: CollapsedSlots) => void }) {
-  const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, sessions: list, unseen: UNSEEN, agentsOn: agents, onOpenAgents: OPEN_AGENTS });
+  const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, sessions: list, unseen: UNSEEN, agentsOn: agents, onOpenAgents: OPEN_AGENTS, markLight: false });
   report(slots);
   const qq = useQQNotifications(true);
   const wechat = useWeChatReminders(true);

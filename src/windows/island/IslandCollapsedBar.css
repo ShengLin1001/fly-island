@@ -32,6 +32,12 @@
   filter: brightness(var(--island-pulse-brightness));
 }
 
+.island__mark-light {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
 .island__pulse--agent-idle {
   background: var(--color-agent-idle);
   box-shadow: 0 0 14px rgba(53, 233, 133, 0.72);

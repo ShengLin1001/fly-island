@@ -13,6 +13,9 @@ export type SettingsAgentText = {
   titleMode: string;
   titleModeHint: string;
   titleModeOptions: { changes: string; running: string };
+  lightStyle: string;
+  lightStyleHint: string;
+  lightStyleOptions: { mark: string; dot: string };
   sessionPageSection: string;
   sessionVisibleRows: string;
   sessionPageHint: string;
@@ -167,6 +170,9 @@ export const zhCN: SettingsAgentText = {
   titleMode: "什么时候显示",
   titleModeHint: "有变化时：会话开始、跑完或出错时显示 4 秒，等你确认时一直显示到你处理，其余时间留给待办和中心图案。运行时一直显示：有 Agent 在运行就显示，结束 3 秒后恢复待办。",
   titleModeOptions: { changes: "有变化时", running: "运行时一直显示" },
+  lightStyle: "状态灯样式",
+  lightStyleHint: "收起条上 Agent 状态灯的样子。悬岛：应用图标的白胶囊，和条上的环一样高；绿点呼吸，运行时短横换成三个依次亮起的点，等你确认时变黄闪烁，失败或可能中断时变红，跑完打勾。圆点：原来的小圆点。",
+  lightStyleOptions: { mark: "悬岛", dot: "圆点" },
   sessionPageSection: "会话列表",
   sessionVisibleRows: "展开后显示条数",
   sessionPageHint: "岛屿展开后的 Agent 页一次显示的会话数，更多的会话可以滚动查看。",
@@ -312,6 +318,9 @@ export const en: SettingsAgentText = {
   titleMode: "When to show it",
   titleModeHint: "On changes: for 4 seconds when a session starts, finishes or fails, and while it waits for your approval; otherwise the todo and the center pattern stay. While running: the whole time an agent runs, then the todo again 3 seconds after it finishes.",
   titleModeOptions: { changes: "On changes", running: "While running" },
+  lightStyle: "Status light",
+  lightStyleHint: "How the Agent status light looks on the collapsed bar. Island mark: the app icon's white pill, as tall as the rings on the bar; its light breathes, three dots take the dash's place while running, it turns yellow and blinks while waiting for you, red when failed or possibly stopped, and shows a tick when done. Dot: the original small dot.",
+  lightStyleOptions: { mark: "Island mark", dot: "Dot" },
   sessionPageSection: "Session list",
   sessionVisibleRows: "Entries shown when open",
   sessionPageHint: "How many sessions the island's Agent page shows at once; scroll for the rest.",

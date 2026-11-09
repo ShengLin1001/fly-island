@@ -5,6 +5,8 @@ export type TodoStyle = "paper" | "island";
 export type TranslationTarget = "window" | "island";
 
 export type AgentTitleMode = "changes" | "running";
+/** The collapsed bar's Agent light: the island mark acting out the agents, or the plain dot. */
+export type AgentLightStyle = "mark" | "dot";
 
 export type AppearanceMode = "classic" | "liquidGlass";
 export type IslandFont = "system" | "pixel";
@@ -185,6 +187,7 @@ export type IslandSettings = CalendarSettingValues & {
   agentTitleEnabled: boolean;
   /** Name an agent for a moment when its session changes (and while it waits on the user), or the whole time one runs. */
   agentTitleMode: AgentTitleMode;
+  agentLightStyle: AgentLightStyle;
   /** While a full-screen app (game, video, slides) is in front: no hover opening or focus, no message pop-ups. */
   gameDoNotDisturb: boolean;
   /** While a full-screen app is in front, the island tucks to the top edge and comes back after. */

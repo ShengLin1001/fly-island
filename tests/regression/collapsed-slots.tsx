@@ -172,6 +172,12 @@ async function runChecks() {
     check(openedPage === "todo", "点状态灯和点小岛一样打开页面");
     const island = bar().closest(".island--collapsed")!;
     check(getComputedStyle(island).backgroundImage === "none", "纯色模式下收起的岛只有底色，没有明暗渐变（D14）");
+    await set({ slots: { statusLight: <span className="test-mark-light" style={{ display: "block", width: 54, height: 25 }} /> } });
+    check(bar().firstElementChild?.classList.contains("island__mark-light") && bar().querySelector(".test-mark-light") && !bar().querySelector(".island__pulse"),
+      "状态灯槽位代替圆点，位置不变");
+    openedPage = null;
+    await act(async () => bar().querySelector<HTMLElement>(".island__mark-light")!.click());
+    check(openedPage === "todo", "点悬岛状态灯和点小岛一样打开页面");
     await set({ slots: { agentCount: <span className="test-sessions" /> } });
     check(bar().querySelector(".test-sessions") && !bar().querySelector(".island-agent-count"), "AI Agent 开启时会话槽位替换蓝色数字");
     await set({ agents: false });

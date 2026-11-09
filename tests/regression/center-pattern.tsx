@@ -71,9 +71,10 @@ const NO_UNSEEN: ReadonlySet<string> = new Set();
 const NO_OP = () => {};
 
 /** The collapsed bar's center slot as useCollapsedSlots fills it from the plugin's settings. */
-function Slot({ agents = [], paused = false }: { agents?: AgentActivity[]; paused?: boolean }) {
-  const slots = useCollapsedSlots({ paused, agents, sessions: NO_SESSIONS, unseen: NO_UNSEEN, agentsOn: false, onOpenAgents: NO_OP });
+function Slot({ agents = [], paused = false, markLight = false }: { agents?: AgentActivity[]; paused?: boolean; markLight?: boolean }) {
+  const slots = useCollapsedSlots({ paused, agents, sessions: NO_SESSIONS, unseen: NO_UNSEEN, agentsOn: false, onOpenAgents: NO_OP, markLight });
   return <div className="cp-island cp-slot">
+    {slots.statusLight ? <span className="cp-light">{slots.statusLight}</span> : null}
     {slots.center ? <span className="island__center-slot">{slots.center}</span> : null}
     {slots.agentIcon ? <span className="cp-agent-icon">{slots.agentIcon}</span> : null}
   </div>;
@@ -194,6 +195,19 @@ async function runChecks() {
   expect(lightFill(mark) === "rgb(255, 69, 58)", "悬岛失败时绿点变红");
   mark = await markIn([{ phase: "completed", updatedAt: Date.now() }]);
   expect(mark.dataset.mood === "done" && mark.querySelector(".center-mark-check") !== null, "悬岛刚完成时短横换成对勾");
+  expect(!fixture.querySelector(".cp-light"), "状态灯样式是圆点时不给状态灯槽位");
+
+  // As the status light (Settings > AI Agent, the default) the mark follows the agents with the
+  // center plugin off, and no second mark stands before the title.
+  centerPlugin = { enabled: false, settings: { pattern: "cat", pet: "" } };
+  await render(<Slot key="light" markLight agents={[{ phase: "waiting", updatedAt: Date.now() }]} />);
+  const lightPill = fixture.querySelector(".cp-light .center-mark-pill")?.getBoundingClientRect();
+  expect(fixture.querySelector<SVGSVGElement>(".cp-light .center-mark")?.dataset.mood === "waiting" && lightPill !== undefined && Math.abs(lightPill.height - 24) < 0.6,
+    "悬岛状态灯：中心图案关着也跟随 Agent，胶囊 24px 高");
+  centerPlugin = { enabled: true, settings: { pattern: "mark", pet: "" } };
+  await render(<Slot key="light-and-center" markLight />);
+  expect(fixture.querySelector(".cp-slot .island__center-slot .center-mark") !== null && !fixture.querySelector(".cp-agent-icon"),
+    "状态灯已是悬岛时，标题前不再放第二个悬岛");
 
   await render(<Gallery paused={false} />);
   for (const pattern of CENTER_PATTERNS) {

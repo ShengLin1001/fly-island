@@ -20,6 +20,7 @@ export const AGENT_ICON_PET_HEIGHT = 18;
  * the bar (the box adds room for its spring), 54 px wide. Px it needs beyond the 16 px icon.
  */
 export const MARK_HEIGHT = 25.5;
+export const MARK_WIDTH = 54;
 export const CENTER_MARK_WIDTH = 56;
 export const AGENT_ICON_MARK_EXTRA_WIDTH = 38;
 

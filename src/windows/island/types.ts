@@ -31,12 +31,14 @@ export type CollapsedSlots = {
   agentIcon?: ReactNode;
   /** Small gauges such as rings, one bar item each (id `usage:<provider>`), placed like the bar's other items. */
   gauges?: { id: string; node: ReactNode }[];
+  /** Drawn in the Agent status light's place instead of the dot. */
+  statusLight?: ReactNode;
   /** Shown instead of the blue running-session count while AI Agent is on; empty keeps the count. */
   agentCount?: ReactNode;
   /** Px `agentIcon` needs beyond the 16 px icon it replaces; the collapsed island widens by it while the bar names an agent. */
   agentIconWidth?: number;
   /** Px that `center` needs; the collapsed island widens by it while the centre shows. */
   centerWidth?: number;
-  /** Px that the shown `gauges` and `agentCount` need with their gaps; the collapsed island widens by it. */
+  /** Px that the shown `gauges`, `agentCount` and `statusLight` need beyond the bar's own; the collapsed island widens by it. */
   sideWidth?: number;
 };

@@ -167,7 +167,9 @@ export function IslandCollapsedBar({
   const { placements: saved } = useCollapsedPlacements();
   const items = collapsedBarItems({
     t,
-    statusLight: <span className={pulseClassName} {...{ [OPENS_BAR]: "" }} />,
+    statusLight: slots.statusLight
+      ? <span className="island__mark-light" {...{ [OPENS_BAR]: "" }}>{slots.statusLight}</span>
+      : <span className={pulseClassName} {...{ [OPENS_BAR]: "" }} />,
     qqMail,
     updateVersion,
     pluginStatus: showCollapsedText && !preview && !translationPeek && !levelPopup && !deviceAlert && !quotaAlert ? pluginStatus : [],

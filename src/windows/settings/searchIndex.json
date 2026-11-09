@@ -1166,6 +1166,27 @@
     {
       "page": "agents",
       "zh-CN": {
+        "group": "小岛显示",
+        "title": "状态灯样式",
+        "description": "收起条上 Agent 状态灯的样子。悬岛：应用图标的白胶囊，和条上的环一样高；绿点呼吸，运行时短横换成三个依次亮起的点，等你确认时变黄闪烁，失败或可能中断时变红，跑完打勾。圆点：原来的小圆点。",
+        "options": [
+          "悬岛",
+          "圆点"
+        ]
+      },
+      "en": {
+        "group": "On the island",
+        "title": "Status light",
+        "description": "How the Agent status light looks on the collapsed bar. Island mark: the app icon's white pill, as tall as the rings on the bar; its light breathes, three dots take the dash's place while running, it turns yellow and blinks while waiting for you, red when failed or possibly stopped, and shows a tick when done. Dot: the original small dot.",
+        "options": [
+          "Island mark",
+          "Dot"
+        ]
+      }
+    },
+    {
+      "page": "agents",
+      "zh-CN": {
         "group": "会话列表",
         "title": "展开后显示条数",
         "description": "岛屿展开后的 Agent 页一次显示的会话数，更多的会话可以滚动查看。"

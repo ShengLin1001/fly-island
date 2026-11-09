@@ -6,7 +6,7 @@ import { AgentSessionListSettings } from "../../features/agent-status/AgentSessi
 import { AgentSessionFilterSettings } from "../../features/agent-status/AgentSessionFilterSettings";
 import { AgentHooksNotice } from "../../features/agent-status/AgentHooksNotice";
 import "../../features/agent-status/AgentHooksSettingsSection.css";
-import type { AgentTitleMode, IslandSettings } from "../../features/appearance/types";
+import type { AgentLightStyle, AgentTitleMode, IslandSettings } from "../../features/appearance/types";
 import { useTranslation } from "../../i18n";
 import { ModuleSwitchSection } from "./ModuleSwitchSection";
 
@@ -60,6 +60,21 @@ export function AgentSettingsPage({
             }
           />
         )}
+        <SettingsRow
+          title={t.settings.agent.lightStyle}
+          description={t.settings.agent.lightStyleHint}
+          control={
+            <SettingsChoice<AgentLightStyle>
+              value={settings.agentLightStyle}
+              ariaLabel={t.settings.agent.lightStyle}
+              options={[
+                { value: "mark", label: t.settings.agent.lightStyleOptions.mark },
+                { value: "dot", label: t.settings.agent.lightStyleOptions.dot },
+              ]}
+              onChange={(agentLightStyle) => onSettingsChange({ ...settings, agentLightStyle })}
+            />
+          }
+        />
       </SettingsGroup>
       <AgentSessionListSettings settings={settings} onSettingsChange={onSettingsChange} />
       <AgentSessionFilterSettings />

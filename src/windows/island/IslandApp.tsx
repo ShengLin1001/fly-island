@@ -88,6 +88,7 @@ export function IslandApp() {
     unseen: unseenAgentSessions.keys,
     agentsOn: settings.agentStatusEnabled,
     onOpenAgents: openAgentsPage,
+    markLight: settings.agentLightStyle === "mark",
   });
   const { todos, activeTodoId, todoPageMode, notebookProps } = useIslandTodos({ settings, mode, page, agentStatus, collapseIsland });
 

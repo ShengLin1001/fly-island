@@ -7,6 +7,7 @@ export {
   CENTER_PET_WIDTH,
   CollapsedCenter,
   MARK_HEIGHT,
+  MARK_WIDTH,
 } from "./CollapsedCenter";
 export { CenterPattern } from "./CenterPattern";
 export { CENTER_PATTERN_PET_KEY, CENTER_PATTERN_PLUGIN_ID, centerPatternChoice, petChoices, type AgentActivity } from "./centerSettings";

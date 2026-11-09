@@ -9,6 +9,7 @@ import {
   CenterPattern,
   CollapsedCenter,
   MARK_HEIGHT,
+  MARK_WIDTH,
   PetSprite,
   centerPatternChoice,
   usePageHidden,
@@ -43,14 +44,19 @@ type CollapsedSlotsOptions = {
   agentsOn: boolean;
   /** Opens the Agent page (what the blue session count does). */
   onOpenAgents: () => void;
+  /** Settings > AI Agent: the status light is the island mark instead of the dot. */
+  markLight: boolean;
 };
+
+// The mark in the status light's place is that much wider than the 9 px dot.
+const MARK_LIGHT_EXTRA_WIDTH = MARK_WIDTH - 9;
 
 /**
  * The one place built-in plugins plug into the collapsed bar. Each plugin reads its own state
  * with useBuiltinPlugin(id) and fills a slot only while it is on. Slots left empty change
  * nothing on the bar. Keep the result stable (useMemo): the collapsed width is worked out from it.
  */
-export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, onOpenAgents }: CollapsedSlotsOptions): CollapsedSlots {
+export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, onOpenAgents, markLight }: CollapsedSlotsOptions): CollapsedSlots {
   const center = useBuiltinPlugin(CENTER_PATTERN_PLUGIN_ID);
   const usage = useBuiltinPlugin(CLAUDE_USAGE_PLUGIN_ID);
   const sessionRing = useBuiltinPlugin(SESSION_RING_PLUGIN_ID);
@@ -63,7 +69,8 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
     () => shownUsageProviders(usage.settings).filter((provider) => !isCollapsedItemHidden(placements, usageItemId(provider))),
     [usage.settings, placements],
   );
-  const mood = usePetMood(agents, center.enabled);
+  const lightShown = markLight && !isCollapsedItemHidden(placements, "status-light");
+  const mood = usePetMood(agents, center.enabled || lightShown);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
   const sheet = usePetSheet(center.enabled ? choice.petId : null, center);
@@ -77,9 +84,10 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       slots.center = <CollapsedCenter choice={choice} sheet={sheet} mood={mood} paused={still} />;
       const mark = choice.pattern === "mark";
       slots.centerWidth = pet ? CENTER_PET_WIDTH : mark ? CENTER_MARK_WIDTH : CENTER_PATTERN_WIDTH;
-      // While the bar names an agent the center is hidden, so the pet or the mark stands in for its icon.
+      // While the bar names an agent the center is hidden, so the pet or the mark stands in for its
+      // icon; not a second mark next to the one in the light's place.
       if (pet) slots.agentIcon = <PetSprite src={pet} mood={mood} paused={still} height={AGENT_ICON_PET_HEIGHT} />;
-      else if (mark) {
+      else if (mark && !lightShown) {
         slots.agentIcon = <CenterPattern pattern="mark" mood={mood} paused={still} height={MARK_HEIGHT} />;
         slots.agentIconWidth = AGENT_ICON_MARK_EXTRA_WIDTH;
       }
@@ -98,8 +106,12 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       slots.gauges = providers.map((provider) => ({ id: usageItemId(provider), node: <UsageGaugeSlot key={provider.id} providers={[provider]} showRemaining={showRemaining} /> }));
       slots.sideWidth = providers.length * CLAUDE_USAGE_GAUGE_WIDTH;
     }
+    if (lightShown) {
+      slots.statusLight = <CenterPattern pattern="mark" mood={mood} paused={still} height={MARK_HEIGHT} />;
+      slots.sideWidth = (slots.sideWidth ?? 0) + MARK_LIGHT_EXTRA_WIDTH;
+    }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
-  }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
+  }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still, lightShown]);
 }
 
 /** Follows the native island hover here, so the slots above stay the same object. */
