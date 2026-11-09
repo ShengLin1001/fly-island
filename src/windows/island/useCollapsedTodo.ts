@@ -51,7 +51,7 @@ export function useCollapsedTodo(
   const collapsedTodoCount = settings.showIdleTodoCount && !collapsedTaskTitle && pendingTodoCount > 0
     ? pendingTodoCount
     : null;
-  const { center, centerWidth = 0, sideWidth = 0 } = slots;
+  const { center, centerWidth = 0, sideWidth = 0, agentIconWidth = 0 } = slots;
   const collapsedIslandWidth = useMemo(() => {
     const text = settings.showCollapsedText
       ? (agentTitle !== null ? AGENT_ICON_TEXT + agentTitle : null) ??
@@ -60,14 +60,15 @@ export function useCollapsedTodo(
         ? t.island.pendingTodos(collapsedTodoCount)
         : settings.showTitle ? "fly-island" : "")
       : "";
+    const iconWidth = settings.showCollapsedText && agentTitle !== null ? agentIconWidth : 0;
     // The same condition as the centre slot on the collapsed bar.
-    const extraWidth = sideWidth + (text === "" && center && !isPeeking ? centerWidth : 0);
+    const extraWidth = sideWidth + iconWidth + (text === "" && center && !isPeeking ? centerWidth : 0);
     return alignCollapsedIslandWidth(
       getCollapsedIslandWidth(text, extraWidth),
       window.innerWidth,
       window.devicePixelRatio,
     );
-  }, [agentTitle, lyricWidthText, center, centerWidth, collapsedTaskTitle, collapsedTodoCount, isPeeking, settings.showCollapsedText, settings.showTitle, sideWidth, t]);
+  }, [agentIconWidth, agentTitle, lyricWidthText, center, centerWidth, collapsedTaskTitle, collapsedTodoCount, isPeeking, settings.showCollapsedText, settings.showTitle, sideWidth, t]);
 
   return { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth };
 }

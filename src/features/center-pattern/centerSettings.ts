@@ -19,6 +19,12 @@ export function centerPatternChoice(settings: Record<string, unknown>): CenterPa
   return { pattern: CENTER_PATTERNS.find((known) => known === pattern) ?? "eyes", petId: null };
 }
 
+/** The plugin's size setting: px tall, as the bar's 24 px rings by default; 16 to 30 fit the 38 px bar. */
+export function centerPatternSize(settings: Record<string, unknown>): number {
+  const size = settings.size;
+  return typeof size === "number" && Number.isFinite(size) ? Math.round(Math.min(30, Math.max(16, size))) : 24;
+}
+
 /** A session or a reported agent, as far as the pet cares. */
 export type AgentActivity = { phase: string; updatedAt: number };
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { gazeOffset, petRow, petSheetRows, petSpriteLayout } from "../../src/features/center-pattern/patterns.ts";
-import { PET_DONE_HOLD_MS, centerPatternChoice, petChoices, petMoodChangesAt, petMoodFor } from "../../src/features/center-pattern/centerSettings.ts";
+import { PET_DONE_HOLD_MS, centerPatternChoice, centerPatternSize, petChoices, petMoodChangesAt, petMoodFor } from "../../src/features/center-pattern/centerSettings.ts";
 
 test("pet moods map to petdex rows and their frame counts", () => {
   assert.deepEqual(petRow("idle"), { row: 0, frames: 6, durationMs: 1100 });
@@ -43,8 +43,19 @@ test("pupils look toward the point and stop at the edge of the eye", () => {
   assert.ok(diagonal.x < 0 && diagonal.y < 0 && Math.hypot(diagonal.x, diagonal.y) <= 2);
 });
 
+test("the size setting is 24 px like the rings, kept within what the bar fits", () => {
+  assert.equal(centerPatternSize({}), 24);
+  assert.equal(centerPatternSize({ size: 18 }), 18);
+  assert.equal(centerPatternSize({ size: 21.6 }), 22);
+  assert.equal(centerPatternSize({ size: 4 }), 16);
+  assert.equal(centerPatternSize({ size: 99 }), 30);
+  assert.equal(centerPatternSize({ size: "28" }), 24);
+  assert.equal(centerPatternSize({ size: Number.NaN }), 24);
+});
+
 test("plugin settings pick a pattern, falling back to the eyes", () => {
   assert.deepEqual(centerPatternChoice({ pattern: "cat" }), { pattern: "cat", petId: null });
+  assert.deepEqual(centerPatternChoice({ pattern: "mark" }), { pattern: "mark", petId: null });
   assert.deepEqual(centerPatternChoice({ pattern: "pet", pet: " noir " }), { pattern: "pet", petId: "noir" });
   assert.deepEqual(centerPatternChoice({ pattern: "pet", pet: "" }), { pattern: "eyes", petId: null });
   assert.deepEqual(centerPatternChoice({ pattern: "dragon" }), { pattern: "eyes", petId: null });

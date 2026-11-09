@@ -1,5 +1,5 @@
 import { useId, type CSSProperties } from "react";
-import type { CenterPatternId } from "./patterns";
+import type { CenterPatternId, PetMood } from "./patterns";
 import { PatternEyes } from "./PatternEyes";
 import "./CenterPattern.css";
 
@@ -9,10 +9,12 @@ type CenterPatternProps = {
   paused?: boolean;
   /** CSS pixels; the width follows each pattern's own proportions (at most about 44 px at 22). */
   height?: number;
+  /** What the agents are doing, as the pet would act it out; only the mark shows it. */
+  mood?: PetMood;
 };
 
 /** One of the built-in animated drawings shown in the collapsed island when there is no summary text. */
-export function CenterPattern({ pattern, paused = false, height = 22 }: CenterPatternProps) {
+export function CenterPattern({ pattern, paused = false, height = 22, mood = "idle" }: CenterPatternProps) {
   return (
     <span
       className="center-pattern"
@@ -25,7 +27,37 @@ export function CenterPattern({ pattern, paused = false, height = 22 }: CenterPa
       {pattern === "bird" && <Bird />}
       {pattern === "orb" && <Orb />}
       {pattern === "cat" && <Cat />}
+      {pattern === "mark" && <Mark mood={mood} />}
     </span>
+  );
+}
+
+/**
+ * The app's mark (src-tauri/icons/mark.svg): a pill with a light and a dash. Idle, the light
+ * breathes and the pill now and then springs open like the island; otherwise the light takes
+ * the session light's colour and the dash shows the agents: dots while running, a tick when done.
+ */
+function Mark({ mood }: { mood: PetMood }) {
+  return (
+    <svg className="center-mark" viewBox="0 2.5 36 17" data-mood={mood}>
+      <rect className="center-mark-pill" x={2.75} y={3} width={30.5} height={16} rx={8} />
+      <g className="center-mark-light">
+        <circle cx={10.75} cy={11} r={2.9} />
+      </g>
+      <g className="center-mark-dash">
+        {mood === "running" ? (
+          <g className="center-mark-typing">
+            <circle cx={19.4} cy={11} r={1.45} />
+            <circle cx={22.4} cy={11} r={1.45} />
+            <circle cx={25.4} cy={11} r={1.45} />
+          </g>
+        ) : mood === "done" ? (
+          <path className="center-mark-check" d="m18.75 11.4 2.4 2.4 4.55-4.8" />
+        ) : (
+          <path d="M18.75 11H26" />
+        )}
+      </g>
+    </svg>
   );
 }
 

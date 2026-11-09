@@ -1,7 +1,7 @@
 // Pure logic for the collapsed island's center pattern: the built-in patterns, the Codex
 // Pets (petdex) spritesheet layout, and where the eyes look.
 
-export const CENTER_PATTERNS = ["eyes", "bird", "orb", "cat"] as const;
+export const CENTER_PATTERNS = ["eyes", "bird", "orb", "cat", "mark"] as const;
 export type CenterPatternId = (typeof CENTER_PATTERNS)[number];
 
 /** What a pet acts out; the caller maps agent state onto it. */

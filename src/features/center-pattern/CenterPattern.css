@@ -161,6 +161,92 @@
   87% { transform: rotate(-3deg); }
 }
 
+/* Mark ------------------------------------------------------------------ */
+.center-mark-pill { fill: var(--center-pattern-ink); }
+.center-mark-light circle { fill: #6abf9b; }
+.center-mark[data-mood="waiting"] .center-mark-light circle { fill: var(--color-light-your-turn, #ffd60a); }
+.center-mark[data-mood="failed"] .center-mark-light circle { fill: var(--color-light-needs, #ff453a); }
+.center-mark-typing circle { fill: var(--center-pattern-dark); }
+.center-mark-dash path {
+  fill: none;
+  stroke: var(--center-pattern-dark);
+  stroke-width: 2.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.center-mark-dash .center-mark-check { stroke-width: 2.3; }
+
+.center-mark-pill { transform-origin: 18px 11px; }
+.center-mark-light circle { transform-origin: 10.75px 11px; }
+.center-mark-check { transform-origin: 22.2px 11.4px; }
+
+.center-mark-light circle {
+  animation: center-mark-breathe 3.6s ease-in-out infinite;
+}
+/* Only idle springs open: with dots or a blink on, a second motion would be noise. */
+.center-mark[data-mood="idle"] .center-mark-pill {
+  animation: center-mark-open 10s infinite;
+}
+.center-mark[data-mood="idle"] .center-mark-light {
+  animation: center-mark-spread-left 10s infinite;
+}
+.center-mark[data-mood="idle"] .center-mark-dash {
+  animation: center-mark-spread-right 10s infinite;
+}
+.center-mark[data-mood="waiting"] .center-mark-light circle {
+  animation: center-mark-blink 1.1s ease-in-out infinite;
+}
+.center-mark[data-mood="failed"] .center-mark-light circle {
+  animation: none;
+}
+.center-mark-typing circle {
+  transform-origin: 22.4px 11px;
+  animation: center-mark-typing 1.2s ease-in-out infinite;
+}
+.center-mark-typing circle:nth-child(2) { animation-delay: 0.15s; }
+.center-mark-typing circle:nth-child(3) { animation-delay: 0.3s; }
+.center-mark-check {
+  animation: center-mark-pop 420ms var(--center-pattern-ease) both;
+}
+
+@keyframes center-mark-breathe {
+  0%, 100% { opacity: 0.86; transform: scale(0.86); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* The island's own open: out past the target, back a touch under, then settle. */
+@keyframes center-mark-open {
+  0%, 86%, 100% { transform: scale(1, 1); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+  89.5% { transform: scale(1.14, 1.06); animation-timing-function: ease-in-out; }
+  93% { transform: scale(0.98, 1); animation-timing-function: ease-out; }
+  96% { transform: scale(1, 1); }
+}
+@keyframes center-mark-spread-left {
+  0%, 86%, 96%, 100% { transform: translateX(0); }
+  89.5% { transform: translateX(-1.8px); }
+  93% { transform: translateX(0.2px); }
+}
+@keyframes center-mark-spread-right {
+  0%, 86%, 96%, 100% { transform: translateX(0); }
+  89.5% { transform: translateX(1.8px); }
+  93% { transform: translateX(-0.2px); }
+}
+
+@keyframes center-mark-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.22; }
+}
+
+@keyframes center-mark-typing {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+@keyframes center-mark-pop {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .center-pattern *,
   .center-pattern[data-paused] * {
