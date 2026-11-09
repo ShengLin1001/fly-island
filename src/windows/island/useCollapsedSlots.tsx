@@ -18,6 +18,8 @@ import { useBuiltinPlugin } from "../../features/plugins/useBuiltinPlugin";
 import type { AgentSessionSummary } from "../../features/agent-status/api";
 import { SESSION_RING_STYLES, SessionRing, type SessionRingStyle } from "../../features/session-ring/SessionRing";
 import { sessionRingCounts } from "../../features/session-ring/ringCounts";
+import { isCollapsedItemHidden } from "../../features/appearance/collapsedItems";
+import { useCollapsedPlacements } from "../../features/appearance/useCollapsedPlacements";
 import { listenIslandHover } from "./api";
 import type { CollapsedSlots } from "./types";
 
@@ -51,7 +53,12 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const showRemaining = usage.settings.show === "remaining";
   const ringStyle = SESSION_RING_STYLES.find((known) => known === sessionRing.settings.style) ?? ("ring" satisfies SessionRingStyle);
   const ringCount = sessionRing.settings.showCount !== false;
-  const providers = useMemo(() => shownUsageProviders(usage.settings), [usage.settings]);
+  const { placements } = useCollapsedPlacements();
+  // A ring hidden on the bar (Appearance > Collapsed bar) is not drawn and takes no width.
+  const providers = useMemo(
+    () => shownUsageProviders(usage.settings).filter((provider) => !isCollapsedItemHidden(placements, usageItemId(provider))),
+    [usage.settings, placements],
+  );
   const mood = usePetMood(agents, center.enabled);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
@@ -79,12 +86,15 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
     }
     // One ring per agent switched on, in USAGE_PROVIDERS order; all off leaves the bar as it is.
     if (usage.enabled && providers.length > 0) {
-      slots.gauges = <UsageGaugeSlot providers={providers} showRemaining={showRemaining} />;
+      slots.gauges = providers.map((provider) => ({ id: usageItemId(provider), node: <UsageGaugeSlot key={provider.id} providers={[provider]} showRemaining={showRemaining} /> }));
       slots.sideWidth = providers.length * CLAUDE_USAGE_GAUGE_WIDTH;
     }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
   }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
 }
+
+/** The collapsed bar item of one provider's usage ring. */
+export const usageItemId = (provider: UsageProvider) => `usage:${provider.id}`;
 
 /** Follows the native island hover here, so the slots above stay the same object. */
 function UsageGaugeSlot({ providers, showRemaining }: { providers: readonly UsageProvider[]; showRemaining: boolean }) {

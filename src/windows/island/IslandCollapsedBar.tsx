@@ -9,7 +9,7 @@ import type { MediaState } from "../../features/media/api";
 import { CollapsedMessageContent } from "../../features/messages/CollapsedMessageContent";
 // After CollapsedMessageContent, matching the original stylesheet order: it brings the
 // message icon, music wave and device-use styles in that order.
-import { collapsedBarItems } from "./collapsedBarItems";
+import { collapsedBarItems, type CollapsedBarItem } from "./collapsedBarItems";
 import type { DeviceUse } from "../../features/device-use/api";
 import type { LevelChange } from "../../features/system-levels/api";
 import { LevelPopup } from "../../features/system-levels/LevelPopup";
@@ -25,6 +25,10 @@ import type { WeChatRemindersController } from "../../features/messages/wechat/W
 import { PluginNotificationActions } from "../../features/plugins/PluginNotificationActions";
 import type { PluginNotificationsController } from "../../features/plugins/usePluginNotifications";
 import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateCheck";
+import { arrangeCollapsedItems, zoneIds, type CollapsedZone } from "../../features/appearance/collapsedItems";
+import { useCollapsedPlacements } from "../../features/appearance/useCollapsedPlacements";
+import type { PluginViewEntry } from "../../features/plugin-views/api";
+import { usePluginStatusItems } from "../../features/plugin-views/usePluginStatusItems";
 import { useTranslation } from "../../i18n";
 import type { CollapsedSlots, IslandPage } from "./types";
 import { useWindowDragGesture } from "./useWindowDragGesture";
@@ -73,13 +77,34 @@ type IslandCollapsedBarProps = {
   onOpenTranslationPeek: () => void;
   onWindowDragStart: () => void;
   onTuck: () => void;
-  /** A plugin's status text; it waits while a message preview or a translation line shows. */
-  pluginStatusChip?: ReactNode;
+  /** The plugin pages on the island, so a plugin status opens its plugin's page; plugin statuses wait while a message preview or a translation line shows. */
+  pluginViews?: readonly PluginViewEntry[];
+  onOpenPluginPage?: (page: `plugin:${string}`) => void;
   /** Built-in plugins' centre, gauge and session-count slots. */
   slots?: CollapsedSlots;
 };
 
 const NO_SLOTS: CollapsedSlots = {};
+const NO_VIEWS: readonly PluginViewEntry[] = [];
+const ignorePage = () => {};
+/** Clicking an item marked with it does what a click on the bar's empty space does. */
+const OPENS_BAR = "data-opens-bar";
+
+/** The items of one zone; neighbours of one group share a wrapper. */
+function renderZone(items: readonly CollapsedBarItem[]) {
+  const out: ReactNode[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    if (!item.group) {
+      out.push(<Fragment key={item.id}>{item.node}</Fragment>);
+      continue;
+    }
+    const group = [item];
+    while (items[index + 1]?.group === item.group) group.push(items[(index += 1)]);
+    out.push(<div key={group[0].id} className="island__gauge-slot">{group.map((member) => <Fragment key={member.id}>{member.node}</Fragment>)}</div>);
+  }
+  return out;
+}
 
 /** The collapsed island: agent pulse, todo or message summary, mail badge, music button and tuck handle. */
 export function IslandCollapsedBar({
@@ -113,7 +138,8 @@ export function IslandCollapsedBar({
   onOpenTranslationPeek,
   onWindowDragStart,
   onTuck,
-  pluginStatusChip,
+  pluginViews = NO_VIEWS,
+  onOpenPluginPage = ignorePage,
   slots = NO_SLOTS,
 }: IslandCollapsedBarProps) {
   const t = useTranslation();
@@ -132,11 +158,14 @@ export function IslandCollapsedBar({
   // The centre slot takes the summary's place while the bar has no summary.
   const showCenter = Boolean(slots.center) && !preview && !translationPeek
     && !(showCollapsedText && (showTitle || agentSession !== null || collapsedTaskTitle !== null || collapsedTodoCount !== null));
+  const pluginStatus = usePluginStatusItems(pluginViews, onOpenPluginPage);
+  const { placements: saved } = useCollapsedPlacements();
   const items = collapsedBarItems({
     t,
+    statusLight: <span className={pulseClassName} {...{ [OPENS_BAR]: "" }} />,
     qqMail,
     updateVersion,
-    pluginStatus: showCollapsedText && !preview && !translationPeek && !levelPopup && !deviceAlert && !quotaAlert ? pluginStatusChip : null,
+    pluginStatus: showCollapsedText && !preview && !translationPeek && !levelPopup && !deviceAlert && !quotaAlert ? pluginStatus : [],
     deviceUse,
     shelfCount,
     showMusic,
@@ -146,6 +175,10 @@ export function IslandCollapsedBar({
     onOpenPage,
     onOpenMessages,
   });
+  const offered = items.map(({ id }) => id);
+  const placements = arrangeCollapsedItems(offered, saved);
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const zone = (name: CollapsedZone) => zoneIds(placements, name, offered).flatMap((id) => byId.get(id) ?? []);
 
   return (
     <div
@@ -153,12 +186,13 @@ export function IslandCollapsedBar({
       aria-hidden={isExpanded}
       inert={isExpanded}
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget || (event.target instanceof Element && event.target.hasAttribute(OPENS_BAR))) {
           if (translationPeek && !preview) onOpenTranslationPeek();
           else onOpenPage(openTarget);
         }
       }}
     >
+      {renderZone(zone("left"))}
       <button
         className={`island__open-button${showCenter ? " island__open-button--center" : ""}`}
         type="button"
@@ -196,7 +230,6 @@ export function IslandCollapsedBar({
           }
         }}
       >
-        <span className={pulseClassName} />
         <CollapsedMessageContent preview={preview} enabled={!isExpanded && !isTucked}>
           {deviceAlert ? (
             <DeviceAlertPopup alert={deviceAlert} />
@@ -254,7 +287,7 @@ export function IslandCollapsedBar({
       {preview?.source === "plugin" && pluginNotifications.notification && (
         <PluginNotificationActions actions={pluginNotifications.notification.actions} onAction={pluginNotifications.runAction} />
       )}
-      {items.map((item) => <Fragment key={item.id}>{item.node}</Fragment>)}
+      {renderZone(zone("right"))}
       {agentSessionCount === null && (
         <button
           className="island__quiet-button"

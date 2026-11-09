@@ -108,7 +108,7 @@ function Fixture({ all = false }: { all?: boolean }) {
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"
       mediaState={UNAVAILABLE_MEDIA}
       features={{ todo: true, music: false, clipboard: true, shelf: true, qq: false, wechat: false, qqMail: false, agents: false, translation: false }}
-      shelfCount={null} collapsedSlots={{ gauges: providers.map((provider) => <ClaudeUsageGauge key={provider.id} provider={provider} />), sideWidth }}
+      shelfCount={null} collapsedSlots={{ gauges: providers.map((provider) => ({ id: `usage:${provider.id}`, node: <ClaudeUsageGauge key={provider.id} provider={provider} /> })), sideWidth }}
       onOpenPage={() => {}} onOpenMessages={() => {}}
       onPageChange={() => {}} onWindowDragStart={() => {}} onCollapse={() => {}}
       onResetPosition={() => {}} minimizesToTray onMinimize={() => {}} onOpenSettings={() => {}} onOpenTranslator={() => {}} translationPeek={null} onOpenTranslationPeek={() => {}} onTuck={() => {}} onReveal={() => {}} pageDigitModifiers="Alt">

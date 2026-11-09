@@ -11,17 +11,23 @@ import type { Translations } from "../../i18n";
 import { openSettingsWindow } from "../settings/api";
 import type { CollapsedSlots, IslandPage } from "./types";
 
-/** The icons that stay on the collapsed bar, each with an id the ordering will refer to (docs/architecture/collapsed-bar-items.md). */
-export type CollapsedBarItemId = "mail" | "update" | "plugin-status" | "device-use" | "shelf" | "music" | "gauges" | "session-count";
-
-export type CollapsedBarItem = { id: CollapsedBarItemId; node: ReactNode };
+/**
+ * An icon that stays on the collapsed bar. The ids are what the user's order
+ * refers to (features/appearance/collapsedItems.ts): status-light, mail, update,
+ * plugin:<plugin>/<item>, device-use, shelf, music, usage:<provider>, session-count.
+ * Items of one `group` that end up next to each other share a wrapper (the
+ * usage rings keep their tighter spacing).
+ */
+export type CollapsedBarItem = { id: string; node: ReactNode; group?: "gauges" };
 
 type CollapsedBarItemsInput = {
   t: Translations;
   qqMail: MailController;
   updateVersion: string | null;
-  /** The plugin status chip, or null while something else takes the summary's place. */
-  pluginStatus: ReactNode;
+  /** The Agent status light. */
+  statusLight: ReactNode;
+  /** One item per plugin status; none while something else takes the summary's place. */
+  pluginStatus: readonly { id: string; node: ReactNode }[];
   deviceUse: DeviceUse;
   shelfCount: number | null;
   showMusic: boolean;
@@ -32,9 +38,10 @@ type CollapsedBarItemsInput = {
   onOpenMessages: (source: MessageSource) => void;
 };
 
-/** The bar's icons right of the summary, in the order they show; empty ones are left out. */
+/** The bar's icons in their default order; empty ones are left out. */
 export function collapsedBarItems({
   t,
+  statusLight,
   qqMail,
   updateVersion,
   pluginStatus,
@@ -47,7 +54,7 @@ export function collapsedBarItems({
   onOpenPage,
   onOpenMessages,
 }: CollapsedBarItemsInput): CollapsedBarItem[] {
-  const items: CollapsedBarItem[] = [];
+  const items: CollapsedBarItem[] = [{ id: "status-light", node: statusLight }];
   if (qqMail.preview !== null) {
     items.push({
       id: "mail",
@@ -78,7 +85,7 @@ export function collapsedBarItems({
       ),
     });
   }
-  if (pluginStatus) items.push({ id: "plugin-status", node: pluginStatus });
+  items.push(...pluginStatus);
   items.push({ id: "device-use", node: <DeviceUseIndicator deviceUse={deviceUse} /> });
   if (shelfCount !== null && shelfCount > 0) {
     items.push({
@@ -105,7 +112,7 @@ export function collapsedBarItems({
       ),
     });
   }
-  if (slots.gauges) items.push({ id: "gauges", node: <div className="island__gauge-slot">{slots.gauges}</div> });
+  for (const gauge of slots.gauges ?? []) items.push({ ...gauge, group: "gauges" });
   if (agentSessionCount !== null) {
     if (slots.agentCount) {
       items.push({ id: "session-count", node: slots.agentCount });

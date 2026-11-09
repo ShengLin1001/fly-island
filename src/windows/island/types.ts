@@ -29,12 +29,12 @@ export type CollapsedSlots = {
    * wide: the collapsed width reserves the icon's room, not this slot's.
    */
   agentIcon?: ReactNode;
-  /** Small gauges such as rings, right before the rightmost item (tuck dot or session count). */
-  gauges?: ReactNode;
+  /** Small gauges such as rings, one bar item each (id `usage:<provider>`), placed like the bar's other items. */
+  gauges?: { id: string; node: ReactNode }[];
   /** Shown instead of the blue running-session count while AI Agent is on; empty keeps the count. */
   agentCount?: ReactNode;
   /** Px that `center` needs; the collapsed island widens by it while the centre shows. */
   centerWidth?: number;
-  /** Px that `gauges` and `agentCount` need with their gaps; the collapsed island widens by it. */
+  /** Px that the shown `gauges` and `agentCount` need with their gaps; the collapsed island widens by it. */
   sideWidth?: number;
 };
