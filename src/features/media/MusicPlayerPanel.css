@@ -1,197 +1,91 @@
+/* The music page sits straight on the island like the Agent page (AgentSessionsPanel.css): no
+   panel, border or shadow of its own, told apart by size and brightness, and only what the
+   pointer is on lights up. What plays is one line at the top, the lyrics take the full width. */
 .music-player {
   position: relative;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--space-lg);
-  overflow: hidden;
-  padding: 12px 16px;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 0 0;
+  /* With no panel of its own, the text follows the island background: light on dark, dark on
+     light (stageStyle.ts sets --island-ink-rgb), as on the Agent page. */
+  --music-ink: var(--island-ink-rgb, 241, 240, 246);
+  --text-1: rgba(var(--music-ink), 0.96);
+  --text-2: rgba(var(--music-ink), 0.68);
+  --text-3: rgba(var(--music-ink), 0.54);
+  --music-hover: rgba(var(--music-ink), 0.08);
   color: var(--text-1);
-  background:
-    radial-gradient(ellipse at 18% 0%, var(--color-white-a12), transparent 36%),
-    radial-gradient(ellipse at 88% 96%, rgba(172, 169, 196, 0.1), transparent 42%),
-    linear-gradient(145deg, var(--color-white-a09), rgba(255, 255, 255, 0.018)),
-    rgba(18, 21, 25, 0.88);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.24),
-    inset 0 0 0 1px var(--color-white-a09);
 }
 
 .music-player--empty {
   color: var(--text-2);
 }
 
-.music-player__controls {
-  position: relative;
-  z-index: 1;
+/* Cover, title and artist · player, then the hints and the page's own buttons. */
+.music-player__head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-xl);
-}
-
-.music-control-button {
-  width: 36px;
-  height: 36px;
-  display: inline-grid;
-  place-items: center;
-  padding: 0;
-  color: var(--text-2);
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid var(--color-white-a10);
-  border-radius: var(--radius-pill);
-  outline: none;
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease,
-    opacity 140ms ease;
-}
-
-.music-control-button:hover:not(:disabled) {
-  color: var(--color-white);
-  background: var(--color-white-a12);
-  transform: translateY(-1px);
-}
-
-.music-control-button:focus-visible {
-  outline: 2px solid rgba(232, 242, 248, 0.78);
-  outline-offset: 3px;
-}
-
-.music-control-button--primary {
-  width: 44px;
-  height: 44px;
-  color: #20282c;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(210, 219, 222, 0.72));
-  border-color: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
-}
-
-.music-control-button--primary:hover:not(:disabled) {
-  color: #171d20;
-  background: linear-gradient(145deg, var(--color-white), rgba(224, 231, 232, 0.9));
-}
-
-.music-control-button:disabled {
-  cursor: default;
-  opacity: 0.36;
-}
-
-.music-control-button__track-change {
-  animation: music-control-track-change 700ms linear infinite;
-}
-
-@keyframes music-control-track-change {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.music-icon-button {
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  display: inline-grid;
-  place-items: center;
-  padding: 0;
-  color: var(--text-2);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-white-a10);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    background 140ms ease,
-    transform 140ms ease;
-}
-
-.music-icon-button:hover {
-  color: var(--color-white);
-  background: var(--color-white-a12);
-  transform: translateY(-1px);
-}
-
-.music-icon-button:focus-visible {
-  outline: 2px solid rgba(232, 242, 248, 0.72);
-  outline-offset: 3px;
-}
-
-.music-player__body {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  align-items: stretch;
-  gap: 24px;
-  width: 100%;
+  gap: 12px;
   min-width: 0;
-}
-
-.music-player__details {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
 }
 
 .music-player__artwork {
-  flex: 0 0 auto;
-  width: 160px;
-  height: 160px;
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border-radius: 16px;
   overflow: hidden;
   color: var(--text-3);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 1px var(--color-white-a08);
+  background: rgba(var(--music-ink), 0.08);
+  border-radius: var(--island-panel-radius, 10px);
+  corner-shape: var(--island-corner-shape, round);
 }
 
 .music-player__artwork img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
+  object-fit: cover;
 }
 
-.music-player__stack {
-  position: relative;
+.music-player__meta {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: 0 0 6px;
+  gap: 3px;
+  line-height: 1.3;
 }
 
-/* The player the island follows on the left; the lyrics offset, hints and settings on the right. */
-.music-player__head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  height: 28px;
-}
-
-.music-player__source {
-  flex: 1;
-  min-width: 0;
+.music-player__track,
+.music-player__artist {
   overflow: hidden;
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* The lyrics offset is a fine adjustment: shown while the pointer is on the page or it has focus. */
+.music-player__track {
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.music-player__artist {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* The song's lyrics offset and the music settings: fine adjustments, shown while the pointer
+   is on the page or one of them has focus. */
 .music-player__tune {
   display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
   opacity: 0;
   transition: opacity 160ms ease;
 }
@@ -201,14 +95,40 @@
   opacity: 1;
 }
 
+.music-icon-button {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-2);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.music-icon-button:hover {
+  color: var(--text-1);
+  background: var(--music-hover);
+}
+
+.music-icon-button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
 /* No lyrics for a Chinese song with only LRCLIB asked: a quiet link to the setting. */
 .music-player__lyrics-hint {
+  flex: 0 1 auto;
   min-width: 0;
   height: 24px;
   padding: 0 10px;
   overflow: hidden;
   color: var(--text-3);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--music-hover);
   border: 0;
   border-radius: var(--radius-pill);
   font: inherit;
@@ -220,7 +140,7 @@
 
 .music-player__lyrics-hint:hover {
   color: var(--text-1);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--music-ink), 0.14);
 }
 
 .music-player__lyrics-hint:focus-visible {
@@ -228,14 +148,25 @@
   outline-offset: 2px;
 }
 
-.music-player__stack .media-waveform {
-  height: 76px;
-  flex-basis: 76px;
+.music-player__error {
+  margin: 0;
+  color: rgba(255, 170, 170, 0.85);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
 }
 
-/* Lyrics in the waveform's place, the time or how it is estimated under them, then the controls. */
-.music-player__stack--lyrics {
-  gap: 8px;
+/* The lyrics, or the waveform without them, in the middle of the page. */
+.music-player__stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+
+.music-player__stage .media-waveform {
+  height: 64px;
 }
 
 /* The player reports no position: the lyrics follow the island's own timing, and the user can
@@ -277,54 +208,72 @@
   border-radius: 4px;
 }
 
-.music-player__meta {
-  min-width: 0;
+/* Previous and next as bare icons; play in a small solid circle in the ink colour. */
+.music-player__controls {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: center;
-  line-height: 1.3;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding-bottom: 2px;
 }
 
-.music-player__track,
-.music-player__artist,
-.music-player__album {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.music-player__track {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-1);
-}
-
-.music-player__artist {
-  font-size: 12px;
-  font-weight: 600;
+.music-control-button {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   color: var(--text-2);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, opacity 140ms ease;
 }
 
-.music-player__album {
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--text-3);
+.music-control-button:hover:not(:disabled) {
+  color: var(--text-1);
+  background: var(--music-hover);
 }
 
-.music-player__error {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 170, 170, 0.85);
+.music-control-button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.music-control-button--primary {
+  width: 38px;
+  height: 38px;
+  color: var(--island-background-color, #000);
+  background: var(--text-1);
+}
+
+.music-control-button--primary:hover:not(:disabled) {
+  color: var(--island-background-color, #000);
+  background: rgba(var(--music-ink), 1);
+}
+
+.music-control-button:disabled {
+  cursor: default;
+  opacity: 0.36;
+}
+
+.music-control-button__track-change {
+  animation: music-control-track-change 700ms linear infinite;
+}
+
+@keyframes music-control-track-change {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .music-control-button__track-change {
     animation: none;
+  }
+
+  .music-player__tune {
+    transition: none;
   }
 }

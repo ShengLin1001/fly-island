@@ -15,7 +15,7 @@
   position: relative;
   height: 3px;
   overflow: hidden;
-  background: var(--color-white-a10);
+  background: rgba(var(--island-ink-rgb, 241, 240, 246), 0.14);
   border-radius: var(--radius-pill);
 }
 

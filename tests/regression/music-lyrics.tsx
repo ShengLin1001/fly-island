@@ -98,7 +98,10 @@ try {
 
   const before = queries.length;
   await render(track("七里香", 6000));
-  check(!view() && Math.abs(wave().getBoundingClientRect().height - 76) < 1 && queries.length === before + 1, "找不到歌词时波形恢复原来的大小");
+  check(!view() && Math.abs(wave().getBoundingClientRect().height - 64) < 1 && wave().closest(".music-player__stage") && queries.length === before + 1, "找不到歌词时歌词的位置显示波形");
+  const page = document.querySelector<HTMLElement>(".music-player")!;
+  check(getComputedStyle(page).backgroundImage === "none" && getComputedStyle(page).backgroundColor === "rgba(0, 0, 0, 0)" && getComputedStyle(page).boxShadow === "none",
+    "音乐页直接放在岛上，没有自己的卡片底色和阴影（C17）");
   const hint = () => document.querySelector<HTMLButtonElement>(".music-player__lyrics-hint");
   const panel = document.querySelector(".music-player")!.getBoundingClientRect();
   check(hint()?.textContent === "没找到歌词 · 试试酷狗和网易云" && hint()!.getBoundingClientRect().left >= panel.left && hint()!.getBoundingClientRect().right <= panel.right,
