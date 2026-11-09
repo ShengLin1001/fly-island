@@ -23,6 +23,17 @@ export type SettingsClipboardText = {
   retentionOption: (days: number) => string;
   winV: string;
   winVHint: string;
+  ocr: string;
+  ocrHint: string;
+  captureFiles: string;
+  captureFilesHint: string;
+  captureHtml: string;
+  captureHtmlHint: string;
+  secrets: string;
+  secretsHint: string;
+  secretsOptions: Record<"mask" | "skip" | "keep", string>;
+  excludedApps: string;
+  excludedAppsHint: string;
 };
 
 export const zhCN: SettingsClipboardText = {
@@ -50,6 +61,17 @@ export const zhCN: SettingsClipboardText = {
   retentionOption: (days) => (days === 0 ? "不清理" : `${days} 天`),
   winV: "用 Win+V 打开",
   winVHint: "按 Win+V 打开岛屿的剪贴板，代替系统自带的剪贴板历史；关掉后 Win+V 还给系统。",
+  ocr: "识别图片里的文字",
+  ocrHint: "用 Windows 自带的文字识别在本机识别，不联网。识别出的文字可以搜索，也可以单独复制。",
+  captureFiles: "记录复制的文件",
+  captureFilesHint: "在资源管理器里复制的文件也进历史，粘贴回去仍是文件；贴到终端里是文件路径。",
+  captureHtml: "保留格式",
+  captureHtmlHint: "从网页、Word 复制的文字连同格式一起记下，粘贴时带格式；独立窗口里按 Shift+Enter 粘贴成纯文本。",
+  secrets: "密钥和令牌",
+  secretsHint: "看起来像 API Key、GitHub 令牌、私钥的内容：打码显示（粘贴时仍是原文）、不记录，或照常记录。",
+  secretsOptions: { mask: "打码", skip: "不记录", keep: "照常" },
+  excludedApps: "不记录这些程序复制的内容",
+  excludedAppsHint: "填程序名，逗号分隔，比如 keepass.exe。每条记录旁边会显示它来自哪个程序。",
 };
 
 export const en: SettingsClipboardText = {
@@ -77,4 +99,15 @@ export const en: SettingsClipboardText = {
   retentionOption: (days) => (days === 0 ? "Never" : days === 1 ? "1 day" : `${days} days`),
   winV: "Open with Win+V",
   winVHint: "Win+V opens the island's clipboard instead of Windows' own clipboard history; turned off, Win+V goes back to Windows.",
+  ocr: "Read the text in images",
+  ocrHint: "Windows' own text recognition, on this computer, offline. The text can be searched and copied on its own.",
+  captureFiles: "Record copied files",
+  captureFilesHint: "Files copied in Explorer join the history and paste back as files; into a terminal they go as paths.",
+  captureHtml: "Keep formatting",
+  captureHtmlHint: "Text copied from web pages or Word keeps its formatting when pasted; Shift+Enter in the window pastes plain text.",
+  secrets: "Keys and tokens",
+  secretsHint: "What looks like an API key, GitHub token or private key: shown masked (pasted as it is), not recorded, or recorded as usual.",
+  secretsOptions: { mask: "Mask", skip: "Skip", keep: "Keep" },
+  excludedApps: "Do not record copies from these programs",
+  excludedAppsHint: "Program names separated by commas, such as keepass.exe. Each entry shows the program it came from.",
 };

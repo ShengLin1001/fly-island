@@ -126,8 +126,9 @@ fn take_target() -> Option<HWND> {
 }
 
 /// Puts the entry on the clipboard, closes the popup and, with auto-paste on, pastes it into the
-/// window that was in front. An image goes as its path into a terminal when that is on.
-pub(super) fn paste(app: &AppHandle, id: &str) -> Result<(), String> {
+/// window that was in front. An image or files go as their path into a terminal when that is on;
+/// `plain` drops the formatting (C24.4).
+pub(super) fn paste(app: &AppHandle, id: &str, plain: bool) -> Result<(), String> {
     let service = service()?;
     let snapshot = service.snapshot()?;
     let settings = &snapshot.settings;
@@ -135,13 +136,15 @@ pub(super) fn paste(app: &AppHandle, id: &str) -> Result<(), String> {
         .items
         .iter()
         .find(|item| item.id == id)
-        .is_some_and(|item| item.kind == ClipboardHistoryItemKind::Image);
+        .is_some_and(|item| matches!(item.kind, ClipboardHistoryItemKind::Image | ClipboardHistoryItemKind::Files));
     let target = take_target();
     let into_terminal = target.is_some_and(|window| {
         win32::process::image_path(win32::process::window_process_id(window)).is_some_and(|path| is_terminal_process(&path))
     });
     let copy_as = if is_image && settings.auto_paste && settings.terminal_image_path && into_terminal {
         CopyAs::Path
+    } else if plain {
+        CopyAs::Plain
     } else {
         CopyAs::Original
     };

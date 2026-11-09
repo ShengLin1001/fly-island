@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ClipboardList, ImageIcon, Search, Star } from "lucide-react";
+import { ImageIcon, Search, Star } from "lucide-react";
 import { useTranslation } from "../../i18n";
 import type { ClipboardHistoryItem } from "./api";
+import { ClipboardEntryIcon } from "./ClipboardEntryIcon";
+import { matchesClipboardQuery } from "./clipboardSearch";
 import { popupIndexAfterKey } from "./popupKeys";
 import "./ClipboardPopup.css";
 
 /**
  * The clipboard window's list (C22.2): a search box, then the entries newest first. ↑↓ move the
- * selection, Enter or a click pastes it, 1–9 paste that row, Esc closes. `openCount` changes each
+ * selection, Enter or a click pastes it (with Shift, as plain text), 1–9 paste that row, Esc closes. `openCount` changes each
  * time the window is shown, which clears the search and goes back to the top.
  */
 export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFavorite }: {
   items: readonly ClipboardHistoryItem[];
   openCount: number;
-  onPaste: (id: string) => void;
+  onPaste: (id: string, plain: boolean) => void;
   onClose: () => void;
   onToggleFavorite: (id: string) => void;
 }) {
@@ -30,9 +32,7 @@ export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFav
   }, [openCount]);
 
   const needle = query.trim().toLowerCase();
-  const shown = needle
-    ? items.filter((item) => [item.preview, item.text ?? "", item.note ?? ""].join(" ").toLowerCase().includes(needle))
-    : items;
+  const shown = needle ? items.filter((item) => matchesClipboardQuery(item, needle)) : items;
   const current = Math.min(selected, Math.max(0, shown.length - 1));
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFav
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      if (shown[current]) onPaste(shown[current].id);
+      if (shown[current]) onPaste(shown[current].id, event.shiftKey);
       return;
     }
     // Digits paste a row only while the search box is empty, so a search can still hold numbers.
@@ -55,7 +55,7 @@ export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFav
     if (!action) return;
     event.preventDefault();
     if (action.paste) {
-      if (shown[action.index]) onPaste(shown[action.index].id);
+      if (shown[action.index]) onPaste(shown[action.index].id, false);
     } else {
       setSelected(action.index);
     }
@@ -89,7 +89,7 @@ export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFav
               className={`clipboard-popup__item${index === current ? " clipboard-popup__item--selected" : ""}`}
               onPointerMove={() => index !== current && setSelected(index)}
             >
-              <button className="clipboard-popup__row" type="button" tabIndex={-1} onClick={() => onPaste(item.id)}>
+              <button className="clipboard-popup__row" type="button" tabIndex={-1} onClick={(event) => onPaste(item.id, event.shiftKey)}>
                 <span className="clipboard-popup__index" aria-label={index < 9 ? t.clipboard.popup.quickPaste(index + 1) : undefined}>
                   {index < 9 ? index + 1 : ""}
                 </span>
@@ -98,11 +98,15 @@ export function ClipboardPopup({ items, openCount, onPaste, onClose, onToggleFav
                     {item.image?.thumbnailDataUrl ? <img src={item.image.thumbnailDataUrl} alt="" /> : <ImageIcon size={16} strokeWidth={1.5} absoluteStrokeWidth />}
                   </span>
                 ) : (
-                  <ClipboardList className="clipboard-popup__icon" size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+                  <ClipboardEntryIcon item={item} className="clipboard-popup__icon" />
                 )}
                 <span className="clipboard-popup__text">
                   <span className="clipboard-popup__preview">{item.preview}</span>
-                  {item.note && <span className="clipboard-popup__note">{item.note}</span>}
+                  {(item.note || item.source || item.tags?.length) && (
+                    <span className="clipboard-popup__note">
+                      {[item.tags?.map((tag) => `#${tag}`).join(" "), item.note, item.source?.name].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
                 </span>
               </button>
               <button

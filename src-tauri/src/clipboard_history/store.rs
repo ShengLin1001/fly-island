@@ -33,6 +33,7 @@ pub(super) fn load_history(history_path: &Path) -> PersistedClipboardHistory {
                     item.text.as_ref().is_some_and(|text| !text.is_empty())
                 }
                 ClipboardHistoryItemKind::Image => item.image.is_some(),
+                ClipboardHistoryItemKind::Files => item.files.as_ref().is_some_and(|files| !files.is_empty()),
             });
             history
         })

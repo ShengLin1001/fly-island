@@ -7,15 +7,17 @@ use std::{fs, path::Path, time::Duration};
 use tauri::{Emitter, Manager};
 
 use super::clipboard_io::{
-    quoted_path, read_clipboard_capture, write_clipboard_file, write_clipboard_image,
-    write_clipboard_text, ClipboardCapture,
+    quoted_path, read_clipboard_capture, write_clipboard_file, write_clipboard_files,
+    write_clipboard_html, write_clipboard_image, write_clipboard_text, CaptureKinds,
+    ClipboardCapture,
 };
+use super::secrets::{looks_like_secret, mask};
 use super::hotkey::{request_hotkey_refresh, HOTKEY_EVENT};
 use super::store::{
     create_item_id, encode_png, make_thumbnail, PersistedClipboardHistory, MAX_IMAGE_PNG_BYTES,
 };
 use super::{
-    current_unix_millis, ClipboardHistoryImage, ClipboardHistoryItem,
+    current_unix_millis, ClipboardHistoryImage, ClipboardHistoryItem, ClipboardSource, SecretHandling,
     ClipboardHistoryItemKind, ClipboardHistoryService, CopyAs, ClipboardHistorySettings,
     ClipboardHistorySnapshot, ClipboardHistoryState, HISTORY_CHANGED_EVENT, MAIN_WINDOW_LABEL,
     MAX_NOTE_CHARACTERS, SHORT_DUPLICATE_WINDOW_MS,
@@ -74,19 +76,33 @@ impl ClipboardHistoryService {
         };
 
         match (item.kind, copy_as) {
-            (ClipboardHistoryItemKind::Text, _) => {
+            (ClipboardHistoryItemKind::Text, copy_as) => {
                 let text = item
                     .text
                     .clone()
                     .ok_or_else(|| "Clipboard text item has no text.".to_string())?;
-                write_clipboard_text(&text)?;
+                // With its formatting unless asked for plain text (C24.4).
+                match (&item.html, copy_as) {
+                    (Some(html), CopyAs::Original) => write_clipboard_html(html, &text)?,
+                    _ => write_clipboard_text(&text)?,
+                }
+            }
+            (ClipboardHistoryItemKind::Files, copy_as) => {
+                let files = item.files.clone().unwrap_or_default();
+                if copy_as == CopyAs::Plain || copy_as == CopyAs::Path {
+                    super::suspend_clipboard_capture(PATH_CAPTURE_PAUSE);
+                    let quoted: Vec<String> = files.iter().map(|path| quoted_path(Path::new(path))).collect();
+                    write_clipboard_text(&quoted.join(" "))?;
+                } else {
+                    write_clipboard_files(&files)?;
+                }
             }
             (ClipboardHistoryItemKind::Image, copy_as) => {
                 let image = item
                     .image
                     .as_ref()
                     .ok_or_else(|| "Clipboard image item has no image.".to_string())?;
-                if copy_as == CopyAs::Path {
+                if copy_as == CopyAs::Path || copy_as == CopyAs::Plain {
                     // The path is not something the user copied: keep it out of the history.
                     super::suspend_clipboard_capture(PATH_CAPTURE_PAUSE);
                     write_clipboard_text(&quoted_path(Path::new(&image.original_path)))?;
@@ -206,7 +222,14 @@ impl ClipboardHistoryService {
             return;
         }
 
-        let capture = match read_clipboard_capture(settings.capture_images) {
+        // Whose copy it is (C24.2): the clipboard's owner, else the window in front.
+        let source = source_app();
+        if source.as_ref().is_some_and(|source| is_excluded(&settings.excluded_apps, &source.path)) {
+            return;
+        }
+
+        let kinds = CaptureKinds { images: settings.capture_images, files: settings.capture_files, html: settings.capture_html };
+        let capture = match read_clipboard_capture(kinds) {
             Ok(Some(capture)) => capture,
             Ok(None) => return,
             Err(error) => {
@@ -215,12 +238,19 @@ impl ClipboardHistoryService {
             }
         };
 
-        if let Err(error) = self.insert_capture(capture) {
+        // Keys and tokens (C24.1): skipped, or kept with a masked preview.
+        let secret = matches!(&capture, ClipboardCapture::Text { text, .. } if looks_like_secret(text));
+        if secret && settings.secrets == SecretHandling::Skip {
+            return;
+        }
+        let masked = secret && settings.secrets == SecretHandling::Mask;
+
+        if let Err(error) = self.insert_capture(capture, source, masked) {
             eprintln!("failed to store clipboard history item: {error}");
         }
     }
 
-    fn insert_capture(&self, capture: ClipboardCapture) -> Result<(), String> {
+    fn insert_capture(&self, capture: ClipboardCapture, source: Option<ClipboardSource>, masked: bool) -> Result<(), String> {
         let now = current_unix_millis();
         let hash = capture.hash().to_string();
         let mut state = self.state.lock().map_err(|error| error.to_string())?;
@@ -248,41 +278,41 @@ impl ClipboardHistoryService {
             return Ok(());
         }
 
+        let base = |hash: String, kind, preview| ClipboardHistoryItem {
+            id: create_item_id(now, &hash),
+            kind,
+            hash,
+            created_at: now,
+            copied_at: now,
+            favorite: false,
+            note: String::new(),
+            preview,
+            text: None,
+            image: None,
+            html: None,
+            files: None,
+            source: source.clone(),
+            tags: Vec::new(),
+            ocr_text: None,
+            masked: false,
+        };
         let item = match capture {
-            ClipboardCapture::Text {
-                hash,
-                text,
-                preview,
-            } => ClipboardHistoryItem {
-                id: create_item_id(now, &hash),
-                kind: ClipboardHistoryItemKind::Text,
-                hash,
-                created_at: now,
-                copied_at: now,
-                favorite: false,
-                note: String::new(),
-                preview,
+            ClipboardCapture::Text { hash, text, preview, html } => ClipboardHistoryItem {
+                preview: if masked { mask(&text) } else { preview },
                 text: Some(text),
-                image: None,
+                html,
+                masked,
+                ..base(hash, ClipboardHistoryItemKind::Text, String::new())
             },
-            ClipboardCapture::Image {
-                hash,
-                width,
-                height,
-                rgba,
-            } => {
+            ClipboardCapture::Files { hash, paths, preview } => ClipboardHistoryItem {
+                files: Some(paths),
+                ..base(hash, ClipboardHistoryItemKind::Files, preview)
+            },
+            ClipboardCapture::Image { hash, width, height, rgba } => {
                 let image = self.persist_image(&hash, width, height, rgba)?;
                 ClipboardHistoryItem {
-                    id: create_item_id(now, &hash),
-                    kind: ClipboardHistoryItemKind::Image,
-                    hash,
-                    created_at: now,
-                    copied_at: now,
-                    favorite: false,
-                    note: String::new(),
-                    preview: format!("{width} x {height} image"),
-                    text: None,
                     image: Some(image),
+                    ..base(hash, ClipboardHistoryItemKind::Image, format!("{width} x {height} image"))
                 }
             }
         };
@@ -412,6 +442,28 @@ impl ClipboardHistoryService {
     }
 }
 
+
+/// The program that put the current contents on the clipboard, or the one in front.
+fn source_app() -> Option<ClipboardSource> {
+    let window = win32::clipboard::owner_window().unwrap_or_else(win32::window::foreground_window);
+    let path = win32::process::image_path(win32::process::window_process_id(window))?;
+    let name = Path::new(&path).file_stem()?.to_string_lossy().into_owned();
+    Some(ClipboardSource { path, name })
+}
+
+/// Whether the program at `path` is on the "do not record" list (lower-case executable names).
+pub(super) fn is_excluded(excluded: &[String], path: &str) -> bool {
+    let name = Path::new(path).file_name().map(|name| name.to_string_lossy().to_lowercase());
+    name.is_some_and(|name| excluded.iter().any(|excluded| *excluded == name))
+}
+
+#[cfg(test)]
+#[test]
+fn excluded_apps_match_by_executable_name() {
+    let excluded = vec!["keepass.exe".to_string()];
+    assert!(is_excluded(&excluded, r"C:\Program Files\KeePass\KeePass.exe"));
+    assert!(!is_excluded(&excluded, r"C:\Windows\notepad.exe"));
+}
 
 #[cfg(test)]
 #[test]

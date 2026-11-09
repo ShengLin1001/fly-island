@@ -1,6 +1,7 @@
-import { Check, ClipboardList, Copy, FileImage, ImageIcon, Pencil, SquareTerminal, Star, Trash2, X } from "lucide-react";
+import { Check, Copy, FileImage, ImageIcon, Pencil, SquareTerminal, Star, Trash2, X } from "lucide-react";
 import { useTranslation } from "../../i18n";
 import type { ClipboardCopyAs, ClipboardHistoryItem } from "./api";
+import { ClipboardEntryIcon } from "./ClipboardEntryIcon";
 import "./ClipboardHistoryItemRow.css";
 
 export function ClipboardHistoryItemRow({
@@ -61,7 +62,7 @@ export function ClipboardHistoryItemRow({
           </span>
         ) : (
           <span className="clipboard-item__text-icon">
-            <ClipboardList size={17} strokeWidth={2.1} />
+            <ClipboardEntryIcon item={item} />
           </span>
         )}
         <span className="clipboard-item__body">

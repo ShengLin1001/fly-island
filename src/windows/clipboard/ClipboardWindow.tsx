@@ -36,7 +36,7 @@ export function ClipboardWindow() {
     <ClipboardPopup
       items={clipboardHistory.items}
       openCount={openCount}
-      onPaste={(id) => void pasteClipboardItem(id).catch((error: unknown) => console.error("Failed to paste a clipboard entry", error))}
+      onPaste={(id, plain) => void pasteClipboardItem(id, plain).catch((error: unknown) => console.error("Failed to paste a clipboard entry", error))}
       onClose={close}
       onToggleFavorite={(id) => void toggleClipboardHistoryFavorite(id)}
     />

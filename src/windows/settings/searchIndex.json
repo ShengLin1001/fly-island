@@ -1055,6 +1055,32 @@
       "page": "clipboard",
       "zh-CN": {
         "group": "剪贴板历史",
+        "title": "记录复制的文件",
+        "description": "在资源管理器里复制的文件也进历史，粘贴回去仍是文件；贴到终端里是文件路径。"
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Record copied files",
+        "description": "Files copied in Explorer join the history and paste back as files; into a terminal they go as paths."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
+        "title": "保留格式",
+        "description": "从网页、Word 复制的文字连同格式一起记下，粘贴时带格式；独立窗口里按 Shift+Enter 粘贴成纯文本。"
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Keep formatting",
+        "description": "Text copied from web pages or Word keeps its formatting when pasted; Shift+Enter in the window pastes plain text."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
         "title": "不记录密码",
         "description": "密码管理器（KeePass、Bitwarden、1Password 等）复制的密码带着「不要记录」的标记，和系统剪贴板历史一样跳过它们。"
       },
@@ -1062,6 +1088,42 @@
         "group": "Clipboard history",
         "title": "Do not record passwords",
         "description": "Password managers (KeePass, Bitwarden, 1Password...) mark the passwords they copy; like Windows' own clipboard history, these are skipped."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
+        "title": "密钥和令牌",
+        "description": "看起来像 API Key、GitHub 令牌、私钥的内容：打码显示（粘贴时仍是原文）、不记录，或照常记录。",
+        "options": [
+          "打码",
+          "不记录",
+          "照常"
+        ]
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Keys and tokens",
+        "description": "What looks like an API key, GitHub token or private key: shown masked (pasted as it is), not recorded, or recorded as usual.",
+        "options": [
+          "Mask",
+          "Skip",
+          "Keep"
+        ]
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
+        "title": "不记录这些程序复制的内容",
+        "description": "填程序名，逗号分隔，比如 keepass.exe。每条记录旁边会显示它来自哪个程序。"
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Do not record copies from these programs",
+        "description": "Program names separated by commas, such as keepass.exe. Each entry shows the program it came from."
       }
     },
     {

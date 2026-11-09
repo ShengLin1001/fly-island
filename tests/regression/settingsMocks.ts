@@ -41,7 +41,7 @@ mockIPC((command, payload) => {
     case "get_default_todo_save_directory": return "";
     case "get_clipboard_history":
     case "set_clipboard_history_settings":
-      return { settings: { enabled: true, captureImages: true, maxItems: 100, shortcut: "Ctrl+Shift+V", shortcutEnabled: true, openIn: "window", popupPosition: "cursor", autoPaste: true, terminalImagePath: true, retentionDays: 0, skipSensitive: true, winV: false, ...(args.settings as object | undefined) }, items: [] };
+      return { settings: { enabled: true, captureImages: true, maxItems: 100, shortcut: "Ctrl+Shift+V", shortcutEnabled: true, openIn: "window", popupPosition: "cursor", autoPaste: true, terminalImagePath: true, retentionDays: 0, skipSensitive: true, winV: false, secrets: "mask", excludedApps: [], captureFiles: true, captureHtml: true, ocr: true, ...(args.settings as object | undefined) }, items: [] };
     case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "C:\\Users\\demo\\AppData\\Roaming\\com.focusd.island\\agent-status.json" };
     case "get_qq_mail_state": return mailboxes;
     case "connect_qq_mail":

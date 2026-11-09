@@ -5,6 +5,7 @@ mod hotkey;
 mod listener;
 mod plugin_view;
 mod popup;
+mod secrets;
 mod service;
 mod store;
 
@@ -106,7 +107,46 @@ pub struct ClipboardHistorySettings {
     /// Win+V opens the history instead of Windows' own clipboard history (C22.3).
     #[serde(default)]
     win_v: bool,
+    /// What happens to text that looks like a key or token (C24.1).
+    #[serde(default)]
+    secrets: SecretHandling,
+    /// Executable names (lower case, e.g. "keepass.exe") whose copies are not recorded (C24.2).
+    #[serde(default)]
+    excluded_apps: Vec<String>,
+    /// Records files copied in Explorer (C24.3).
+    #[serde(default = "default_true")]
+    capture_files: bool,
+    /// Keeps the HTML next to copied text, for pasting with formatting (C24.4).
+    #[serde(default = "default_true")]
+    capture_html: bool,
+    /// Reads the text in recorded images with Windows' own OCR, on this computer (C24.9).
+    #[serde(default = "default_true")]
+    ocr: bool,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SecretHandling {
+    /// Recorded, but shown as its first characters and dots until revealed.
+    #[default]
+    Mask,
+    Skip,
+    Keep,
+}
+
+/// The program an entry was copied from (C24.2).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipboardSource {
+    /// Full path of the executable, for its icon.
+    path: String,
+    /// Its file name without ".exe".
+    name: String,
+}
+
+const MAX_EXCLUDED_APPS: usize = 50;
+const MAX_TAGS: usize = 8;
+const MAX_TAG_CHARACTERS: usize = 16;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -141,6 +181,11 @@ impl Default for ClipboardHistorySettings {
             retention_days: 0,
             skip_sensitive: true,
             win_v: false,
+            secrets: SecretHandling::Mask,
+            excluded_apps: Vec::new(),
+            capture_files: true,
+            capture_html: true,
+            ocr: true,
         }
     }
 }
@@ -149,6 +194,7 @@ impl ClipboardHistorySettings {
     fn normalized(mut self) -> Self {
         self.max_items = self.max_items.clamp(MIN_MAX_ITEMS, MAX_MAX_ITEMS);
         self.retention_days = self.retention_days.min(MAX_RETENTION_DAYS);
+        self.excluded_apps = normalized_app_names(&self.excluded_apps);
         // The default parses to its own label (see hotkey tests), so falling back
         // to the constant matches falling back to its parsed binding.
         self.shortcut = parse_shortcut_binding(&self.shortcut)
@@ -167,6 +213,8 @@ pub(crate) enum CopyAs {
     Original,
     File,
     Path,
+    /// Text without its formatting; files and images as their paths (C24.4).
+    Plain,
 }
 
 #[derive(Clone)]
@@ -192,6 +240,8 @@ fn default_shortcut_binding() -> Option<ShortcutBinding> {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ClipboardHistoryItemKind {
+    /// Files copied in Explorer (C24.3); older history files never have it.
+    Files,
     Text,
     Image,
 }
@@ -211,6 +261,47 @@ pub struct ClipboardHistoryItem {
     preview: String,
     text: Option<String>,
     image: Option<ClipboardHistoryImage>,
+    /// The text as HTML (C24.4).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    html: Option<String>,
+    /// The paths of a files entry (C24.3).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    files: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source: Option<ClipboardSource>,
+    /// Tags the user gave it (C24.5).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    tags: Vec<String>,
+    /// Text Windows' OCR read in an image (C24.9).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ocr_text: Option<String>,
+    /// Looks like a key or token: the preview is masked (C24.1).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    masked: bool,
+}
+
+/// Lower-case executable names, without blanks or duplicates, at most MAX_EXCLUDED_APPS.
+fn normalized_app_names(names: &[String]) -> Vec<String> {
+    let mut seen = Vec::new();
+    for name in names {
+        let name = name.trim().to_lowercase();
+        if !name.is_empty() && !seen.contains(&name) && seen.len() < MAX_EXCLUDED_APPS {
+            seen.push(name);
+        }
+    }
+    seen
+}
+
+/// Tags as the user typed them: trimmed, without a leading '#', no blanks or duplicates, capped.
+pub(crate) fn normalized_tags(tags: &[String]) -> Vec<String> {
+    let mut kept: Vec<String> = Vec::new();
+    for tag in tags {
+        let tag: String = tag.trim().trim_start_matches('#').trim().chars().take(MAX_TAG_CHARACTERS).collect();
+        if !tag.is_empty() && !kept.iter().any(|kept| kept.eq_ignore_ascii_case(&tag)) && kept.len() < MAX_TAGS {
+            kept.push(tag);
+        }
+    }
+    kept
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -269,8 +360,8 @@ pub fn copy_clipboard_history_item_as(id: String, copy_as: CopyAs) -> Result<Cli
 /// From the clipboard window: puts the entry on the clipboard and pastes it into the window that
 /// was in front (C22.2).
 #[tauri::command]
-pub async fn paste_clipboard_history_item(app: AppHandle, id: String) -> Result<(), String> {
-    popup::paste(&app, &id)
+pub async fn paste_clipboard_history_item(app: AppHandle, id: String, plain: Option<bool>) -> Result<(), String> {
+    popup::paste(&app, &id, plain.unwrap_or(false))
 }
 
 #[tauri::command]

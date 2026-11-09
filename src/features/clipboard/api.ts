@@ -22,7 +22,20 @@ export type ClipboardHistorySettings = {
   skipSensitive: boolean;
   /** Win+V opens the history instead of Windows' own (C22.3). */
   winV: boolean;
+  /** Text that looks like a key or token (C24.1). */
+  secrets: ClipboardSecretHandling;
+  /** Lower-case executable names whose copies are not recorded (C24.2). */
+  excludedApps: string[];
+  captureFiles: boolean;
+  captureHtml: boolean;
+  /** Reads the text in images with Windows' OCR (C24.9). */
+  ocr: boolean;
 };
+
+export type ClipboardSecretHandling = "mask" | "skip" | "keep";
+
+/** The program an entry was copied from (C24.2). */
+export type ClipboardSource = { path: string; name: string };
 
 export type ClipboardOpenIn = "window" | "island";
 export type ClipboardPopupPosition = "cursor" | "center";
@@ -38,7 +51,7 @@ export type ClipboardHistoryImage = {
 
 export type ClipboardHistoryItem = {
   id: string;
-  kind: "text" | "image";
+  kind: "text" | "image" | "files";
   hash: string;
   createdAt: number;
   copiedAt: number;
@@ -47,6 +60,16 @@ export type ClipboardHistoryItem = {
   preview: string;
   text?: string;
   image?: ClipboardHistoryImage;
+  /** The text as HTML, pasted with its formatting (C24.4). */
+  html?: string;
+  /** A files entry's paths (C24.3). */
+  files?: string[];
+  source?: ClipboardSource;
+  tags?: string[];
+  /** Text Windows' OCR read in the image (C24.9). */
+  ocrText?: string;
+  /** Looks like a key: the preview is masked (C24.1). */
+  masked?: boolean;
 };
 
 export type ClipboardHistorySnapshot = {
@@ -73,7 +96,7 @@ export function setClipboardHistorySettings(settings: ClipboardHistorySettings) 
 }
 
 /** How an image goes back (C22.1): as copied, as its saved file, or as its quoted path (for terminals). */
-export type ClipboardCopyAs = "original" | "file" | "path";
+export type ClipboardCopyAs = "original" | "file" | "path" | "plain";
 
 // copy_clipboard_history_item_as in src-tauri/src/clipboard_history/mod.rs (CopyAs).
 export function copyClipboardItem(id: string, copyAs: ClipboardCopyAs = "original") {
@@ -86,8 +109,13 @@ export function copyClipboardItem(id: string, copyAs: ClipboardCopyAs = "origina
 const CLIPBOARD_POPUP_OPENED_EVENT = "clipboard-popup-opened";
 
 /** Copies the entry, closes the window and pastes into the window that was in front. */
-export function pasteClipboardItem(id: string) {
-  return invoke<void>("paste_clipboard_history_item", { id });
+export function pasteClipboardItem(id: string, plain = false) {
+  return invoke<void>("paste_clipboard_history_item", { id, plain });
+}
+
+/** A program's icon as a PNG data URL (get_agent_host_icon in agent_status), null without one. */
+export function getAppIcon(path: string) {
+  return invoke<string | null>("get_agent_host_icon", { path });
 }
 
 export function hideClipboardPopup() {

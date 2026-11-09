@@ -1,0 +1,15 @@
+/* The program's icon (C24.2) covers the plain icon once it has loaded. */
+.clipboard-entry-icon {
+  position: relative;
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+}
+
+.clipboard-entry-icon__app {
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+}

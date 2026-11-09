@@ -63,7 +63,7 @@ export const zhCN: ClipboardText = {
   popup: {
     title: "剪贴板",
     search: "搜索剪贴记录",
-    hint: "↑↓ 选择 · Enter 粘贴 · 1–9 快速粘贴 · Esc 关闭",
+    hint: "Enter 粘贴 · Shift+Enter 纯文本 · 1–9 快速粘贴 · Esc 关闭",
     empty: "还没有剪贴记录",
     quickPaste: (index) => `按 ${index} 粘贴`,
   },
@@ -106,7 +106,7 @@ export const en: ClipboardText = {
   popup: {
     title: "Clipboard",
     search: "Search clipboard history",
-    hint: "↑↓ select · Enter paste · 1–9 quick paste · Esc close",
+    hint: "Enter paste · Shift+Enter plain text · 1–9 quick paste · Esc close",
     empty: "Nothing copied yet",
     quickPaste: (index) => `Press ${index} to paste`,
   },

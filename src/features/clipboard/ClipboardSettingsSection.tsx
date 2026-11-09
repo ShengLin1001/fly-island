@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
 import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
-import { SettingsNumberRow } from "../../components/settings/SettingsNumberRow";
 import { SettingsRow } from "../../components/settings/SettingsRow";
-import { SettingsSelect } from "../../components/settings/SettingsSelect";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import { useTranslation } from "../../i18n";
 import type { ClipboardHistorySettings, ClipboardOpenIn, ClipboardPopupPosition } from "./api";
-import { CLIPBOARD_RETENTION_DAYS } from "./settings";
+import { ClipboardRecordSettings } from "./ClipboardRecordSettings";
 
 /**
  * The clipboard history options below the module switch (which is `enabled`, set by the
@@ -80,38 +78,7 @@ export function ClipboardSettingsSection({ clipboardSettings, onClipboardSetting
         )}
         {children}
       </SettingsGroup>
-      <SettingsGroup title={text.title}>
-        <SettingsToggleRow
-          title={text.captureImages}
-          checked={clipboardSettings.captureImages}
-          onChange={(captureImages) => change({ captureImages })}
-        />
-        <SettingsToggleRow
-          title={text.skipSensitive}
-          description={text.skipSensitiveHint}
-          checked={clipboardSettings.skipSensitive}
-          onChange={(skipSensitive) => change({ skipSensitive })}
-        />
-        <SettingsNumberRow
-          title={text.maxItems}
-          value={clipboardSettings.maxItems}
-          min={5}
-          max={200}
-          onChange={(maxItems) => change({ maxItems })}
-        />
-        <SettingsRow
-          title={text.retention}
-          description={text.retentionHint}
-          control={
-            <SettingsSelect
-              value={String(clipboardSettings.retentionDays)}
-              ariaLabel={text.retention}
-              options={CLIPBOARD_RETENTION_DAYS.map((days) => ({ value: String(days), label: text.retentionOption(days) }))}
-              onChange={(value) => change({ retentionDays: Number(value) })}
-            />
-          }
-        />
-      </SettingsGroup>
+      <ClipboardRecordSettings clipboardSettings={clipboardSettings} onChange={change} />
     </>
   );
 }

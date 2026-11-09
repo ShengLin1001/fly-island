@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardHistoryItem } from "./api";
+import { matchesClipboardQuery } from "./clipboardSearch";
 
 export function useClipboardHistoryList(items: ClipboardHistoryItem[]) {
   const [query, setQuery] = useState("");
@@ -17,13 +18,7 @@ export function useClipboardHistoryList(items: ClipboardHistoryItem[]) {
       return viewedItems;
     }
 
-    return viewedItems.filter((item) => {
-      const haystack = [item.preview, item.text ?? "", item.note ?? ""]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(normalizedQuery);
-    });
+    return viewedItems.filter((item) => matchesClipboardQuery(item, normalizedQuery));
   }, [normalizedQuery, viewedItems]);
 
   useLayoutEffect(() => {

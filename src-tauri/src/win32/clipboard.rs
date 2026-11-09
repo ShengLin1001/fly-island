@@ -8,6 +8,7 @@ use windows::{
         System::{
             DataExchange::{
                 AddClipboardFormatListener, CloseClipboard, EmptyClipboard, GetClipboardData,
+                GetClipboardOwner,
                 IsClipboardFormatAvailable, OpenClipboard, RegisterClipboardFormatW,
                 RemoveClipboardFormatListener,
             },
@@ -38,6 +39,12 @@ pub(crate) fn empty() -> Result<()> {
         CloseClipboard()?;
         emptied
     }
+}
+
+/// The window that put the current contents on the clipboard, if it says (C24.2: the source app).
+pub(crate) fn owner_window() -> Option<HWND> {
+    // SAFETY: takes no arguments; the handle is only compared and passed on by value.
+    unsafe { GetClipboardOwner() }.ok().filter(|window| !window.is_invalid())
 }
 
 fn format_id(name: PCWSTR) -> u32 {
