@@ -18,11 +18,13 @@ let replyMarkerOn = false;
 export const REPLY_MARKER = { path: "C:\\Users\\demo\\.claude\\rules\\focusd-island-reply-marker.md", content: "<!-- focusd-island: reply marker v2 -->\n## Reply status marker" };
 const replyMarker = () => ({ installed: replyMarkerOn, outdated: false, ...REPLY_MARKER, remotes: [] });
 export const replyMarkerCalls: boolean[] = [];
+export const openedUrls: string[] = [];
 mockIPC((command, payload) => {
   commands.push(command);
   const args = (payload ?? {}) as Record<string, unknown>;
   if (command === "revoke_plugin_sensitive_permission") revokedPermissions.push(String(args.permission));
   if (command === "install_market_plugin") marketInstalls.push(args);
+  if (command === "plugin:opener|open_url") openedUrls.push(String(args.url));
   // Answers with the plugin list, like the island does after saving the shortcut.
   if (command === "set_plugin_keybinding") {
     keybindingCalls.push(args);
@@ -59,6 +61,7 @@ mockIPC((command, payload) => {
     case "get_updater_proxy": return null;
     case "plugin:app|version": return "0.0.0-test";
     case "get_cached_plugin_market": return null;
+    case "get_plugin_market_likes": return { "dev.example.new": { count: 12, url: "https://github.com/TixXin/focusd-plugins/discussions/9" }, "dev.example.todo-sync": { count: 3, url: "https://github.com/TixXin/focusd-plugins/discussions/8" } };
     case "get_plugin_market": return {
       indexUrl: "https://raw.githubusercontent.com/TixXin/focusd-plugins/main/index.json",
       nodeAvailable: false,

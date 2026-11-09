@@ -61,13 +61,14 @@ test("plugin pages get a height by template, within the panel limit", () => {
   assert.equal(getPluginPageExpandedHeight("list", 300, 8), 300);
 });
 
-test("the collapsed bar shows the status text with the highest priority, first plugin on ties", async () => {
-  const { topStatusItem } = await import("../../src/features/plugin-views/statusItems.ts");
+test("the collapsed bar shows each status text, highest priority first, first plugin on ties", async () => {
+  const { shownStatusEntries } = await import("../../src/features/plugin-views/statusItems.ts");
   const entry = (pluginId, priority, text = "x") => ({ pluginId, itemId: "t", priority, text, tooltip: null, tone: "neutral" });
-  assert.equal(topStatusItem([]), null);
-  assert.equal(topStatusItem([entry("a", 1), entry("b", 5), entry("c", 5)]).pluginId, "b");
-  assert.equal(topStatusItem([entry("a", -3), entry("b", -1)]).pluginId, "b");
-  assert.equal(topStatusItem([entry("a", 9, "")]), null);
+  const ids = (entries) => shownStatusEntries(entries).map((item) => item.pluginId).join(",");
+  assert.equal(ids([]), "");
+  assert.equal(ids([entry("a", 1), entry("b", 5), entry("c", 5)]), "b,c,a");
+  assert.equal(ids([entry("a", -3), entry("b", -1)]), "b,a");
+  assert.equal(ids([entry("a", 9, ""), entry("b", 0)]), "b");
 });
 
 test("plugin page preferences order and hide pages, and bad stored data means defaults", async () => {

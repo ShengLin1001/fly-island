@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Minimal repro for island-jitter.md: the transition rules of IslandShell.css around one line of
+     text per layer. #root takes collapsed / expanded; mode-compositor animates transform, mode-zoom
+     uses zoom instead of transform: scale. Set --cw, --sc and --se on #root. -->
+<style>
+@property --island-scale { syntax: "<number>"; inherits: true; initial-value: 1; }
+body{margin:0;background:#000;font-family:"Microsoft YaHei UI","Segoe UI",sans-serif}
+.stage{width:820px;height:460px;display:flex;justify-content:center;align-items:flex-start}
+.island{position:relative;flex:0 0 auto;background:#111;color:#fff;transform:scale(var(--island-scale));transform-origin:top center;
+ transition:width 560ms cubic-bezier(.16,1,.3,1),height 560ms cubic-bezier(.16,1,.3,1),border-radius 560ms cubic-bezier(.16,1,.3,1),--island-scale 560ms cubic-bezier(.16,1,.3,1)}
+.mode-compositor .island{transform:scale(var(--s));transition:width 560ms cubic-bezier(.16,1,.3,1),height 560ms cubic-bezier(.16,1,.3,1),border-radius 560ms cubic-bezier(.16,1,.3,1),transform 560ms cubic-bezier(.16,1,.3,1)}
+.surface{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
+.c,.x{position:absolute;top:0;left:50%;z-index:2;opacity:1!important;transition:top 280ms cubic-bezier(.16,1,.3,1)}
+.c{width:var(--cw);height:38px;margin-left:calc(var(--cw)/-2);display:flex;align-items:center;padding:0 18px;box-sizing:border-box;font-size:13px}
+.x{width:560px;height:306px;margin-left:-280px;padding:18px 20px;box-sizing:border-box;top:-6px;font-size:15px}
+.collapsed .island{width:var(--cw);height:38px;border-radius:0 0 22px 22px;--island-scale:var(--sc);--s:var(--sc)}
+.expanded .island{width:560px;height:306px;border-radius:0 0 30px 30px;--island-scale:var(--se);--s:var(--se)}
+.expanded .c{top:-6px}.expanded .x{top:0;transition:top 280ms cubic-bezier(.16,1,.3,1) 140ms}
+.static .x, .static .c{transition:none!important}
+.mode-zoom .island{transform:none;zoom:var(--island-scale)}
+</style></head><body><div id="root" class="collapsed"><div class="stage"><div class="island"><div class="surface">
+<div class="c"><span id="ct">剩余3个待办 Todo</span></div>
+<div class="x"><span id="xt">待办清单 Today's tasks 12</span></div>
+</div></div></div></div></body></html>

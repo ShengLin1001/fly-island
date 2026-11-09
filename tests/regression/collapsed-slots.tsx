@@ -1,5 +1,5 @@
 // pnpm dev, then open /tests/regression/collapsed-slots.html (demo) or ?test=1 (checks).
-import { act, StrictMode, useState, type CSSProperties, type ReactNode } from "react";
+import { act, StrictMode, useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import "../../src/styles/tokens.css";
@@ -12,7 +12,7 @@ import type { PluginNotificationsController } from "../../src/features/plugins/u
 const NO_PLUGIN_NOTIFICATIONS: PluginNotificationsController = { notification: null, dismiss: () => {}, runAction: () => {} };
 import type { CollapsedSlots } from "../../src/windows/island/types";
 import { MiniRing } from "../../src/components/MiniRing";
-import { PluginStatusChip } from "../../src/features/plugin-views/PluginStatusChip";
+import { emit } from "@tauri-apps/api/event";
 import type { PluginStatusEntry } from "../../src/features/plugin-views/api";
 import { useQQNotifications } from "../../src/features/messages/qq-notifications/QQNotifications";
 import { useWeChatReminders } from "../../src/features/messages/wechat/WeChatReminders";
@@ -35,21 +35,23 @@ keys.forEach((key) => localStorage.removeItem(key));
 window.addEventListener("beforeunload", () => {
   keys.forEach((key, index) => originals[index] === null ? localStorage.removeItem(key) : localStorage.setItem(key, originals[index]!));
 });
+let pluginStatus: PluginStatusEntry[] = [];
 mockIPC((command) => {
+  if (command === "list_plugin_views") return { views: [], status: pluginStatus };
   if (command === "get_qq_mail_state") return [{
     revision: 0, email: "", configured: false, enabled: false, syncing: false,
     status: "disabled", unreadCount: 0, items: [], lastSyncedAt: null, error: null,
   }];
 }, { shouldMockEvents: true });
 
-type State = { slots?: CollapsedSlots; task: string | null; agents: boolean; count: number; agentTitle?: string; chip?: ReactNode };
+type State = { slots?: CollapsedSlots; task: string | null; agents: boolean; count: number; agentTitle?: string; status?: PluginStatusEntry[] };
 const STATUS: PluginStatusEntry = { pluginId: "dev.test.monitor", itemId: "bar", priority: 0, text: "CPU 23% · 内存 61%", tooltip: null, tone: "neutral" };
 const usageRing = <MiniRing rings={[{ value: 0.62, color: "#7ccfff" }, { value: 0.28, color: "#b9a6ff" }]} ariaLabel="5 小时 62%，7 天 28%" title="5 小时 62%，7 天 28%" />;
 const sessionRing = <MiniRing segments={[{ value: 0.5, color: "#5ad19a" }, { value: 0.25, color: "#f5c46b" }, { value: 0.25, color: "#ff8a80" }]} size={22} label="4" ariaLabel="4 个会话" title="4 个会话：2 运行，1 等待，1 出错" />;
 const DEMO: State = {
-  slots: { center: <span style={{ color: "var(--text-2)", fontSize: 13 }}>· · ·</span>, gauges: usageRing, agentCount: sessionRing },
+  slots: { center: <span style={{ color: "var(--text-2)", fontSize: 13 }}>· · ·</span>, gauges: [{ id: "usage:claudeCode", node: usageRing }], agentCount: sessionRing },
   task: null, agents: true, count: 4,
-  chip: <PluginStatusChip status={{ ...STATUS, ring: 0.23, cells: [{ label: "CPU", value: "23%", tone: "neutral" }, { label: "GPU", value: "81°", tone: "warning" }] }} onOpen={() => {}} />,
+  status: [{ ...STATUS, ring: 0.23, cells: [{ label: "CPU", value: "23%", tone: "neutral" }, { label: "GPU", value: "81°", tone: "warning" }] }],
 };
 let change: (next: Partial<State>) => void;
 let openedPage: string | null = null;
@@ -68,7 +70,7 @@ function Fixture() {
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"
       mediaState={UNAVAILABLE_MEDIA}
       features={{ todo: true, music: false, clipboard: true, shelf: true, qq: false, wechat: false, qqMail: false, agents: state.agents, translation: false }}
-      shelfCount={null} collapsedSlots={state.slots} pluginStatusChip={state.chip}
+      shelfCount={null} collapsedSlots={state.slots}
       onOpenPage={(page) => { openedPage = page; }} onOpenMessages={() => {}}
       onPageChange={() => {}} onWindowDragStart={() => {}} onCollapse={() => {}}
       onResetPosition={() => {}} minimizesToTray onMinimize={() => {}} onOpenSettings={() => {}} onOpenTranslator={() => {}} translationPeek={null} onOpenTranslationPeek={() => {}} onTuck={() => {}} onReveal={() => {}} pageDigitModifiers="Alt">
@@ -83,7 +85,15 @@ function check(condition: unknown, label: string) {
   messages.push(`PASS ${label}`);
 }
 const bar = () => document.querySelector<HTMLElement>(".island__collapsed")!;
-const set = (next: Partial<State>) => act(async () => change(next));
+const set = (next: Partial<State>) => act(async () => {
+  change(next);
+  // The bar reads plugin statuses over IPC, as on the island; tell it they changed.
+  if (next.status !== undefined) {
+    pluginStatus = next.status;
+    await emit("plugin-view-changed", { kind: "status", pluginId: STATUS.pluginId, itemId: STATUS.itemId, status: null });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+});
 async function settle() {
   const deadline = performance.now() + 1500;
   while (bar().querySelector(".island__summary-layer--outgoing, .island__summary-layer--incoming")) {
@@ -97,14 +107,14 @@ const rings = document.getElementById("rings")!;
 async function runChecks() {
   try {
     const plain = bar().innerHTML;
-    for (const slots of [{}, { center: null, gauges: false, agentCount: undefined }] as CollapsedSlots[]) {
+    for (const slots of [{}, { center: null, gauges: [], agentCount: undefined }] as CollapsedSlots[]) {
       await set({ slots });
       check(bar().innerHTML === plain, `空槽位不改变收起条（${JSON.stringify(slots)}）`);
     }
     await set({ slots: undefined, task: null });
     await settle();
     const empty = bar().innerHTML;
-    for (const slots of [{}, { center: null, gauges: false, agentCount: undefined }] as CollapsedSlots[]) {
+    for (const slots of [{}, { center: null, gauges: [], agentCount: undefined }] as CollapsedSlots[]) {
       await set({ slots });
       check(bar().innerHTML === empty && !bar().querySelector(".island__center-slot, .island__gauge-slot, .island__open-button--center"),
         `摘要为空时空槽位不渲染外层元素（${JSON.stringify(slots)}）`);
@@ -119,7 +129,7 @@ async function runChecks() {
     await set({ agents: false, count: 0, slots: { center: <span className="test-center">中</span> } });
     check(!bar().querySelector(".island__center-slot"), "有待办摘要时不显示中心槽位");
     // With rings and the session count on the right, the pattern centres in the space left between them.
-    await set({ task: null, agents: true, count: 2, slots: { center: <span className="test-center">中</span>, gauges: <span className="test-gauge" style={{ display: "block", width: 42, height: 20 }} /> } });
+    await set({ task: null, agents: true, count: 2, slots: { center: <span className="test-center">中</span>, gauges: [{ id: "usage:claudeCode", node: <span className="test-gauge" style={{ display: "block", width: 42, height: 20 }} /> }] } });
     const box = (selector: string) => bar().querySelector(selector)!.getBoundingClientRect();
     const [pattern, slot, light, gauges] = [box(".test-center"), box(".island__center-slot"), box(".island__pulse"), box(".island__gauge-slot")];
     check(Math.abs(pattern.left + pattern.width / 2 - (slot.left + slot.width / 2)) < 1
@@ -130,13 +140,35 @@ async function runChecks() {
     check(openedPage === "todo", "点中心图案和点小岛一样打开页面");
     await set({ agents: false, count: 0 });
 
-    await set({ slots: { gauges: <span className="test-gauge" /> } });
+    await set({ slots: { gauges: [{ id: "usage:claudeCode", node: <span className="test-gauge" /> }] } });
     const gauge = () => bar().querySelector(".island__gauge-slot")!;
     check(gauge().nextElementSibling?.classList.contains("island__quiet-button") && bar().lastElementChild === gauge().nextElementSibling,
       "仪表槽位在收起灰点之前");
     await set({ agents: true, count: 2 });
     check(gauge().nextElementSibling?.classList.contains("island-agent-count") && bar().lastElementChild === gauge().nextElementSibling,
       "仪表槽位在会话数之前");
+    // The user's order (Appearance > Collapsed bar), followed through the storage event as from the settings window.
+    const arrange = (items: unknown[] | null) => act(async () => {
+      if (items) localStorage.setItem("focusd-island-collapsed-items", JSON.stringify({ version: 1, items }));
+      else localStorage.removeItem("focusd-island-collapsed-items");
+      window.dispatchEvent(new StorageEvent("storage", { key: "focusd-island-collapsed-items" }));
+    });
+    const lightBox = bar().querySelector(".island__pulse")!.getBoundingClientRect();
+    const textLeft = bar().querySelector(".island__open-button")!.getBoundingClientRect().left;
+    await arrange([{ id: "status-light", zone: "left" }, { id: "session-count", zone: "left" }, { id: "usage:claudeCode", zone: "right", hidden: true }]);
+    check(bar().firstElementChild?.classList.contains("island__pulse") && bar().children[1]?.classList.contains("island-agent-count")
+      && !bar().querySelector(".island__gauge-slot") && bar().lastElementChild?.classList.contains("island-agent-count") === false,
+      "按用户的排列：会话数放到左侧状态灯后面，隐藏的仪表不显示（C12）");
+    await arrange([{ id: "status-light", zone: "left", hidden: true }]);
+    check(!bar().querySelector(".island__pulse") && gauge(), "状态灯也能隐藏");
+    await arrange(null);
+    check(bar().firstElementChild?.classList.contains("island__pulse") && bar().lastElementChild === gauge().nextElementSibling
+      && Math.abs(bar().querySelector(".island__pulse")!.getBoundingClientRect().left - lightBox.left) < 0.5
+      && Math.abs(bar().querySelector(".island__open-button")!.getBoundingClientRect().left - textLeft) < 0.5,
+      "没有排列时和原来的布局一样");
+    openedPage = null;
+    await act(async () => bar().querySelector<HTMLElement>(".island__pulse")!.click());
+    check(openedPage === "todo", "点状态灯和点小岛一样打开页面");
 
     await set({ slots: { agentCount: <span className="test-sessions" /> } });
     check(bar().querySelector(".test-sessions") && !bar().querySelector(".island-agent-count"), "AI Agent 开启时会话槽位替换蓝色数字");
@@ -153,17 +185,17 @@ async function runChecks() {
 
     // Plugin status (status.update): text, or label-over-value cells, with an optional ring.
     const chip = () => bar().querySelector<HTMLElement>(".plugin-status-chip")!;
-    await set({ task: "剩余3个待办", slots: {}, chip: <PluginStatusChip status={STATUS} onOpen={() => {}} /> });
+    await set({ task: "剩余3个待办", slots: {}, status: [STATUS] });
     check(chip().textContent === STATUS.text && !chip().querySelector(".mini-ring, .plugin-status-chip__cell"), "插件状态只有文字时照旧显示文字");
     const cells = [{ label: "CPU", value: "23%", tone: "neutral" }, { label: "内存", value: "61%", tone: "warning" }, { label: "CPU", value: "71°", tone: "neutral" }, { label: "GPU", value: "88°", tone: "danger" }] as const;
-    await set({ chip: <PluginStatusChip status={{ ...STATUS, cells: [...cells], ring: 0.23 }} onOpen={() => {}} /> });
+    await set({ status: [{ ...STATUS, cells: [...cells], ring: 0.23 }] });
     const columns = [...chip().querySelectorAll<HTMLElement>(".plugin-status-chip__cell")];
     check(columns.length === 4 && columns[1].textContent === "内存61%" && columns[3].classList.contains("plugin-status-chip__cell--danger"), "插件状态的列按顺序显示标签、数值和色调");
     check(chip().getAttribute("aria-label") === STATUS.text && chip().querySelector(".mini-ring__arc"), "有列时文字作读屏名称，前面画进度环");
     check(getComputedStyle(columns[3].querySelector(".plugin-status-chip__value")!).color !== getComputedStyle(columns[0].querySelector(".plugin-status-chip__value")!).color, "danger 列的数值换色");
     const barBox = bar().getBoundingClientRect();
     check(chip().getBoundingClientRect().right <= barBox.right && bar().scrollWidth <= bar().clientWidth + 1, "四列加进度环不撑出收起条");
-    await set({ chip: undefined, task: null });
+    await set({ status: [], task: null });
 
     await act(async () => createRoot(rings).render(<>
       <MiniRing rings={[{ value: 0.5, color: "red" }, { value: 0, color: "blue" }]} ariaLabel="两圈" title="两圈提示" />

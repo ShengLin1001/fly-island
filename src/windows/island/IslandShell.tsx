@@ -17,6 +17,7 @@ import { useTranslation } from "../../i18n";
 import { isPluginPage, type IslandFeatures } from "./features";
 import { IslandCollapsedBar } from "./IslandCollapsedBar";
 import { IslandHeader } from "./IslandHeader";
+import type { PluginViewEntry } from "../../features/plugin-views/api";
 import type { CollapsedSlots, IslandMode, IslandPage, NativeGlassState } from "./types";
 import { useGlassPointer } from "./useGlassPointer";
 import { useIslandPreparing } from "./useIslandPreparing";
@@ -81,8 +82,9 @@ type IslandShellProps = {
   pluginPageButtons?: ReactNode;
   /** Buttons of the open page, first among the window actions. */
   pageActions?: ReactNode;
-  /** A plugin's status text on the collapsed bar. */
-  pluginStatusChip?: ReactNode;
+  /** Plugin pages on the island, for the plugin statuses on the collapsed bar. */
+  pluginViews?: readonly PluginViewEntry[];
+  onOpenPluginPage?: (page: `plugin:${string}`) => void;
   /** Built-in plugins' slots on the collapsed bar. */
   collapsedSlots?: CollapsedSlots;
   children: ReactNode;
@@ -134,7 +136,8 @@ export function IslandShell({
   overlay,
   pluginPageButtons,
   pageActions,
-  pluginStatusChip,
+  pluginViews,
+  onOpenPluginPage,
   collapsedSlots,
   children,
 }: IslandShellProps) {
@@ -199,7 +202,8 @@ export function IslandShell({
           qqNotifications={qqNotifications}
           wechatReminders={wechatReminders}
           pluginNotifications={pluginNotifications}
-          pluginStatusChip={pluginStatusChip}
+          pluginViews={pluginViews}
+          onOpenPluginPage={onOpenPluginPage}
           slots={collapsedSlots}
           preview={preview}
           page={page}

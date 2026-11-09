@@ -271,7 +271,7 @@ pub(super) fn incompatibility(entry: &MarketEntry, app_version: &str) -> Option<
     }
 }
 
-fn client() -> Result<reqwest::Client, String> {
+pub(super) fn client() -> Result<reqwest::Client, String> {
     let mut builder = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")));
@@ -290,7 +290,7 @@ async fn download(client: &reqwest::Client, url: &str, limit: u64) -> Result<Vec
 }
 
 /// None when the file does not exist (404).
-async fn download_unless_missing(client: &reqwest::Client, url: &str, limit: u64) -> Result<Option<Vec<u8>>, String> {
+pub(super) async fn download_unless_missing(client: &reqwest::Client, url: &str, limit: u64) -> Result<Option<Vec<u8>>, String> {
     let response = client
         .get(url)
         .send()

@@ -7,7 +7,6 @@ import { PluginContextMenus } from "../../features/plugins/PluginContextMenu";
 import { useCalendar } from "../../features/calendar/useCalendar";
 import { todoEvents } from "../../features/calendar/todoEvents";
 import { IslandPages } from "./IslandPages";
-import { PluginStatusSlot } from "../../features/plugin-views/PluginStatusSlot";
 import { useTranslation } from "../../i18n";
 import { openSettingsWindow } from "../settings/api";
 import { useQuickTranslation } from "../../features/translation/useQuickTranslation";
@@ -264,7 +263,8 @@ export function IslandApp() {
         onPageChange={setPage}
         pageDigitModifiers={settings.pageDigitModifiers}
         overlay={<PluginPermissionPrompt prompts={permissionPrompts} />}
-        pluginStatusChip={<PluginStatusSlot views={pluginPages.views} onOpen={openEnabledPage} />}
+        pluginViews={pluginPages.views}
+        onOpenPluginPage={openEnabledPage}
         collapsedSlots={collapsedSlots}
         pageActions={page === "agents" && (
           <AgentArrangeButton sort={settings.agentSessionSort} group={settings.agentSessionGroup} onChange={(patch) => setSettings({ ...settings, ...patch })} />
