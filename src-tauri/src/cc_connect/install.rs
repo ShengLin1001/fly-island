@@ -3,6 +3,7 @@
 //! SHA-256 in the release's `checksums.txt`, and both must come from the project's own release
 //! downloads. Through the same proxy as the update check.
 
+use crate::user_error::UserError;
 use std::{
     fs::{self, File},
     io::{self, Cursor, Read},
@@ -36,13 +37,13 @@ struct Asset {
 }
 
 /// The program, downloaded unless this release is there already.
-pub(super) async fn install(app_dir: PathBuf) -> Result<PathBuf, String> {
+pub(super) async fn install(app_dir: PathBuf) -> Result<PathBuf, UserError> {
     let client = client()?;
     let release: Release =
-        serde_json::from_slice(&get(&client, LATEST, MAX_TEXT).await?).map_err(|error| format!("Could not read GitHub's release: {error}"))?;
+        serde_json::from_slice(&get(&client, LATEST, MAX_TEXT).await?).map_err(|error| UserError::new("net.unreadable", "Could not read GitHub's answer.").arg("service", "GitHub").detail(error))?;
     let tag = release.tag_name.as_str();
     if tag.is_empty() || !tag.bytes().all(|byte| byte.is_ascii_alphanumeric() || b".-_".contains(&byte)) {
-        return Err(format!("cc-connect's version tag is not valid: {tag}"));
+        return Err(UserError::new("ccConnect.tag", format!("cc-connect's version tag is not valid: {tag}")).arg("tag", tag));
     }
     let dir = app_dir.join(FOLDER).join(tag);
     let exe = dir.join(EXE_NAME);
@@ -56,51 +57,51 @@ pub(super) async fn install(app_dir: PathBuf) -> Result<PathBuf, String> {
             .iter()
             .find(|asset| asset.name == name && asset.browser_download_url.starts_with(DOWNLOADS))
             .map(|asset| asset.browser_download_url.as_str())
-            .ok_or_else(|| format!("cc-connect {tag} has no {name}."))
+            .ok_or_else(|| UserError::new("ccConnect.asset", format!("cc-connect {tag} has no {name}.")).arg("tag", tag).arg("name", name))
     };
     let sums = get(&client, url_of("checksums.txt")?, MAX_TEXT).await?;
-    let expected = checksum_for(&String::from_utf8_lossy(&sums), &zip_name).ok_or_else(|| format!("checksums.txt does not list {zip_name}."))?;
+    let expected = checksum_for(&String::from_utf8_lossy(&sums), &zip_name).ok_or_else(|| UserError::new("ccConnect.checksumMissing", format!("checksums.txt does not list {zip_name}.")).arg("name", zip_name.as_str()))?;
     let zip = get(&client, url_of(&zip_name)?, MAX_ZIP).await?;
     let actual: String = Sha256::digest(&zip).iter().map(|byte| format!("{byte:02x}")).collect();
     if actual != expected {
-        return Err("The downloaded cc-connect does not match the release's checksum; it was thrown away.".into());
+        return Err(UserError::new("ccConnect.checksum", "The downloaded cc-connect does not match the release's checksum; it was thrown away."));
     }
     tauri::async_runtime::spawn_blocking(move || unpack(&zip, &dir, &exe).map(|()| exe))
         .await
-        .map_err(|error| format!("Failed to join the unpack task: {error}"))?
+        .map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))?
 }
 
-fn client() -> Result<reqwest::Client, String> {
+fn client() -> Result<reqwest::Client, UserError> {
     let mut builder = reqwest::Client::builder()
         .timeout(TIMEOUT)
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")));
     if let Some(proxy) = get_updater_proxy() {
-        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| format!("Invalid proxy {proxy}: {error}"))?);
+        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| UserError::new("net.proxy", format!("Invalid proxy {proxy}.")).arg("proxy", proxy.as_str()).detail(error))?);
     }
-    builder.build().map_err(|error| format!("Could not create the HTTP client: {error}"))
+    builder.build().map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))
 }
 
-async fn get(client: &reqwest::Client, url: &str, limit: u64) -> Result<Vec<u8>, String> {
-    let response = client.get(url).send().await.map_err(|error| format!("Could not reach {url}: {error}"))?;
+async fn get(client: &reqwest::Client, url: &str, limit: u64) -> Result<Vec<u8>, UserError> {
+    let response = client.get(url).send().await.map_err(|error| UserError::new("net.unreachable", format!("Could not reach {}.", url)).arg("service", url).detail(error))?;
     if !response.status().is_success() {
-        return Err(format!("{url} answered {}.", response.status()));
+        return Err(UserError::new("net.status", format!("{url} answered {}.", response.status())).arg("service", url).arg("status", response.status().as_u16()));
     }
     if response.content_length().is_some_and(|length| length > limit) {
-        return Err(format!("{url} is larger than {limit} bytes."));
+        return Err(UserError::new("net.tooLarge", format!("{url} is larger than {limit} bytes.")).arg("service", url).arg("bytes", limit));
     }
-    let bytes = response.bytes().await.map_err(|error| format!("Could not download {url}: {error}"))?;
+    let bytes = response.bytes().await.map_err(|error| UserError::new("net.unreachable", format!("Could not reach {}.", url)).arg("service", url).detail(error))?;
     if bytes.len() as u64 > limit {
-        return Err(format!("{url} is larger than {limit} bytes."));
+        return Err(UserError::new("net.tooLarge", format!("{url} is larger than {limit} bytes.")).arg("service", url).arg("bytes", limit));
     }
     Ok(bytes.to_vec())
 }
 
 /// `cc-connect-<tag>-windows-<amd64|arm64>.zip`, the release's name for this CPU.
-fn asset_name(tag: &str, arch: &str) -> Result<String, String> {
+fn asset_name(tag: &str, arch: &str) -> Result<String, UserError> {
     let arch = match arch {
         "x86_64" => "amd64",
         "aarch64" => "arm64",
-        other => return Err(format!("cc-connect has no Windows build for {other}.")),
+        other => return Err(UserError::new("ccConnect.arch", format!("cc-connect has no Windows build for {other}.")).arg("arch", other)),
     };
     Ok(format!("cc-connect-{tag}-windows-{arch}.zip"))
 }
@@ -115,25 +116,25 @@ fn checksum_for(sums: &str, name: &str) -> Option<String> {
 }
 
 /// Writes the zip's one .exe to `exe` (in `dir`), through a `.part` file so a cut-off write is never found.
-fn unpack(zip: &[u8], dir: &Path, exe: &Path) -> Result<(), String> {
-    let mut archive = zip::ZipArchive::new(Cursor::new(zip)).map_err(|error| format!("Could not open the cc-connect zip: {error}"))?;
+fn unpack(zip: &[u8], dir: &Path, exe: &Path) -> Result<(), UserError> {
+    let mut archive = zip::ZipArchive::new(Cursor::new(zip)).map_err(|error| UserError::new("ccConnect.zip", "Could not read the cc-connect zip.").detail(error))?;
     let index = (0..archive.len())
         .find(|&index| {
             archive
                 .by_index(index)
                 .is_ok_and(|file| file.is_file() && file.name().is_ok_and(|name| name.to_ascii_lowercase().ends_with(".exe")))
         })
-        .ok_or("The cc-connect zip has no program in it.")?;
-    let file = archive.by_index(index).map_err(|error| format!("Could not read the cc-connect zip: {error}"))?;
+        .ok_or_else(|| UserError::new("ccConnect.zipEmpty", "The cc-connect zip has no program in it."))?;
+    let file = archive.by_index(index).map_err(|error| UserError::new("ccConnect.zip", "Could not read the cc-connect zip.").detail(error))?;
     if file.size() > MAX_EXE {
-        return Err("The cc-connect program is unusually large; gave up.".into());
+        return Err(UserError::new("ccConnect.zipLarge", "The cc-connect program is unusually large; gave up."));
     }
-    fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
+    fs::create_dir_all(dir).map_err(|error| UserError::new("file.create", format!("Could not create {}.", dir.display())).arg("path", dir.display().to_string()).detail(error))?;
     let part = dir.join(format!("{EXE_NAME}.part"));
-    let mut out = File::create(&part).map_err(|error| format!("Could not write {}: {error}", part.display()))?;
-    io::copy(&mut file.take(MAX_EXE), &mut out).map_err(|error| format!("Could not unpack cc-connect: {error}"))?;
+    let mut out = File::create(&part).map_err(|error| UserError::new("file.write", format!("Could not write {}.", part.display())).arg("path", part.display().to_string()).detail(error))?;
+    io::copy(&mut file.take(MAX_EXE), &mut out).map_err(|error| UserError::new("ccConnect.unpack", "Could not unpack cc-connect.").detail(error))?;
     drop(out);
-    fs::rename(&part, exe).map_err(|error| format!("Could not put {} in place: {error}", exe.display()))
+    fs::rename(&part, exe).map_err(|error| UserError::new("file.write", format!("Could not write {}.", exe.display())).arg("path", exe.display().to_string()).detail(error))
 }
 
 #[cfg(test)]

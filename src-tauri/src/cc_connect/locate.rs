@@ -5,6 +5,7 @@
 //! `%LOCALAPPDATA%\Programs`): the exe in it, or in a version folder under it. No search of the
 //! disks: that takes an index kept in memory (as Everything keeps), far too much for one file.
 
+use crate::user_error::UserError;
 use std::{
     env,
     ffi::OsStr,
@@ -22,13 +23,13 @@ const PATH_NAMES: [&str; 2] = [EXE_NAME, "cc-connect.cmd"];
 /// None when it is nowhere. `app_dir`: the island's data folder. A path set on the plugin page
 /// that is not a file is an error rather than a reason to look elsewhere, so a wrong setting is
 /// seen instead of quietly passed over.
-pub(super) fn find(setting: Option<&str>, app_dir: Option<&Path>) -> Result<Option<(PathBuf, &'static str)>, String> {
+pub(super) fn find(setting: Option<&str>, app_dir: Option<&Path>) -> Result<Option<(PathBuf, &'static str)>, UserError> {
     if let Some(path) = setting.map(str::trim).filter(|path| !path.is_empty()) {
         let path = PathBuf::from(path.trim_matches('"'));
         return if path.is_file() {
             Ok(Some((path, "setting")))
         } else {
-            Err(format!("cc-connect is not at {}", path.display()))
+            Err(UserError::new("ccConnect.notAt", format!("cc-connect is not at {}", path.display())).arg("path", path.display().to_string()))
         };
     }
     if let Some(path) = crate::win32::process::running_executable(&[EXE_NAME]) {

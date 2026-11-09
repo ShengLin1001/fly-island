@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { NativeError } from "../../i18n/nativeError";
 
 // Mirrors the commands in src-tauri/src/cc_connect/mod.rs.
 
@@ -17,11 +18,11 @@ export type CcConnectStatus = {
   exe: string | null;
   exeSource: "setting" | "running" | "path" | "downloaded" | "installed" | null;
   /** Why the path set on the plugin page cannot be used. */
-  exeError: string | null;
+  exeError: NativeError | string | null;
   /** Some cc-connect is running; sending only works then. */
   running: boolean;
   runner: CcConnectRunState;
-  runnerError: string | null;
+  runnerError: NativeError | string | null;
   dataDir: string;
   /** Whether cc-connect's config.toml is there. */
   config: boolean;
@@ -47,7 +48,7 @@ export type CcConnectFeishuSetup = {
   url: string | null;
   done: boolean;
   allowFrom: string | null;
-  error: string | null;
+  error: NativeError | string | null;
 };
 
 export type CcConnectNewProject = { project: string; workDir: string; platform: CcConnectSetupPlatform; token: string; allowFrom: string };

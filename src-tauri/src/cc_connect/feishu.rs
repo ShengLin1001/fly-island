@@ -4,6 +4,7 @@
 //! shows the QR code (cc-connect saves it as a PNG) and asks here how it goes. Failed or
 //! cancelled, the project the island added is taken out of the config again.
 
+use crate::user_error::UserError;
 use std::{
     fs,
     io::{BufRead, BufReader, Read},
@@ -25,7 +26,7 @@ use crate::{
 };
 
 /// How it is going, for the plugin page. Mirrored by `CcConnectFeishuSetup` in src/features/cc-connect/api.ts.
-#[derive(Serialize, Default, Debug, PartialEq, Eq)]
+#[derive(Serialize, Default, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FeishuProgress {
     running: bool,
@@ -35,7 +36,7 @@ pub struct FeishuProgress {
     url: Option<String>,
     done: bool,
     allow_from: Option<String>,
-    error: Option<String>,
+    error: Option<UserError>,
 }
 
 struct Setup {
@@ -46,7 +47,7 @@ struct Setup {
     config: PathBuf,
     /// The config before the project was added, to put back.
     original: Option<String>,
-    ended: Option<Result<(), String>>,
+    ended: Option<Result<(), UserError>>,
 }
 
 fn setup() -> MutexGuard<'static, Option<Setup>> {
@@ -55,10 +56,10 @@ fn setup() -> MutexGuard<'static, Option<Setup>> {
 }
 
 /// Adds `project` (with an empty Feishu platform) and starts the QR setup in it.
-pub(super) fn start(exe: &Path, config: &Path, project: &config_file::NewProject, app_dir: &Path, today: &str, stamp: &str) -> Result<(), String> {
+pub(super) fn start(exe: &Path, config: &Path, project: &config_file::NewProject, app_dir: &Path, today: &str, stamp: &str) -> Result<(), UserError> {
     let mut current = setup();
     if current.as_ref().is_some_and(|setup| setup.ended.is_none()) {
-        return Err("A Feishu QR setup is already running.".into());
+        return Err(UserError::new("ccConnect.feishuRunning", "A Feishu QR setup is already running."));
     }
     let original = config_file::add_project(config, project, today, stamp)?;
     let qr = app_dir.join(FOLDER).join("feishu-qr.png");
@@ -97,9 +98,9 @@ pub(super) fn start(exe: &Path, config: &Path, project: &config_file::NewProject
     Ok(())
 }
 
-fn spawn(exe: &Path, config: &Path, project: &str, qr: &Path) -> Result<(Child, Job), String> {
+fn spawn(exe: &Path, config: &Path, project: &str, qr: &Path) -> Result<(Child, Job), UserError> {
     if let Some(dir) = qr.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| UserError::new("file.create", format!("Could not create {}.", dir.display())).arg("path", dir.display().to_string()).detail(error))?;
     }
     let mut child = Command::new(exe)
         .args(["feishu", "new", "--config"])
@@ -112,13 +113,13 @@ fn spawn(exe: &Path, config: &Path, project: &str, qr: &Path) -> Result<(Child, 
         .stderr(Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW | job::START_SUSPENDED)
         .spawn()
-        .map_err(|error| format!("Could not run cc-connect: {error}"))?;
+        .map_err(|error| UserError::new("ccConnect.run", "Could not run cc-connect.").detail(error))?;
     match Job::new().and_then(|job| job.assign(&child).map(|()| job)).and_then(|job| job::resume(child.id()).map(|()| job)) {
         Ok(job) => Ok((child, job)),
         Err(error) => {
             let _ = child.kill();
             let _ = child.wait();
-            Err(error)
+            Err(UserError::new("ccConnect.run", "Could not run cc-connect.").detail(error))
         }
     }
 }
@@ -168,14 +169,9 @@ pub(super) fn progress() -> FeishuProgress {
 }
 
 /// Why it did not finish: cc-connect's last error line, else its last line.
-fn failure(output: &[String]) -> String {
-    output
-        .iter()
-        .rev()
-        .find(|line| line.starts_with("Error"))
-        .or(output.last())
-        .cloned()
-        .unwrap_or_else(|| "The Feishu QR setup did not finish.".into())
+fn failure(output: &[String]) -> UserError {
+    let line = output.iter().rev().find(|line| line.starts_with("Error")).or(output.last());
+    UserError::new("ccConnect.feishuUnfinished", "The Feishu QR setup did not finish.").detail(line.map_or("", String::as_str))
 }
 
 /// Stops a setup still waiting for the scan and takes its project out again. One that made the app
@@ -234,8 +230,8 @@ mod tests {
     #[test]
     fn a_failure_says_cc_connect_s_error() {
         let output = ["请扫码".to_string(), "Error: onboarding failed: timed out".into(), "Tip: bind instead".into()];
-        assert_eq!(failure(&output), "Error: onboarding failed: timed out");
-        assert_eq!(failure(&output[..1]), "请扫码");
-        assert_eq!(failure(&[]), "The Feishu QR setup did not finish.");
+        assert_eq!(failure(&output).to_string(), "The Feishu QR setup did not finish: Error: onboarding failed: timed out");
+        assert_eq!(failure(&output[..1]).to_string(), "The Feishu QR setup did not finish: 请扫码");
+        assert_eq!(failure(&[]).to_string(), "The Feishu QR setup did not finish.");
     }
 }

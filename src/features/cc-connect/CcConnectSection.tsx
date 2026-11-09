@@ -1,11 +1,9 @@
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { chatLabel, installCcConnect, type CcConnectStatus } from "./api";
 import { CcConnectSetup } from "./CcConnectSetup";
 import { useCcConnect } from "./useCcConnect";
-
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /**
  * The cc-connect phone link's plugin page sections: the program found and how (or a download),
@@ -16,6 +14,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 export function CcConnectSection() {
   const t = useTranslation().settings.plugins.ccConnect;
   const cc = useCcConnect();
+  const errorText = useErrorText();
   const { enabled, status, error, refresh } = cc;
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -28,7 +27,7 @@ export function CcConnectSection() {
       await installCcConnect();
       await refresh();
     } catch (reason) {
-      setDownloadError(message(reason));
+      setDownloadError(errorText(reason));
     } finally {
       setDownloading(false);
     }
@@ -50,7 +49,7 @@ export function CcConnectSection() {
               {status.exe ? <InfoRow label={t.program} value={`${status.exe} · ${t.source[status.exeSource ?? "path"]}`} /> : null}
               {status.exe && status.running ? <InfoRow label={t.state} value={t.running} /> : null}
               {status.runner !== "off" ? (
-                <InfoRow label={t.runnerLabel} value={[t.runner[status.runner], status.runnerError].filter(Boolean).join(" · ")} />
+                <InfoRow label={t.runnerLabel} value={[t.runner[status.runner], status.runnerError && errorText(status.runnerError)].filter(Boolean).join(" · ")} />
               ) : null}
               {projectNames(status).map((name) => (
                 <InfoRow key={name} label={name} value={chatsOf(status, name, t.platforms) || t.noChats} />
@@ -58,7 +57,7 @@ export function CcConnectSection() {
             </div>
             {status.exe ? null : (
               <>
-                <p className="plugin-card__error">{status.exeError ?? t.notFound}</p>
+                <p className="plugin-card__error">{status.exeError ? errorText(status.exeError) : t.notFound}</p>
                 <p className="settings-section__hint">{t.downloadHint}</p>
                 <div>
                   <button className="plugin-card__button" type="button" disabled={downloading} onClick={() => void download()}>

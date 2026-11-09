@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import { errorText, isNativeError } from "../../src/i18n/nativeError.ts";
 import * as errors from "../../src/i18n/sections/errors.ts";
@@ -29,4 +31,21 @@ test("English text for logs reads the native error too", () => {
 
 test("both languages word every code", () => {
   assert.deepEqual(Object.keys(errors.zhCN.codes).sort(), Object.keys(errors.en.codes).sort());
+});
+
+test("every code the native side sends has its wording", () => {
+  const sent = new Set();
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else if (entry.name.endsWith(".rs")) {
+        for (const match of readFileSync(file, "utf8").matchAll(/UserError::new\("([A-Za-z.]+)"/g)) sent.add(match[1]);
+      }
+    }
+  };
+  walk("src-tauri/src");
+  // "plain" is a message not given a code yet; the user_error.rs tests use codes of their own.
+  const missing = [...sent].filter((code) => code !== "plain" && !(code in errors.en.codes));
+  assert.deepEqual(missing, []);
 });

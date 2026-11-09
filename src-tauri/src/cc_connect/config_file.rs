@@ -4,6 +4,7 @@
 //! `config.toml.bak-focusd-<time>` first; a file is made when there is none. The agent is Claude
 //! Code in `default` mode, so every tool call still asks on the phone.
 
+use crate::user_error::UserError;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -33,30 +34,30 @@ fn id_like(value: &str) -> bool {
 }
 
 /// Why `project` cannot be added to a config whose projects are `taken`, if it cannot.
-pub(super) fn check(project: &NewProject, taken: &[String]) -> Result<(), String> {
+pub(super) fn check(project: &NewProject, taken: &[String]) -> Result<(), UserError> {
     if !id_like(project.name) {
-        return Err("A project name takes letters, digits, - and _, up to 64 characters.".into());
+        return Err(UserError::new("ccConnect.projectName", "A project name takes letters, digits, - and _, up to 64 characters."));
     }
     if taken.iter().any(|name| name == project.name) {
-        return Err(format!("cc-connect already has a project called {}; pick another name.", project.name));
+        return Err(UserError::new("ccConnect.projectTaken", format!("cc-connect already has a project called {}; pick another name.", project.name)).arg("name", project.name));
     }
     let dir = Path::new(project.work_dir);
     if !dir.is_absolute() || !dir.is_dir() {
-        return Err(format!("The work folder does not exist: {}", project.work_dir));
+        return Err(UserError::new("ccConnect.workDir", format!("The work folder does not exist: {}", project.work_dir)).arg("path", project.work_dir));
     }
     if !PLATFORMS.contains(&project.platform) {
-        return Err(format!("Unsupported platform: {}", project.platform));
+        return Err(UserError::new("ccConnect.platform", format!("Unsupported platform: {}", project.platform)).arg("platform", project.platform));
     }
     if project.platform == "feishu" {
         return Ok(());
     }
     if project.token.is_empty() || project.token.len() > 512 || project.token.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
-        return Err("That bot token does not look right.".into());
+        return Err(UserError::new("ccConnect.token", "That bot token does not look right."));
     }
     // Empty or "*" lets anyone who finds the bot work on this computer.
     let ids: Vec<&str> = project.allow_from.split(',').map(str::trim).collect();
     if ids.iter().any(|id| !id_like(id)) {
-        return Err("Fill in your own user ID (several separated by commas), or anyone who finds the bot can use this computer.".into());
+        return Err(UserError::new("ccConnect.allowFrom", "Fill in your own user ID (several separated by commas), or anyone who finds the bot can use this computer."));
     }
     Ok(())
 }
@@ -122,17 +123,17 @@ pub(super) fn project_names(text: &str) -> Vec<String> {
 
 /// Appends `project` to the config at `path`; returns the text it had (None: there was no file),
 /// to put back if the setup does not finish.
-pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp: &str) -> Result<Option<String>, String> {
+pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp: &str) -> Result<Option<String>, UserError> {
     let original = match fs::read_to_string(path) {
         Ok(text) => Some(text),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-        Err(error) => return Err(format!("Could not read {}: {error}", path.display())),
+        Err(error) => return Err(UserError::new("file.read", format!("Could not read {}.", path.display())).arg("path", path.display().to_string()).detail(error)),
     };
     check(project, &original.as_deref().map(project_names).unwrap_or_default())?;
     let mut text = match &original {
         Some(text) => {
             let backup = path.with_file_name(format!("{FILE_NAME}.bak-focusd-{stamp}"));
-            fs::write(&backup, text).map_err(|error| format!("Could not back up {}: {error}", path.display()))?;
+            fs::write(&backup, text).map_err(|error| UserError::new("file.backup", format!("Could not back up {}.", path.display())).arg("path", path.display().to_string()).detail(error))?;
             text.trim_end().to_string()
         }
         None => "# cc-connect configuration, started by FocuSD Island. `cc-connect config example` prints every option.".to_string(),
@@ -140,25 +141,25 @@ pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp:
     text.push('\n');
     text.push_str(&project_block(project, today));
     if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| UserError::new("file.create", format!("Could not create {}.", dir.display())).arg("path", dir.display().to_string()).detail(error))?;
     }
     write(path, &text)?;
     Ok(original)
 }
 
 /// Puts back what `add_project` found: the old text, or no file.
-pub(super) fn restore(path: &Path, original: Option<&str>) -> Result<(), String> {
+pub(super) fn restore(path: &Path, original: Option<&str>) -> Result<(), UserError> {
     match original {
         Some(text) => write(path, text),
-        None => fs::remove_file(path).map_err(|error| format!("Could not undo {}: {error}", path.display())),
+        None => fs::remove_file(path).map_err(|error| UserError::new("file.undo", format!("Could not undo {}.", path.display())).arg("path", path.display().to_string()).detail(error)),
     }
 }
 
 /// Through a `.tmp` file, so cc-connect never reads half a config.
-fn write(path: &Path, text: &str) -> Result<(), String> {
+fn write(path: &Path, text: &str) -> Result<(), UserError> {
     let temp = path.with_file_name(format!("{FILE_NAME}.focusd.tmp"));
-    fs::write(&temp, text).map_err(|error| format!("Could not write {}: {error}", temp.display()))?;
-    fs::rename(&temp, path).map_err(|error| format!("Could not write {}: {error}", path.display()))
+    fs::write(&temp, text).map_err(|error| UserError::new("file.write", format!("Could not write {}.", temp.display())).arg("path", temp.display().to_string()).detail(error))?;
+    fs::rename(&temp, path).map_err(|error| UserError::new("file.write", format!("Could not write {}.", path.display())).arg("path", path.display().to_string()).detail(error))
 }
 
 #[cfg(test)]
@@ -182,7 +183,7 @@ mod tests {
         let home = home.to_str().unwrap();
         assert!(check(&telegram("phone", home, "123456"), &[]).is_ok());
         assert!(check(&telegram("phone", home, "123,456"), &[]).is_ok());
-        assert!(check(&telegram("phone", home, "123"), &["phone".into()]).is_err());
+        assert_eq!(check(&telegram("phone", home, "123"), &["phone".into()]).unwrap_err().code(), "ccConnect.projectTaken");
         assert!(check(&telegram("my phone", home, "123"), &[]).is_err());
         assert!(check(&telegram("phone", r"Z:\nowhere\at\all", "123"), &[]).is_err());
         for open in ["", "*", "123,*", "1 2"] {

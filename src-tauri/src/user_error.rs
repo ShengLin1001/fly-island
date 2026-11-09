@@ -39,6 +39,22 @@ impl UserError {
         self
     }
 
+    /// Takes `secret` (a token in a URL, say) out of everything the error says.
+    pub(crate) fn redact(mut self, secret: &str) -> Self {
+        if secret.is_empty() {
+            return self;
+        }
+        let hide = |text: &str| text.replace(secret, "[token]");
+        self.message = hide(&self.message);
+        self.detail = self.detail.as_deref().map(hide);
+        for value in self.args.values_mut() {
+            if let Value::String(text) = value {
+                *text = hide(text);
+            }
+        }
+        self
+    }
+
     #[cfg(test)]
     pub(crate) fn code(&self) -> &'static str {
         self.code

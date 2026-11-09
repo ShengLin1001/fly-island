@@ -1,6 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState } from "react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { cancelCcConnectFeishuSetup, getCcConnectFeishuSetup, type CcConnectFeishuSetup } from "./api";
 
 /** How often the QR setup is asked how it goes. */
@@ -12,6 +12,7 @@ const POLL_MS = 1_000;
  */
 export function FeishuSetup({ onEnd }: { onEnd: () => void }) {
   const t = useTranslation().settings.plugins.ccConnect.setup;
+  const errorText = useErrorText();
   const [state, setState] = useState<CcConnectFeishuSetup | null>(null);
   const running = state?.running ?? true;
 
@@ -57,7 +58,7 @@ export function FeishuSetup({ onEnd }: { onEnd: () => void }) {
     );
   return (
     <div className="cc-connect-setup__actions">
-      <p className="plugin-card__error">{state?.error}</p>
+      <p className="plugin-card__error">{state?.error ? errorText(state.error) : null}</p>
       <button className="plugin-card__button" type="button" onClick={onEnd}>
         {t.feishuRetry}
       </button>

@@ -3,6 +3,7 @@
 //! A cc-connect the island did not start is left alone: while one runs, this only waits. Its
 //! output goes to `<app data>/cc-connect/cc-connect.log`, written anew at each start.
 
+use crate::user_error::UserError;
 use std::{
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
@@ -30,7 +31,7 @@ const RECHECK: Duration = Duration::from_secs(15);
 const STABLE: Duration = Duration::from_secs(60);
 
 /// How the island's cc-connect is doing. Mirrored by `CcConnectRunState` in src/features/cc-connect/api.ts.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) enum RunState {
     Off,
     Starting,
@@ -39,7 +40,7 @@ pub(super) enum RunState {
     External,
     /// No `config.toml` yet: set a bot up first.
     NoConfig,
-    Failed(String),
+    Failed(UserError),
 }
 
 impl RunState {
@@ -54,7 +55,7 @@ impl RunState {
         }
     }
 
-    pub(super) fn error(&self) -> Option<String> {
+    pub(super) fn error(&self) -> Option<UserError> {
         match self {
             Self::Failed(error) => Some(error.clone()),
             _ => None,
@@ -85,7 +86,7 @@ fn set(status: &Mutex<RunState>, next: RunState) {
 }
 
 /// Starts or stops the supervisor to match the plugin's settings (`run`, `path`).
-pub(crate) fn apply(settings: &Map<String, Value>, app_dir: Option<&Path>, config: PathBuf) -> Result<(), String> {
+pub(crate) fn apply(settings: &Map<String, Value>, app_dir: Option<&Path>, config: PathBuf) -> Result<(), UserError> {
     if !settings.get("run").and_then(Value::as_bool).unwrap_or(false) {
         stop();
         return Ok(());
@@ -104,7 +105,7 @@ pub(crate) fn apply(settings: &Map<String, Value>, app_dir: Option<&Path>, confi
         thread::Builder::new()
             .name("cc-connect".into())
             .spawn(move || supervise(setting.as_deref(), &app_dir, &config, &status, &restarts))
-            .map_err(|error| format!("Could not start cc-connect's supervisor: {error}"))?;
+            .map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))?;
     }
     *current = Some(Runner { setting, status, restart });
     Ok(())
@@ -129,7 +130,7 @@ pub(super) fn state() -> RunState {
 enum Ended {
     /// Not started; waits RECHECK in this state.
     Waiting(RunState),
-    Exited { stable: bool, reason: String },
+    Exited { stable: bool, reason: UserError },
     Restart,
     Stopped,
 }
@@ -166,7 +167,7 @@ fn run_once(setting: Option<&str>, app_dir: &Path, config: &Path, status: &Mutex
     }
     let exe = match locate::find(setting, Some(app_dir)) {
         Ok(Some((exe, _))) => exe,
-        Ok(None) => return Ended::Waiting(RunState::Failed("cc-connect was not found; download it or fill in its path first.".into())),
+        Ok(None) => return Ended::Waiting(RunState::Failed(UserError::new("ccConnect.notFoundRun", "cc-connect was not found; download it or fill in its path first."))),
         Err(error) => return Ended::Waiting(RunState::Failed(error)),
     };
     let log = app_dir.join(FOLDER).join(LOG_NAME);
@@ -188,25 +189,25 @@ fn run_once(setting: Option<&str>, app_dir: &Path, config: &Path, status: &Mutex
         match child.try_wait() {
             Ok(None) => {}
             Ok(Some(exit)) => {
-                let reason = last_line(&log).unwrap_or_else(|| format!("cc-connect exited ({exit})"));
+                let reason = UserError::new("ccConnect.exited", format!("cc-connect stopped ({exit}).")).detail(last_line(&log).unwrap_or_default());
                 return Ended::Exited { stable: started.elapsed() >= STABLE, reason };
             }
             Err(error) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Ended::Exited { stable: false, reason: format!("Lost track of cc-connect: {error}") };
+                return Ended::Exited { stable: false, reason: UserError::new("ccConnect.lost", "Lost track of cc-connect.").detail(error) };
             }
         }
     }
 }
 
 /// cc-connect started hidden in a job, its output into `log`; the job ends what it started too.
-fn start(exe: &Path, config: &Path, log: &Path) -> Result<(Child, Job), String> {
+fn start(exe: &Path, config: &Path, log: &Path) -> Result<(Child, Job), UserError> {
     if let Some(dir) = log.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| UserError::new("file.create", format!("Could not create {}.", dir.display())).arg("path", dir.display().to_string()).detail(error))?;
     }
-    let out = File::create(log).map_err(|error| format!("Could not write {}: {error}", log.display()))?;
-    let err = out.try_clone().map_err(|error| format!("Could not write {}: {error}", log.display()))?;
+    let out = File::create(log).map_err(|error| UserError::new("file.write", format!("Could not write {}.", log.display())).arg("path", log.display().to_string()).detail(error))?;
+    let err = out.try_clone().map_err(|error| UserError::new("file.write", format!("Could not write {}.", log.display())).arg("path", log.display().to_string()).detail(error))?;
     let mut command = Command::new(exe);
     command
         .arg("--config")
@@ -218,14 +219,14 @@ fn start(exe: &Path, config: &Path, log: &Path) -> Result<(Child, Job), String> 
     if let Some(dir) = config.parent() {
         command.current_dir(dir);
     }
-    let mut child = command.spawn().map_err(|error| format!("Could not run cc-connect: {error}"))?;
+    let mut child = command.spawn().map_err(|error| UserError::new("ccConnect.run", "Could not run cc-connect.").detail(error))?;
     // Started suspended, so the agents it starts are in the job too.
     match Job::new().and_then(|job| job.assign(&child).map(|()| job)).and_then(|job| job::resume(child.id()).map(|()| job)) {
         Ok(job) => Ok((child, job)),
         Err(error) => {
             let _ = child.kill();
             let _ = child.wait();
-            Err(error)
+            Err(UserError::new("ccConnect.run", "Could not run cc-connect.").detail(error))
         }
     }
 }

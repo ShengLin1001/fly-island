@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useErrorText } from "../../i18n";
 import { useBuiltinPlugin } from "../plugins/useBuiltinPlugin";
 import { CC_CONNECT_PLUGIN_ID, getCcConnectStatus, programSetting, type CcConnectStatus } from "./api";
-
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Read again this often while shown, so a chat appears soon after its first message to the bot. */
 const REFRESH_MS = 5_000;
@@ -11,6 +10,7 @@ const REFRESH_MS = 5_000;
 export function useCcConnect() {
   const plugin = useBuiltinPlugin(CC_CONNECT_PLUGIN_ID);
   const path = programSetting(plugin.settings);
+  const errorText = useErrorText();
   const [status, setStatus] = useState<CcConnectStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,9 +19,9 @@ export function useCcConnect() {
       setStatus(await getCcConnectStatus(path));
       setError(null);
     } catch (reason) {
-      setError(message(reason));
+      setError(errorText(reason));
     }
-  }, [path]);
+  }, [path, errorText]);
 
   useEffect(() => {
     if (!plugin.enabled) return;

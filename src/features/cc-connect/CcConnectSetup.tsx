@@ -1,7 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useState, type ReactNode } from "react";
 import { SelectControl } from "../../components/controls/SelectControl";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import {
   addCcConnectProject,
   allowFromValid,
@@ -15,8 +15,6 @@ import { FeishuSetup } from "./FeishuSetup";
 import type { useCcConnect } from "./useCcConnect";
 import "./CcConnectSetup.css";
 
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
 /**
  * The plugin page's "Set up a bot": a project for one Telegram, Discord or Feishu bot added to
  * cc-connect's config (src-tauri/src/cc_connect/config_file.rs), so chatting with that bot is
@@ -26,6 +24,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
  */
 export function CcConnectSetup({ cc }: { cc: ReturnType<typeof useCcConnect> }) {
   const texts = useTranslation().settings.plugins.ccConnect;
+  const errorText = useErrorText();
   const t = texts.setup;
   const [platform, setPlatform] = useState<CcConnectSetupPlatform>("telegram");
   const [project, setProject] = useState<string | null>(null);
@@ -61,7 +60,7 @@ export function CcConnectSetup({ cc }: { cc: ReturnType<typeof useCcConnect> }) 
       if (found.senders.length === 1 && !allowFrom) setAllowFrom(found.senders[0].id);
     } catch (reason) {
       setBot(null);
-      setError(message(reason));
+      setError(errorText(reason));
     } finally {
       setBusy(null);
     }
@@ -82,7 +81,7 @@ export function CcConnectSetup({ cc }: { cc: ReturnType<typeof useCcConnect> }) 
       }
       void cc.refresh();
     } catch (reason) {
-      setError(message(reason));
+      setError(errorText(reason));
     } finally {
       setBusy(null);
     }

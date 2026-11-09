@@ -3,6 +3,7 @@
 //! on Discord the link that invites the bot to a server. Through the update check's proxy. The
 //! token is in Telegram's URLs, so it is cut out of every error.
 
+use crate::user_error::UserError;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -31,28 +32,28 @@ pub struct Sender {
     name: String,
 }
 
-pub(super) async fn check(platform: &str, token: &str) -> Result<BotCheck, String> {
+pub(super) async fn check(platform: &str, token: &str) -> Result<BotCheck, UserError> {
     let token = token.trim();
     if token.is_empty() || token.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
-        return Err("That bot token does not look right.".into());
+        return Err(UserError::new("ccConnect.token", "That bot token does not look right."));
     }
     let client = client()?;
     let result = match platform {
         "telegram" => telegram(&client, token).await,
         "discord" => discord(&client, token).await,
-        _ => Err(format!("{platform} has no token to check.")),
+        _ => Err(UserError::new("ccConnect.noTokenCheck", format!("{platform} has no token to check.")).arg("platform", platform)),
     };
-    result.map_err(|error| error.replace(token, "[token]"))
+    result.map_err(|error| error.redact(token))
 }
 
-fn client() -> Result<reqwest::Client, String> {
+fn client() -> Result<reqwest::Client, UserError> {
     let mut builder = reqwest::Client::builder()
         .timeout(TIMEOUT)
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")));
     if let Some(proxy) = get_updater_proxy() {
-        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| format!("Invalid proxy {proxy}: {error}"))?);
+        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| UserError::new("net.proxy", format!("Invalid proxy {proxy}.")).arg("proxy", proxy.as_str()).detail(error))?);
     }
-    builder.build().map_err(|error| format!("Could not create the HTTP client: {error}"))
+    builder.build().map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))
 }
 
 #[derive(Deserialize)]
@@ -66,25 +67,25 @@ struct TelegramAnswer {
     result: Value,
 }
 
-async fn telegram_call(client: &reqwest::Client, token: &str, method: &str) -> Result<Value, String> {
+async fn telegram_call(client: &reqwest::Client, token: &str, method: &str) -> Result<Value, UserError> {
     let url = format!("https://api.telegram.org/bot{token}/{method}");
     let answer: TelegramAnswer = client
         .get(&url)
         .send()
         .await
-        .map_err(|error| format!("Could not reach Telegram: {error}"))?
+        .map_err(|error| UserError::new("net.unreachable", format!("Could not reach {}.", "Telegram")).arg("service", "Telegram").detail(error))?
         .json()
         .await
-        .map_err(|error| format!("Could not read Telegram's answer: {error}"))?;
+        .map_err(|error| UserError::new("net.unreadable", "Could not read Telegram's answer.").arg("service", "Telegram").detail(error))?;
     match (answer.ok, answer.error_code) {
         (true, _) => Ok(answer.result),
-        (false, 401 | 404) => Err("Telegram does not know this token; copy it again from BotFather.".into()),
-        (false, 409) => Err("Another program (most likely cc-connect) is receiving this bot's messages; stop it, then look again.".into()),
-        (false, _) => Err(format!("Telegram：{}", answer.description)),
+        (false, 401 | 404) => Err(UserError::new("ccConnect.telegramToken", "Telegram does not know this token; copy it again from BotFather.")),
+        (false, 409) => Err(UserError::new("ccConnect.telegramBusy", "Another program (most likely cc-connect) is receiving this bot's messages; stop it, then look again.")),
+        (false, _) => Err(UserError::new("net.said", "Telegram answered with an error.").arg("service", "Telegram").detail(&answer.description)),
     }
 }
 
-async fn telegram(client: &reqwest::Client, token: &str) -> Result<BotCheck, String> {
+async fn telegram(client: &reqwest::Client, token: &str) -> Result<BotCheck, UserError> {
     let me = telegram_call(client, token, "getMe").await?;
     let name = format!("@{}", me["username"].as_str().unwrap_or_default());
     // Without an offset nothing is taken off Telegram's queue: cc-connect still gets these.
@@ -111,21 +112,21 @@ fn telegram_senders(updates: &Value) -> Vec<Sender> {
     senders
 }
 
-async fn discord(client: &reqwest::Client, token: &str) -> Result<BotCheck, String> {
+async fn discord(client: &reqwest::Client, token: &str) -> Result<BotCheck, UserError> {
     let response = client
         .get("https://discord.com/api/v10/users/@me")
         .header("Authorization", format!("Bot {token}"))
         .send()
         .await
-        .map_err(|error| format!("Could not reach Discord: {error}"))?;
+        .map_err(|error| UserError::new("net.unreachable", format!("Could not reach {}.", "Discord")).arg("service", "Discord").detail(error))?;
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err("Discord does not know this token; reset and copy it on the Bot page of the Developer Portal.".into());
+        return Err(UserError::new("ccConnect.discordToken", "Discord does not know this token; reset and copy it on the Bot page of the Developer Portal."));
     }
     if !response.status().is_success() {
-        return Err(format!("Discord answered {}.", response.status()));
+        return Err(UserError::new("net.status", format!("Discord answered {}.", response.status())).arg("service", "Discord").arg("status", response.status().as_u16()));
     }
-    let me: Value = response.json().await.map_err(|error| format!("Could not read Discord's answer: {error}"))?;
-    let id = me["id"].as_str().filter(|id| id.bytes().all(|byte| byte.is_ascii_digit())).ok_or("Discord did not give the bot's id.")?;
+    let me: Value = response.json().await.map_err(|error| UserError::new("net.unreadable", "Could not read Discord's answer.").arg("service", "Discord").detail(error))?;
+    let id = me["id"].as_str().filter(|id| id.bytes().all(|byte| byte.is_ascii_digit())).ok_or_else(|| UserError::new("ccConnect.discordId", "Discord did not give the bot's id."))?;
     Ok(BotCheck {
         name: me["username"].as_str().unwrap_or_default().to_string(),
         invite_url: Some(discord_invite(id)),
@@ -147,8 +148,8 @@ mod tests {
     fn a_wrong_token_is_named_and_never_shown() {
         for platform in ["telegram", "discord"] {
             let error = tauri::async_runtime::block_on(check(platform, "123456:not-a-real-token")).unwrap_err();
-            assert!(error.contains("token"), "{platform}: {error}");
-            assert!(!error.contains("not-a-real-token"), "{platform}: {error}");
+            assert!(error.code().ends_with("Token"), "{platform}: {error}");
+            assert!(!error.to_string().contains("not-a-real-token"), "{platform}: {error}");
         }
     }
 
