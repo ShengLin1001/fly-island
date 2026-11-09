@@ -40,7 +40,7 @@ export function MessageBanner({
         aria-label={t.openPreview(messagePreviewText(message, t), t.sourceLabels[message.source])}
         onClick={onOpen}
       >
-        <MessageSourceIcon source={message.source} size={20} />
+        <MessageSourceIcon source={message.source} size={20} account={message.account} />
         <span className="message-banner__text">
           <span className="message-banner__head">
             <strong className="message-banner__title">{title}</strong>

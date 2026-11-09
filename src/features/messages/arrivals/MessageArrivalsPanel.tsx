@@ -52,7 +52,7 @@ export function MessageArrivalsPanel({
                 aria-label={t.openPreview(messagePreviewText(message, t), t.sourceLabels[message.source])}
                 onClick={() => onOpen(message)}
               >
-                <MessageSourceIcon source={message.source} size={20} />
+                <MessageSourceIcon source={message.source} size={20} account={message.account} />
                 <span className="message-arrivals__text">
                   <span className="message-arrivals__head">
                     <strong className="message-arrivals__sender">{title}</strong>
