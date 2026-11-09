@@ -1,4 +1,5 @@
 import type { CalendarSettingValues } from "../calendar/calendarSettings";
+import type { LyricsIslandPriority } from "../media/lyrics/lyricsSettings";
 export type TranslationTarget = "window" | "island";
 
 export type AppearanceMode = "classic" | "liquidGlass";
@@ -171,6 +172,8 @@ export type IslandSettings = CalendarSettingValues & {
   lyricsOffsetMs: number;
   /** The collapsed island shows the line being sung, while playing and lyrics were found. */
   lyricsOnIsland: boolean;
+  /** Lyrics first (agents shown when their session changes or waits on the user), or agents first. */
+  lyricsIslandPriority: LyricsIslandPriority;
   mailEnabled: boolean;
   /** Show the running agent's icon and session title on the collapsed island. */
   agentTitleEnabled: boolean;

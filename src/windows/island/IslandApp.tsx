@@ -72,7 +72,7 @@ export function IslandApp() {
   // A banner holds the island like a preview line does, but leaves the bar's summary in place.
   const showsMessage = hasMessagePreview || banner.showing;
   const media = useMediaState(settings.musicEnabled);
-  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession, agentActivity, agentUsages } =
+  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession: namedAgent, agentInterjection, agentActivity, agentUsages } =
     useIslandAgents(settings);
   const quotaAlert = useQuotaAlert(agentUsages, settings.agentStatusEnabled ? settings.agentQuotaAlertPercent : 0, {
     quiet: game.quiet,
@@ -95,7 +95,9 @@ export function IslandApp() {
     page,
     barShown: mode === "collapsed" && !isTucked && settings.showCollapsedText,
   });
-  // A named agent keeps the summary's place; the lyric line shows while none is named.
+  // While a line is sung, lyrics first: an agent only for a moment when its session changes, or
+  // while it waits on the user. Agents first: the lyric line only while no agent is named.
+  const agentSession = currentLyric && settings.lyricsIslandPriority === "lyrics" ? agentInterjection : namedAgent;
   const lyricLine = agentSession ? null : currentLyric;
   const { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth } =
     useCollapsedTodo(

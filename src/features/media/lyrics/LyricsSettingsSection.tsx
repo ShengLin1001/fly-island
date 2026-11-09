@@ -4,6 +4,8 @@ import { SettingsGroup } from "../../../components/settings/SettingsGroup";
 import { SettingsRow } from "../../../components/settings/SettingsRow";
 import { SettingsSliderRow } from "../../../components/settings/SettingsSliderRow";
 import { SettingsToggleRow } from "../../../components/settings/SettingsToggleRow";
+import { SettingsChoice } from "../../../components/settings/SettingsChoice";
+import type { LyricsIslandPriority } from "./lyricsSettings";
 import type { IslandSettings } from "../../appearance/types";
 import "./LyricsSettingsSection.css";
 
@@ -60,6 +62,21 @@ export function LyricsSettingsSection({
         checked={settings.lyricsOnIsland}
         onChange={(lyricsOnIsland) => onSettingsChange({ ...settings, lyricsOnIsland })}
       />
+      {settings.lyricsOnIsland && (
+        <SettingsRow
+          indent
+          title={text.priority}
+          description={text.priorityHint}
+          control={
+            <SettingsChoice<LyricsIslandPriority>
+              value={settings.lyricsIslandPriority}
+              ariaLabel={text.priority}
+              options={[{ value: "lyrics", label: text.priorityLyrics }, { value: "agent", label: text.priorityAgent }]}
+              onChange={(lyricsIslandPriority) => onSettingsChange({ ...settings, lyricsIslandPriority })}
+            />
+          }
+        />
+      )}
       <SettingsSliderRow
         title={text.offset}
         description={text.offsetHint}

@@ -769,6 +769,27 @@
       "page": "music",
       "zh-CN": {
         "group": "歌词",
+        "title": "同时有 Agent 在运行时",
+        "description": "歌词优先：Agent 开始新会话、跑完或出错时临时显示 4 秒，等你确认时一直显示到你处理。Agent 优先：有 Agent 在运行就显示它，空下来才显示歌词。",
+        "options": [
+          "歌词优先",
+          "Agent 优先"
+        ]
+      },
+      "en": {
+        "group": "Lyrics",
+        "title": "While an agent is running",
+        "description": "Lyrics first: an agent shows for 4 seconds when it starts a session, finishes or fails, and stays while it waits for you. Agent first: a running agent shows, and lyrics come back when it is idle.",
+        "options": [
+          "Lyrics first",
+          "Agent first"
+        ]
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
+        "group": "歌词",
         "title": "歌词提前或推后",
         "description": "歌词比歌声快就往右调，慢就往左调。"
       },
