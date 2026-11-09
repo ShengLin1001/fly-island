@@ -7,6 +7,7 @@
 //! LRC, with the translation as a second LRC when the source has one; the island parses both.
 
 mod found;
+mod inflink;
 mod krc;
 mod kugou;
 mod local;
@@ -24,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 use found::FoundLyrics;
+pub use inflink::InflinkState;
 use matching::{cache_key, named_in_simplified, stable_hash, traditional_chars};
 use crate::win32::chinese::to_simplified;
 
@@ -248,11 +250,26 @@ pub async fn get_lyrics(app: AppHandle, query: LyricsQuery) -> Result<Option<Lyr
     Ok(answer.map(|(source, found)| for_display(source, found, &query.title, &query.artist)))
 }
 
+/// Whether BetterNCM and NetEase's InfLink-rs plugin are installed, and with `check_latest` the
+/// newest InfLink-rs release on GitHub (Settings → Music → Lyrics).
+#[tauri::command]
+pub async fn get_inflink_state(check_latest: bool) -> Result<InflinkState, String> {
+    inflink::state(check_latest).await
+}
+
+/// Installs or updates InfLink-rs in BetterNCM's plugins folder; NetEase picks it up on restart.
+#[tauri::command]
+pub async fn install_inflink() -> Result<InflinkState, String> {
+    inflink::install().await
+}
+
 /// This module's Tauri commands, chained into `lib.rs`'s `generate_handler!`.
 macro_rules! tauri_commands {
     ($next:ident [$($done:tt)*] $($rest:tt)*) => {
         $next!([$($done)*
             crate::lyrics::get_lyrics,
+            crate::lyrics::get_inflink_state,
+            crate::lyrics::install_inflink,
         ] $($rest)*)
     };
 }

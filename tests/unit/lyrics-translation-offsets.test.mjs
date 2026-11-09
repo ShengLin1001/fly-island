@@ -3,6 +3,7 @@ import test from "node:test";
 import { parseLrc, withTranslations } from "../../src/features/media/lyrics/lrc.ts";
 import { MAX_SONG_OFFSETS, normalizeSongOffsets, setSongOffset } from "../../src/features/media/lyrics/songOffsets.ts";
 import { normalizeSettings } from "../../src/features/appearance/settings.ts";
+import { chineseLyricsByDefault, DEFAULT_LYRICS_SETTINGS } from "../../src/features/media/lyrics/lyricsSettings.ts";
 
 test("each line takes the translation that starts with it", () => {
   const lines = parseLrc("[00:17.51]Oh I believe\n[00:22.00]in yesterday\n[00:30.00]");
@@ -28,7 +29,12 @@ test("per-song offsets are kept in range, and 0 or the oldest drop out", () => {
   assert.deepEqual(normalizeSongOffsets([1]), {});
 });
 
-test("Chinese lyric sources stay off until turned on", () => {
-  assert.equal(normalizeSettings({}).lyricsChinese, false);
+test("Chinese lyric sources start on for a Chinese system, and a saved choice wins", () => {
+  assert.equal(chineseLyricsByDefault(["zh-CN"]), true);
+  assert.equal(chineseLyricsByDefault(["en-US", "zh-Hans-CN"]), true);
+  assert.equal(chineseLyricsByDefault(["en-US", undefined]), false);
+  assert.equal(chineseLyricsByDefault(["zhx"]), false);
+  assert.equal(normalizeSettings({}).lyricsChinese, DEFAULT_LYRICS_SETTINGS.lyricsChinese);
   assert.equal(normalizeSettings({ lyricsChinese: true }).lyricsChinese, true);
+  assert.equal(normalizeSettings({ lyricsChinese: false }).lyricsChinese, false);
 });

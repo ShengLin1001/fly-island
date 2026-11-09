@@ -5,6 +5,7 @@ import { SettingsRow } from "../../../components/settings/SettingsRow";
 import { SettingsSliderRow } from "../../../components/settings/SettingsSliderRow";
 import { SettingsToggleRow } from "../../../components/settings/SettingsToggleRow";
 import { SettingsChoice } from "../../../components/settings/SettingsChoice";
+import { InflinkRow } from "./InflinkRow";
 import type { LyricsIslandPriority } from "./lyricsSettings";
 import type { IslandSettings } from "../../appearance/types";
 import "./LyricsSettingsSection.css";
@@ -56,6 +57,7 @@ export function LyricsSettingsSection({
           onChange={(lyricsChinese) => onSettingsChange({ ...settings, lyricsChinese })}
         />
       )}
+      <InflinkRow />
       <SettingsToggleRow
         title={text.onIsland}
         description={settings.lyricsOnIsland && !settings.lyricsOnline && !settings.lyricsFolder ? text.onIslandNoSource : text.onIslandHint}

@@ -1,5 +1,4 @@
-import { ArrowUpRight, Music2, Pause, Play, RefreshCcw, Settings, SkipBack, SkipForward } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { ChevronRight, Music2, Pause, Play, RefreshCcw, Settings, SkipBack, SkipForward } from "lucide-react";
 import { useTranslation } from "../../i18n";
 import type { MediaState } from "./api";
 import { MediaWaveform } from "./MediaWaveform";
@@ -13,7 +12,6 @@ import "./MusicPlayerPanel.css";
 
 const NO_LYRICS = { lyricsFolder: "", lyricsOnline: false, lyricsOffsetMs: 0 };
 /** The NetEase Cloud Music plugin that reports the position and song id to Windows. */
-const INFLINK_URL = "https://github.com/apoint123/InfLink-rs";
 const isNetEase = (sourceApp: string | null) => /cloudmusic/i.test(sourceApp ?? "");
 
 export function MusicPlayerPanel({
@@ -103,9 +101,9 @@ export function MusicPlayerPanel({
         <p className="music-player__estimate">
           <span>{estimate === "unsure" ? t.music.estimate.unsure : t.music.estimate.timed}</span>
           {isNetEase(mediaState.sourceApp) && (
-            <button className="music-player__estimate-link" type="button" onClick={() => void openUrl(INFLINK_URL).catch(() => {})}>
+            <button className="music-player__estimate-link" type="button" onClick={onOpenSettings}>
               {t.music.estimate.inflink}
-              <ArrowUpRight size={11} strokeWidth={2.4} aria-hidden="true" />
+              <ChevronRight size={11} strokeWidth={2.4} aria-hidden="true" />
             </button>
           )}
         </p>

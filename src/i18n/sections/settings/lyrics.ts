@@ -19,6 +19,20 @@ export type SettingsLyricsText = {
   priorityHint: string;
   priorityLyrics: string;
   priorityAgent: string;
+  inflink: {
+    title: string;
+    hint: string;
+    needsBetterNcm: string;
+    getBetterNcm: string;
+    install: string;
+    update: string;
+    installing: string;
+    about: string;
+    installed: (version: string) => string;
+    updateAvailable: (installed: string, latest: string) => string;
+    restart: (version: string) => string;
+    failed: (error: string) => string;
+  };
 };
 
 export const zhCN: SettingsLyricsText = {
@@ -42,6 +56,20 @@ export const zhCN: SettingsLyricsText = {
   priorityHint: "歌词优先：Agent 开始新会话、跑完或出错时临时显示 4 秒，做到一半等你审批或回答时一直显示到你处理。Agent 优先：有 Agent 在运行就显示它，空下来才显示歌词。",
   priorityLyrics: "歌词优先",
   priorityAgent: "Agent 优先",
+  inflink: {
+    title: "网易云精确同步（InfLink-rs）",
+    hint: "网易云插件，让网易云把播放进度和歌曲 ID 告诉系统：音乐页有进度条，歌词按歌曲直接查、不会对不上。从 GitHub 下载，放进 BetterNCM 的插件文件夹。",
+    needsBetterNcm: "要先装 BetterNCM（网易云的第三方插件管理器）：它会往网易云的程序文件夹里放一个文件，所以由你自己安装，岛屿不改网易云。装好并打开一次网易云后，回到这里一键安装 InfLink-rs。",
+    getBetterNcm: "获取 BetterNCM",
+    install: "安装",
+    update: "更新",
+    installing: "正在安装…",
+    about: "项目主页",
+    installed: (version) => `已安装 v${version}。`,
+    updateAvailable: (installed, latest) => `已安装 v${installed}，有新版本 v${latest}。`,
+    restart: (version) => `已安装 v${version}，重启网易云后生效。`,
+    failed: (error) => `安装失败：${error}`,
+  },
 };
 
 export const en: SettingsLyricsText = {
@@ -65,4 +93,18 @@ export const en: SettingsLyricsText = {
   priorityHint: "Lyrics first: an agent shows for 4 seconds when it starts a session, finishes or fails, and stays while it is stopped on an approval or question. Agent first: a running agent shows, and lyrics come back when it is idle.",
   priorityLyrics: "Lyrics first",
   priorityAgent: "Agent first",
+  inflink: {
+    title: "Exact NetEase sync (InfLink-rs)",
+    hint: "A NetEase Cloud Music plugin that tells Windows the playback position and song id: the music page gets a progress bar, and lyrics are looked up by song and stay in step. Downloaded from GitHub into BetterNCM's plugins folder.",
+    needsBetterNcm: "Needs BetterNCM first (a third-party plugin manager for NetEase). It puts a file in NetEase's program folder, so you install it yourself; the island does not change NetEase. Once it is installed and NetEase has been opened once, install InfLink-rs here.",
+    getBetterNcm: "Get BetterNCM",
+    install: "Install",
+    update: "Update",
+    installing: "Installing…",
+    about: "Project page",
+    installed: (version) => `v${version} is installed.`,
+    updateAvailable: (installed, latest) => `v${installed} is installed; v${latest} is out.`,
+    restart: (version) => `v${version} is installed. Restart NetEase Cloud Music to use it.`,
+    failed: (error) => `Install failed: ${error}`,
+  },
 };

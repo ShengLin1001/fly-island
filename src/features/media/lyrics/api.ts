@@ -26,3 +26,22 @@ export type LyricsQuery = {
 export function getLyrics(query: LyricsQuery) {
   return invoke<Lyrics | null>("get_lyrics", { query });
 }
+
+/** Mirrors InflinkState in src-tauri/src/lyrics/inflink.rs. */
+export type InflinkState = {
+  /** BetterNCM's data folder; null when BetterNCM was not found. */
+  betterNcm: string | null;
+  /** The installed InfLink-rs version. */
+  installed: string | null;
+  /** The newest InfLink-rs release; null when GitHub was not asked or could not be reached. */
+  latest: string | null;
+};
+
+export function getInflinkState(checkLatest: boolean) {
+  return invoke<InflinkState>("get_inflink_state", { checkLatest });
+}
+
+/** Installs or updates InfLink-rs in BetterNCM's plugins folder. */
+export function installInflink() {
+  return invoke<InflinkState>("install_inflink");
+}

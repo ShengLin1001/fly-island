@@ -777,6 +777,19 @@
       "page": "music",
       "zh-CN": {
         "group": "歌词",
+        "title": "网易云精确同步（InfLink-rs）",
+        "description": "网易云插件，让网易云把播放进度和歌曲 ID 告诉系统：音乐页有进度条，歌词按歌曲直接查、不会对不上。从 GitHub 下载，放进 BetterNCM 的插件文件夹。"
+      },
+      "en": {
+        "group": "Lyrics",
+        "title": "Exact NetEase sync (InfLink-rs)",
+        "description": "A NetEase Cloud Music plugin that tells Windows the playback position and song id: the music page gets a progress bar, and lyrics are looked up by song and stay in step. Downloaded from GitHub into BetterNCM's plugins folder."
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
+        "group": "歌词",
         "title": "在收起的岛上显示当前歌词",
         "description": "播放中、找到带时间轴的歌词时，收起的岛显示正在唱的那一句；暂停、间奏和没找到歌词时照常显示待办。"
       },
