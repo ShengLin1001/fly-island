@@ -5,6 +5,8 @@ export type IslandText = {
   agentSession: (provider: string, title: string) => string;
   /** The collapsed island shows the line being sung. */
   lyricLine: (text: string) => string;
+  /** The collapsed island names the playing song, which has no lyrics. */
+  nowPlaying: (text: string) => string;
   openMusic: string;
   collapse: string;
   collapseIsland: string;
@@ -42,6 +44,7 @@ export const zhCN: IslandText = {
   pendingTodos: (count) => `剩余${count}个待办`,
   agentSession: (provider, title) => `${provider} 正在处理：${title}`,
   lyricLine: (text) => `正在唱：${text}`,
+  nowPlaying: (text) => `正在播放：${text}`,
   openMusic: "打开音乐控制",
   collapse: "收起",
   collapseIsland: "收起岛屿",
@@ -79,6 +82,7 @@ export const en: IslandText = {
   pendingTodos: (count) => (count === 1 ? "1 todo left" : `${count} todos left`),
   agentSession: (provider, title) => `${provider} is working on: ${title}`,
   lyricLine: (text) => `Now singing: ${text}`,
+  nowPlaying: (text) => `Now playing: ${text}`,
   openMusic: "Open music controls",
   collapse: "Collapse",
   collapseIsland: "Collapse island",

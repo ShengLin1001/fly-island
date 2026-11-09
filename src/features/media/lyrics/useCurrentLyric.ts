@@ -9,6 +9,8 @@ export type CurrentLyric = {
   index: number;
   /** The song's longest line, for sizing the island once per song. */
   longest: string;
+  /** Not a sung line: the song's name, shown while it has no lyrics (songLine.ts). */
+  song?: boolean;
 };
 
 const NONE: CurrentLyric = { text: null, index: -1, longest: "" };

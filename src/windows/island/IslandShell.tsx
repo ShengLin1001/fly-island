@@ -179,7 +179,7 @@ export function IslandShell({
     ? agentSession
       ? t.island.agentSession(agentSession.label, agentSession.title)
       : lyricLine?.text
-      ? t.island.lyricLine(lyricLine.text)
+      ? (lyricLine.song ? t.island.nowPlaying : t.island.lyricLine)(lyricLine.text)
       : collapsedTaskTitle
       ? t.messages.collapsedTask(collapsedTaskTitle)
       : collapsedTodoCount !== null
