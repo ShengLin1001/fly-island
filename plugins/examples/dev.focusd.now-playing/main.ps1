@@ -3,22 +3,19 @@
 # island's music page and collapsed bar already show the song), when the track
 # changes. media:read is a sensitive permission, so the first call that uses it
 # waits until the user answers on the island; a refusal comes back as an error
-# and is logged.
+# and is logged. The message names the song and artist beside the player's icon,
+# inline (notifyStyle); older islands show the same text with the plugin icon.
 . "$PSScriptRoot\lib\focusd.ps1"
-
-# Windows PowerShell 5.1 reads a script without a BOM as ANSI, so this file stays
-# ASCII and writes Chinese text as \u escapes.
-function Text([string]$Escaped) { [regex]::Unescape($Escaped) }
 
 function Show-Playing($now) {
     if ($null -eq $now -or -not $now.title) {
         Write-FocusdLog 'nothing is playing'
         return
     }
-    $body = [string]$now.title
-    if ($now.artist) { $body = "$body - $($now.artist)" }
-    $answer = Invoke-FocusdMethod 'island.notify' @{ title = "Now playing / $(Text '\u6b63\u5728\u64ad\u653e')"; body = $body; durationMs = 6000 }
-    if ($answer.muted) { Write-FocusdLog "now playing: $body (messages are muted)" }
+    $title = [string]$now.title
+    $body = if ($now.artist) { [string]$now.artist } else { '' }
+    $answer = Invoke-FocusdMethod 'island.notify' @{ title = $title; body = $body; durationMs = 6000; icon = 'media'; layout = 'inline' }
+    if ($answer.muted) { Write-FocusdLog "now playing: $title (messages are muted)" }
 }
 
 $script:NotifyOnChange = $false
