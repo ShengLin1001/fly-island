@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Bot, CircleArrowUp, Inbox } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
+import { Bot } from "lucide-react";
 import { AgentProviderIcon } from "../../features/agent-status/AgentProviderIcon";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import { QuotaAlertPopup } from "../../features/agent-status/QuotaAlertPopup";
@@ -7,11 +7,10 @@ import type { AgentSession } from "../../features/agent-status/session";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { MediaState } from "../../features/media/api";
 import { CollapsedMessageContent } from "../../features/messages/CollapsedMessageContent";
-import { MessageSourceIcon } from "../../features/messages/MessageSourceIcon";
-// After CollapsedMessageContent, matching the original stylesheet order.
-import { MusicWaveButton } from "../../features/media/MusicWaveButton";
+// After CollapsedMessageContent, matching the original stylesheet order: it brings the
+// message icon, music wave and device-use styles in that order.
+import { collapsedBarItems } from "./collapsedBarItems";
 import type { DeviceUse } from "../../features/device-use/api";
-import { DeviceUseIndicator } from "../../features/device-use/DeviceUseIndicator";
 import type { LevelChange } from "../../features/system-levels/api";
 import { LevelPopup } from "../../features/system-levels/LevelPopup";
 import type { DeviceAlert } from "../../features/device-events/api";
@@ -27,7 +26,6 @@ import { PluginNotificationActions } from "../../features/plugins/PluginNotifica
 import type { PluginNotificationsController } from "../../features/plugins/usePluginNotifications";
 import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateCheck";
 import { useTranslation } from "../../i18n";
-import { openSettingsWindow } from "../settings/api";
 import type { CollapsedSlots, IslandPage } from "./types";
 import { useWindowDragGesture } from "./useWindowDragGesture";
 import "./IslandCollapsedBar.css";
@@ -123,7 +121,6 @@ export function IslandCollapsedBar({
   const updateVersion = useUpdateReminder();
   const { didDragRef, prepareWindowDrag, handleWindowDragMove, cancelWindowDrag } =
     useWindowDragGesture(isTucked, onWindowDragStart);
-  const isMusicPlaying = mediaState.playbackStatus === "playing";
   const pulseClassName = [
     "island__pulse",
     `island__pulse--agent-${agentVisualState}`,
@@ -135,6 +132,20 @@ export function IslandCollapsedBar({
   // The centre slot takes the summary's place while the bar has no summary.
   const showCenter = Boolean(slots.center) && !preview && !translationPeek
     && !(showCollapsedText && (showTitle || agentSession !== null || collapsedTaskTitle !== null || collapsedTodoCount !== null));
+  const items = collapsedBarItems({
+    t,
+    qqMail,
+    updateVersion,
+    pluginStatus: showCollapsedText && !preview && !translationPeek && !levelPopup && !deviceAlert && !quotaAlert ? pluginStatusChip : null,
+    deviceUse,
+    shelfCount,
+    showMusic,
+    mediaState,
+    agentSessionCount,
+    slots,
+    onOpenPage,
+    onOpenMessages,
+  });
 
   return (
     <div
@@ -243,45 +254,8 @@ export function IslandCollapsedBar({
       {preview?.source === "plugin" && pluginNotifications.notification && (
         <PluginNotificationActions actions={pluginNotifications.notification.actions} onAction={pluginNotifications.runAction} />
       )}
-      {qqMail.preview !== null && (
-        <button className="island-message-button island-message-button--compact qq-mail-badge" type="button" aria-label={t.messages.newMailLabel} onClick={() => onOpenMessages("qqMail")}>
-          <MessageSourceIcon source="qqMail" size={16} />
-          <span className="island-message-button__dot" aria-hidden="true" />
-        </button>
-      )}
-      {updateVersion && (
-        <button
-          className="island-message-button island-message-button--compact island-update-badge"
-          type="button"
-          aria-label={t.settings.project.update.islandReminder(updateVersion)}
-          onClick={(event) => {
-            event.stopPropagation();
-            openSettingsWindow("updates");
-          }}
-        >
-          <CircleArrowUp size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
-          <span className="island-message-button__dot island-update-badge__dot" aria-hidden="true" />
-        </button>
-      )}
-      {showCollapsedText && !preview && !translationPeek && !levelPopup && !deviceAlert && !quotaAlert && pluginStatusChip}
-      <DeviceUseIndicator deviceUse={deviceUse} />
-      {shelfCount !== null && shelfCount > 0 && (
-        <button className="island-shelf-count" type="button" aria-label={t.island.shelfCount(shelfCount)} onClick={() => onOpenPage("shelf")}>
-          <Inbox size={14} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
-          <span>{shelfCount}</span>
-        </button>
-      )}
-      {showMusic && (
-        <MusicWaveButton
-          isAvailable={mediaState.available || mediaState.audioActive}
-          isPlaying={isMusicPlaying}
-          audioPeak={mediaState.audioPeak}
-          label={t.island.openMusic}
-          onClick={() => onOpenPage("music")}
-        />
-      )}
-      {slots.gauges && <div className="island__gauge-slot">{slots.gauges}</div>}
-      {agentSessionCount === null ? (
+      {items.map((item) => <Fragment key={item.id}>{item.node}</Fragment>)}
+      {agentSessionCount === null && (
         <button
           className="island__quiet-button"
           type="button"
@@ -291,21 +265,7 @@ export function IslandCollapsedBar({
             onTuck();
           }}
         />
-      ) : slots.agentCount ? (
-        slots.agentCount
-      ) : agentSessionCount > 0 ? (
-        <button
-          className="island-agent-count"
-          type="button"
-          aria-label={t.agent.sessions.activeCount(agentSessionCount)}
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenPage("agents");
-          }}
-        >
-          {agentSessionCount}
-        </button>
-      ) : null}
+      )}
     </div>
   );
 }
