@@ -16,14 +16,14 @@ const DEFAULT_SERVER: &str = "https://api.day.app";
 const MAX_FIELD_CHARS: usize = 300;
 
 fn credential() -> Result<Entry, String> {
-    Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_USER).map_err(|_| "无法访问 Windows 凭据。".into())
+    Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_USER).map_err(|_| "Could not open Windows Credential Manager.".into())
 }
 
 fn read_key() -> Result<Option<String>, String> {
     match credential()?.get_password() {
         Ok(key) => Ok(Some(key)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(_) => Err("无法读取 Windows 凭据。".into()),
+        Err(_) => Err("Could not read from Windows Credential Manager.".into()),
     }
 }
 
@@ -31,9 +31,9 @@ fn read_key() -> Result<Option<String>, String> {
 pub(crate) fn push_url(server: &str) -> Result<reqwest::Url, String> {
     let server = server.trim().trim_end_matches('/');
     let server = if server.is_empty() { DEFAULT_SERVER } else { server };
-    let url = reqwest::Url::parse(&format!("{server}/push")).map_err(|_| "Bark 服务器地址无效。".to_string())?;
+    let url = reqwest::Url::parse(&format!("{server}/push")).map_err(|_| "The Bark server address is not valid.".to_string())?;
     if !matches!(url.scheme(), "https" | "http") || url.host_str().is_none() {
-        return Err("Bark 服务器地址要以 https:// 或 http:// 开头。".into());
+        return Err("The Bark server address must start with https:// or http://.".into());
     }
     Ok(url)
 }
@@ -63,22 +63,22 @@ pub fn has_bark_key() -> Result<bool, String> {
 
 #[tauri::command]
 pub fn save_bark_key(key: String) -> Result<(), String> {
-    let key = normalize_key(&key).ok_or_else(|| "这不像 Bark 的设备 Key：在 Bark 里复制推送地址或其中那串字母数字。".to_string())?;
-    credential()?.set_password(&key).map_err(|_| "无法保存到 Windows 凭据。".into())
+    let key = normalize_key(&key).ok_or_else(|| "That does not look like a Bark device key: copy the push URL in Bark, or the letters and digits in it.".to_string())?;
+    credential()?.set_password(&key).map_err(|_| "Could not save to Windows Credential Manager.".into())
 }
 
 #[tauri::command]
 pub fn delete_bark_key() -> Result<(), String> {
     match credential()?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(_) => Err("无法删除 Windows 凭据。".into()),
+        Err(_) => Err("Could not delete from Windows Credential Manager.".into()),
     }
 }
 
 /// Sends one push to the saved device; `server` empty means Bark's own server.
 #[tauri::command]
 pub async fn send_bark_push(server: String, title: String, body: String, group: String) -> Result<(), String> {
-    let key = read_key()?.ok_or_else(|| "还没有填 Bark 设备 Key。".to_string())?;
+    let key = read_key()?.ok_or_else(|| "No Bark device key yet.".to_string())?;
     let url = push_url(&server)?;
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
@@ -90,7 +90,7 @@ pub async fn send_bark_push(server: String, title: String, body: String, group: 
         .json(&push_body(&key, &title, &body, &group))
         .send()
         .await
-        .map_err(|error| format!("连不上 Bark 服务器：{error}"))?;
+        .map_err(|error| format!("Could not reach the Bark server: {error}"))?;
     let status = response.status().as_u16();
     if (200..300).contains(&status) {
         return Ok(());
@@ -98,9 +98,9 @@ pub async fn send_bark_push(server: String, title: String, body: String, group: 
     let reply: Value = response.json().await.unwrap_or(Value::Null);
     let message = reply["message"].as_str().unwrap_or_default();
     Err(match status {
-        400 if message.contains("device") => "Bark 不认这个设备 Key，请重新复制。".to_string(),
-        _ if message.is_empty() => format!("Bark 返回 {status}。"),
-        _ => format!("Bark 返回 {status}：{message}"),
+        400 if message.contains("device") => "Bark does not know this device key; copy it again.".to_string(),
+        _ if message.is_empty() => format!("Bark answered {status}."),
+        _ => format!("Bark answered {status}: {message}"),
     })
 }
 
