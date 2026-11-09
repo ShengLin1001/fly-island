@@ -48,6 +48,7 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     hoverCollapseDelayMs: typeof settings?.hoverCollapseDelayMs === "number" && Number.isFinite(settings.hoverCollapseDelayMs)
       ? clamp(Math.round(settings.hoverCollapseDelayMs), MIN_HOVER_COLLAPSE_DELAY_MS, MAX_HOVER_COLLAPSE_DELAY_MS)
       : LEGACY_FALLBACKS.hoverCollapseDelayMs,
+    hoverSwitchPage: settings?.hoverSwitchPage === true,
     minimizeAction: settings?.minimizeAction === "tuck" ? "tuck" : "tray",
     tuckedHoverAction: settings?.tuckedHoverAction === "expand" ? "expand" : "reveal",
     pageDigitModifiers: normalizePageDigitModifiers(settings?.pageDigitModifiers),

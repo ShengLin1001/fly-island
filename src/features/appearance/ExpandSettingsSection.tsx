@@ -93,6 +93,12 @@ export function ExpandSettingsSection({
             />
           </>
         )}
+        <SettingsToggleRow
+          title={expand.hoverSwitchPage}
+          description={expand.hoverSwitchPageHint}
+          checked={settings.hoverSwitchPage}
+          onChange={(hoverSwitchPage) => update({ hoverSwitchPage })}
+        />
       </SettingsGroup>
 
       <SettingsGroup title={expand.tuckTitle}>

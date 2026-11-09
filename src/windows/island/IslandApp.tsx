@@ -262,6 +262,7 @@ export function IslandApp() {
         onReveal={hoverTucked}
         onPageChange={setPage}
         pageDigitModifiers={settings.pageDigitModifiers}
+        hoverSwitchPage={settings.hoverSwitchPage}
         overlay={<PluginPermissionPrompt prompts={permissionPrompts} />}
         pluginViews={pluginPages.views}
         onOpenPluginPage={openEnabledPage}
@@ -269,7 +270,7 @@ export function IslandApp() {
         pageActions={page === "agents" && (
           <AgentArrangeButton sort={settings.agentSessionSort} group={settings.agentSessionGroup} onChange={(patch) => setSettings({ ...settings, ...patch })} />
         )}
-        pluginPageButtons={<PluginPageButtons views={pluginPages.views} page={page} features={features} modifiers={settings.pageDigitModifiers} onOpen={setPage} />}
+        pluginPageButtons={<PluginPageButtons views={pluginPages.views} page={page} features={features} modifiers={settings.pageDigitModifiers} hoverSwitchPage={settings.hoverSwitchPage} onOpen={setPage} />}
       >
         <IslandPages
           page={page}

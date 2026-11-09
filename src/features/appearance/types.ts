@@ -119,6 +119,8 @@ export type IslandSettings = CalendarSettingValues & {
   hoverExpandDelayMs: number;
   /** Time (ms) a hover-opened panel stays open after the pointer leaves it. */
   hoverCollapseDelayMs: number;
+  /** Resting the pointer on a page button of the expanded island opens that page. */
+  hoverSwitchPage: boolean;
   minimizeAction: MinimizeAction;
   tuckedHoverAction: TuckedHoverAction;
   /** Modifiers held with 1–9 to open that page, left to right. The digits themselves stay fixed. */

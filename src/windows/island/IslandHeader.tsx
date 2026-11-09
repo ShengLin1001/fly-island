@@ -6,6 +6,7 @@ import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateChe
 import { useTranslation } from "../../i18n";
 import { isPageEnabled, pageShortcutLabel, type IslandFeatures } from "./features";
 import type { IslandPage } from "./types";
+import { usePageHoverSwitch } from "./usePageHoverSwitch";
 import "./IslandHeader.css";
 
 type IslandHeaderProps = {
@@ -29,6 +30,8 @@ type IslandHeaderProps = {
   onMinimize: () => void;
   /** Modifiers shown with each page number, such as "Alt" or "Ctrl+Shift". */
   pageDigitModifiers: string;
+  /** Resting the pointer on a page button opens its page. */
+  hoverSwitchPage: boolean;
   /** Buttons for plugin pages, after the built-in page dots. */
   pluginPageButtons?: ReactNode;
   /** Buttons of the open page, first among the window actions. */
@@ -54,11 +57,13 @@ export function IslandHeader({
   minimizesToTray,
   onMinimize,
   pageDigitModifiers,
+  hoverSwitchPage,
   pluginPageButtons,
   pageActions,
 }: IslandHeaderProps) {
   const t = useTranslation();
   const updateVersion = useUpdateReminder();
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, onPageChange);
   const settingsLabel = updateVersion ? t.settings.project.update.islandReminder(updateVersion) : t.settings.title;
   const messageBadgeLabel = t.messages.badge(qqNotificationCount, wechatPending);
   const withShortcut = (label: string, target: IslandPage) => {
@@ -80,6 +85,7 @@ export function IslandHeader({
             type="button"
             aria-label={withShortcut(`${agentStatusLabel} · ${t.agent.sessions.open}`, "agents")}
             aria-pressed={page === "agents"}
+            {...hoverSwitch("agents")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("agents");
@@ -110,6 +116,7 @@ export function IslandHeader({
             }`}
             type="button"
             aria-label={withShortcut(t.island.todoList, "todo")}
+            {...hoverSwitch("todo")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("todo");
@@ -123,6 +130,7 @@ export function IslandHeader({
             }`}
             type="button"
             aria-label={withShortcut(t.island.music, "music")}
+            {...hoverSwitch("music")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("music");
@@ -136,6 +144,7 @@ export function IslandHeader({
             }`}
             type="button"
             aria-label={withShortcut(t.island.calendar, "calendar")}
+            {...hoverSwitch("calendar")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("calendar");
@@ -149,6 +158,7 @@ export function IslandHeader({
             }`}
             type="button"
             aria-label={withShortcut(t.island.clipboardHistory, "clipboard")}
+            {...hoverSwitch("clipboard")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("clipboard");
@@ -162,6 +172,7 @@ export function IslandHeader({
             }`}
             type="button"
             aria-label={withShortcut(t.island.shelf, "shelf")}
+            {...hoverSwitch("shelf")}
             onClick={(event) => {
               event.stopPropagation();
               onPageChange("shelf");

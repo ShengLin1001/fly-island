@@ -135,6 +135,9 @@ test("expand trigger, hover delays and max panel height default for older settin
   assert.equal(older.tuckedHoverAction, "reveal", "settings saved before the option only slide out, as before");
   assert.equal(normalizeSettings({ tuckedHoverAction: "expand" }).tuckedHoverAction, "expand");
   assert.equal(normalizeSettings({ tuckedHoverAction: "panel" }).tuckedHoverAction, "reveal");
+  assert.equal(older.hoverSwitchPage, false, "page dots still need a click unless switched on");
+  assert.equal(normalizeSettings({ hoverSwitchPage: true }).hoverSwitchPage, true);
+  assert.equal(normalizeSettings({ hoverSwitchPage: "yes" }).hoverSwitchPage, false);
   assert.equal(older.pageDigitModifiers, "Alt");
   assert.equal(older.pageNextShortcut, "Ctrl+Tab");
   assert.equal(older.pagePreviousShortcut, "Ctrl+Shift+Tab");

@@ -72,6 +72,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   expandTrigger: "hover",
   hoverExpandDelayMs: DEFAULT_HOVER_EXPAND_DELAY_MS,
   hoverCollapseDelayMs: DEFAULT_HOVER_COLLAPSE_DELAY_MS,
+  hoverSwitchPage: false,
   minimizeAction: "tuck",
   tuckedHoverAction: "reveal",
   pageDigitModifiers: DEFAULT_PAGE_DIGIT_MODIFIERS,

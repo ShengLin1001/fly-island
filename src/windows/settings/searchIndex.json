@@ -88,6 +88,19 @@
     {
       "page": "general",
       "zh-CN": {
+        "group": "展开",
+        "title": "悬停切换页面",
+        "description": "鼠标停在展开后顶部的页面圆点上，就切到那一页，不用点击"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Switch pages on hover",
+        "description": "Resting the pointer on a page dot at the top of the open island opens that page, no click needed"
+      }
+    },
+    {
+      "page": "general",
+      "zh-CN": {
         "group": "贴边隐藏",
         "title": "闲置时贴边隐藏",
         "description": "一段时间没有操作后，岛屿贴到屏幕顶部，只露出一条边。"
