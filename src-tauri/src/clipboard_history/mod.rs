@@ -1,6 +1,8 @@
 //! Clipboard history: commands, item types and the background capture service.
 
+mod clipboard_io;
 mod hotkey;
+mod listener;
 mod plugin_view;
 mod popup;
 mod service;
@@ -15,7 +17,7 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
-use service::{notify_clipboard_changed, start_workers};
+use listener::{notify_clipboard_changed, start_workers};
 use store::{load_history, HISTORY_FILE_NAME, IMAGE_DIRECTORY_NAME};
 
 pub(crate) use hotkey::parse_shortcut_binding;

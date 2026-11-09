@@ -1,45 +1,26 @@
-//! History service, clipboard reads and writes, and the clipboard listener window.
+//! The history service: the entries and settings, what each command does to them, and storing
+//! what the listener captures.
 
-use arboard::{Clipboard, ImageData};
 use base64::{engine::general_purpose, Engine as _};
 use image::RgbaImage;
-use std::{
-    borrow::Cow,
-    fs,
-    path::Path,
-    sync::{
-        mpsc::{self, SyncSender},
-        Mutex, OnceLock,
-    },
-    thread,
-    time::Duration,
-};
+use std::{fs, path::Path, time::Duration};
 use tauri::{Emitter, Manager};
-use windows::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, WPARAM},
-    UI::WindowsAndMessaging::{WM_CLIPBOARDUPDATE, WM_HOTKEY},
-};
 
-use super::hotkey::{
-    refresh_registered_hotkey, request_hotkey_refresh, unregister_current_hotkey,
-    CLIPBOARD_HOTKEY_WINDOW, HOTKEY_EVENT, HOTKEY_ID, HOTKEY_REFRESH_MESSAGE, WIN_V_MESSAGE,
+use super::clipboard_io::{
+    quoted_path, read_clipboard_capture, write_clipboard_file, write_clipboard_image,
+    write_clipboard_text, ClipboardCapture,
 };
+use super::hotkey::{request_hotkey_refresh, HOTKEY_EVENT};
 use super::store::{
-    create_item_id, encode_png, hash_bytes, make_thumbnail, preview_text,
-    PersistedClipboardHistory, MAX_IMAGE_PNG_BYTES,
+    create_item_id, encode_png, make_thumbnail, PersistedClipboardHistory, MAX_IMAGE_PNG_BYTES,
 };
 use super::{
-    current_unix_millis, service, ClipboardHistoryImage, ClipboardHistoryItem,
+    current_unix_millis, ClipboardHistoryImage, ClipboardHistoryItem,
     ClipboardHistoryItemKind, ClipboardHistoryService, CopyAs, ClipboardHistorySettings,
     ClipboardHistorySnapshot, ClipboardHistoryState, HISTORY_CHANGED_EVENT, MAIN_WINDOW_LABEL,
     MAX_NOTE_CHARACTERS, SHORT_DUPLICATE_WINDOW_MS,
 };
-use crate::win32::{
-    self,
-    message_window::{self, WindowMessages},
-};
-
-const POLL_INTERVAL: Duration = Duration::from_secs(2);
+use crate::win32;
 
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 
@@ -51,25 +32,7 @@ pub(super) fn is_expired(copied_at: i64, cutoff: i64) -> bool {
 /// Long enough for the listener to see the path written by "copy path" and skip it.
 const PATH_CAPTURE_PAUSE: Duration = Duration::from_millis(800);
 
-const CLIPBOARD_WRITE_RETRY_ATTEMPTS: usize = 8;
 
-const CLIPBOARD_WRITE_RETRY_DELAY: Duration = Duration::from_millis(35);
-
-static CLIPBOARD_NOTIFY_TX: OnceLock<Mutex<Option<SyncSender<()>>>> = OnceLock::new();
-
-enum ClipboardCapture {
-    Text {
-        hash: String,
-        text: String,
-        preview: String,
-    },
-    Image {
-        hash: String,
-        width: usize,
-        height: usize,
-        rgba: Vec<u8>,
-    },
-}
 
 impl ClipboardHistoryService {
     pub(super) fn snapshot(&self) -> Result<ClipboardHistorySnapshot, String> {
@@ -222,7 +185,7 @@ impl ClipboardHistoryService {
         Ok(snapshot)
     }
 
-    fn capture_current_clipboard(&self) {
+    pub(super) fn capture_current_clipboard(&self) {
         if super::clipboard_capture_suspended() {
             return;
         }
@@ -431,7 +394,7 @@ impl ClipboardHistoryService {
         super::plugin_view::publish_changed(enabled);
     }
 
-    fn emit_shortcut(&self) {
+    pub(super) fn emit_shortcut(&self) {
         // The clipboard window (C22.2), unless the settings ask for the island's page.
         let settings = self.state.lock().map(|state| state.settings.clone()).ok();
         if let Some(settings) = settings.filter(|settings| settings.open_in == super::OpenIn::Window) {
@@ -449,217 +412,10 @@ impl ClipboardHistoryService {
     }
 }
 
-impl ClipboardCapture {
-    fn hash(&self) -> &str {
-        match self {
-            Self::Text { hash, .. } | Self::Image { hash, .. } => hash,
-        }
-    }
-}
-
-fn read_clipboard_capture(capture_images: bool) -> Result<Option<ClipboardCapture>, String> {
-    let mut clipboard = Clipboard::new().map_err(|error| error.to_string())?;
-
-    if let Ok(text) = clipboard.get_text() {
-        if !text.trim().is_empty() {
-            let hash = hash_bytes([b"text:", text.as_bytes()].concat().as_slice());
-            return Ok(Some(ClipboardCapture::Text {
-                hash,
-                preview: preview_text(&text),
-                text,
-            }));
-        }
-    }
-
-    if capture_images {
-        if let Ok(image) = clipboard.get_image() {
-            let mut hash_input = Vec::with_capacity(16 + image.bytes.len());
-            hash_input.extend_from_slice(&image.width.to_le_bytes());
-            hash_input.extend_from_slice(&image.height.to_le_bytes());
-            hash_input.extend_from_slice(&image.bytes);
-            let hash = hash_bytes(&hash_input);
-
-            return Ok(Some(ClipboardCapture::Image {
-                hash,
-                width: image.width,
-                height: image.height,
-                rgba: image.bytes.into_owned(),
-            }));
-        }
-    }
-
-    Ok(None)
-}
-
-fn write_clipboard_text(text: &str) -> Result<(), String> {
-    retry_clipboard_write("set clipboard text", || {
-        Clipboard::new()
-            .map_err(|error| format!("Failed to open clipboard: {error}"))?
-            .set_text(text.to_owned())
-            .map_err(|error| format!("Failed to set clipboard text: {error}"))
-    })
-}
-
-/// Adds the file to what is on the clipboard (CF_HDROP next to the bitmap and PNG): chat apps and
-/// Explorer paste the file, image editors the bitmap.
-fn write_clipboard_file(path: &Path) -> Result<(), String> {
-    retry_clipboard_write("set clipboard file", || {
-        Clipboard::new()
-            .map_err(|error| format!("Failed to open clipboard: {error}"))?
-            .set()
-            .file_list(&[path])
-            .map_err(|error| format!("Failed to set clipboard file: {error}"))
-    })
-}
-
-/// The path in double quotes, as a terminal's drag and drop gives it; spaces stay one argument.
-pub(super) fn quoted_path(path: &Path) -> String {
-    format!("\"{}\"", path.display())
-}
 
 #[cfg(test)]
 #[test]
 fn entries_expire_after_the_retention_cutoff() {
     assert!(is_expired(999, 1000));
     assert!(!is_expired(1000, 1000));
-}
-
-#[cfg(test)]
-#[test]
-fn image_paths_are_quoted_and_copy_forms_parse() {
-    assert_eq!(quoted_path(Path::new(r"C:\Users\a b\clip.png")), r#""C:\Users\a b\clip.png""#);
-    let forms: Vec<CopyAs> = serde_json::from_str(r#"["original","file","path"]"#).expect("parses");
-    assert_eq!(forms, [CopyAs::Original, CopyAs::File, CopyAs::Path]);
-}
-
-fn write_clipboard_image(width: usize, height: usize, image: &RgbaImage) -> Result<(), String> {
-    retry_clipboard_write("set clipboard image", || {
-        Clipboard::new()
-            .map_err(|error| format!("Failed to open clipboard: {error}"))?
-            .set_image(ImageData {
-                width,
-                height,
-                bytes: Cow::Owned(image.as_raw().clone()),
-            })
-            .map_err(|error| format!("Failed to set clipboard image: {error}"))
-    })
-}
-
-fn retry_clipboard_write(
-    action: &str,
-    mut write: impl FnMut() -> Result<(), String>,
-) -> Result<(), String> {
-    let mut last_error = None;
-
-    for attempt in 0..CLIPBOARD_WRITE_RETRY_ATTEMPTS {
-        match write() {
-            Ok(()) => return Ok(()),
-            Err(error) => {
-                last_error = Some(error);
-
-                if attempt + 1 < CLIPBOARD_WRITE_RETRY_ATTEMPTS {
-                    thread::sleep(CLIPBOARD_WRITE_RETRY_DELAY);
-                }
-            }
-        }
-    }
-
-    Err(format!(
-        "Failed to {action} after {CLIPBOARD_WRITE_RETRY_ATTEMPTS} attempts: {}",
-        last_error.unwrap_or_else(|| "unknown error".to_string())
-    ))
-}
-
-pub(super) fn start_workers() {
-    // Clipboard reads can block while another process owns the clipboard. Keep at most one
-    // pending read so a busy clipboard cannot build an unbounded backlog of work.
-    let (tx, rx) = mpsc::sync_channel::<()>(1);
-    let _ = CLIPBOARD_NOTIFY_TX.set(Mutex::new(Some(tx)));
-
-    thread::spawn(move || {
-        while rx.recv().is_ok() {
-            if let Ok(service) = service() {
-                service.capture_current_clipboard();
-            }
-        }
-    });
-
-    thread::spawn(|| {
-        if let Err(error) = run_windows_clipboard_listener() {
-            eprintln!("clipboard listener fell back to polling only: {error}");
-
-            loop {
-                thread::sleep(POLL_INTERVAL);
-                notify_clipboard_changed();
-            }
-        }
-    });
-}
-
-pub(super) fn notify_clipboard_changed() {
-    if let Some(sender) = CLIPBOARD_NOTIFY_TX
-        .get()
-        .and_then(|sender| sender.lock().ok())
-        .and_then(|sender| sender.as_ref().cloned())
-    {
-        let _ = sender.try_send(());
-    }
-}
-
-fn run_windows_clipboard_listener() -> Result<(), String> {
-    let class_name = "FocuSDClipboardHistoryListener";
-    let instance = message_window::module_instance().map_err(|error| error.to_string())?;
-
-    if message_window::register_class::<ClipboardWindow>(instance, class_name).is_err() {
-        return Err("Failed to register clipboard listener window class.".to_string());
-    }
-
-    let hwnd = message_window::create_message_only_window(
-        instance,
-        class_name,
-        "FocuSD Clipboard History Listener",
-    )
-    .map_err(|error| error.to_string())?;
-
-    win32::clipboard::add_format_listener(hwnd).map_err(|error| error.to_string())?;
-    if let Some(window) = CLIPBOARD_HOTKEY_WINDOW.get() {
-        if let Ok(mut stored_window) = window.lock() {
-            *stored_window = Some(hwnd.0 as isize);
-        }
-    } else {
-        let _ = CLIPBOARD_HOTKEY_WINDOW.set(Mutex::new(Some(hwnd.0 as isize)));
-    }
-    refresh_registered_hotkey(hwnd);
-
-    message_window::run_message_loop();
-
-    unregister_current_hotkey(hwnd);
-    let _ = win32::clipboard::remove_format_listener(hwnd);
-
-    Ok(())
-}
-
-struct ClipboardWindow;
-
-impl WindowMessages for ClipboardWindow {
-    fn handle(hwnd: HWND, message: u32, wparam: WPARAM, _: LPARAM) -> Option<LRESULT> {
-        if message == WM_CLIPBOARDUPDATE {
-            notify_clipboard_changed();
-            return Some(LRESULT(0));
-        }
-
-        if (message == WM_HOTKEY && wparam.0 == HOTKEY_ID as usize) || message == WIN_V_MESSAGE {
-            if let Ok(service) = service() {
-                service.emit_shortcut();
-            }
-            return Some(LRESULT(0));
-        }
-
-        if message == HOTKEY_REFRESH_MESSAGE {
-            refresh_registered_hotkey(hwnd);
-            return Some(LRESULT(0));
-        }
-
-        None
-    }
 }
