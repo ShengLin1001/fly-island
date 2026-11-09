@@ -1,10 +1,12 @@
+import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
+import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import { AgentSessionListSettings } from "../../features/agent-status/AgentSessionListSettings";
 import { AgentSessionFilterSettings } from "../../features/agent-status/AgentSessionFilterSettings";
 import { AgentHooksNotice } from "../../features/agent-status/AgentHooksNotice";
 import "../../features/agent-status/AgentHooksSettingsSection.css";
-import type { IslandSettings } from "../../features/appearance/types";
+import type { AgentTitleMode, IslandSettings } from "../../features/appearance/types";
 import { useTranslation } from "../../i18n";
 import { ModuleSwitchSection } from "./ModuleSwitchSection";
 
@@ -40,6 +42,24 @@ export function AgentSettingsPage({
           checked={settings.agentTitleEnabled}
           onChange={(agentTitleEnabled) => onSettingsChange({ ...settings, agentTitleEnabled })}
         />
+        {settings.agentTitleEnabled && (
+          <SettingsRow
+            indent
+            title={t.settings.agent.titleMode}
+            description={t.settings.agent.titleModeHint}
+            control={
+              <SettingsChoice<AgentTitleMode>
+                value={settings.agentTitleMode}
+                ariaLabel={t.settings.agent.titleMode}
+                options={[
+                  { value: "changes", label: t.settings.agent.titleModeOptions.changes },
+                  { value: "running", label: t.settings.agent.titleModeOptions.running },
+                ]}
+                onChange={(agentTitleMode) => onSettingsChange({ ...settings, agentTitleMode })}
+              />
+            }
+          />
+        )}
       </SettingsGroup>
       <AgentSessionListSettings settings={settings} onSettingsChange={onSettingsChange} />
       <AgentSessionFilterSettings />

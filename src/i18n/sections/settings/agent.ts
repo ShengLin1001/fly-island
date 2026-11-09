@@ -10,6 +10,9 @@ export type SettingsAgentText = {
   sessionTitleSection: string;
   sessionTitle: string;
   sessionTitleHint: string;
+  titleMode: string;
+  titleModeHint: string;
+  titleModeOptions: { changes: string; running: string };
   sessionPageSection: string;
   sessionVisibleRows: string;
   sessionPageHint: string;
@@ -159,8 +162,11 @@ export const zhCN: SettingsAgentText = {
   clearStatus: "清除状态",
   scriptsDir: "脚本目录",
   sessionTitleSection: "小岛显示",
-  sessionTitle: "运行时在小岛显示会话标题",
-  sessionTitleHint: "显示 Agent 图标和会话标题，结束 3 秒后恢复待办。标题直接读取 Claude Code 和 Codex 的会话记录，不需要安装钩子。",
+  sessionTitle: "在小岛显示会话标题",
+  sessionTitleHint: "在待办的位置显示 Agent 图标和会话标题。标题直接读取 Claude Code 和 Codex 的会话记录，不需要安装钩子。",
+  titleMode: "什么时候显示",
+  titleModeHint: "有变化时：会话开始、跑完或出错时显示 4 秒，等你确认时一直显示到你处理，其余时间留给待办和中心图案。运行时一直显示：有 Agent 在运行就显示，结束 3 秒后恢复待办。",
+  titleModeOptions: { changes: "有变化时", running: "运行时一直显示" },
   sessionPageSection: "会话列表",
   sessionVisibleRows: "展开后显示条数",
   sessionPageHint: "岛屿展开后的 Agent 页一次显示的会话数，更多的会话可以滚动查看。",
@@ -301,8 +307,11 @@ export const en: SettingsAgentText = {
   clearStatus: "Clear status",
   scriptsDir: "Scripts folder",
   sessionTitleSection: "On the island",
-  sessionTitle: "Show the session title while running",
-  sessionTitleHint: "Shows the agent icon and session title, then the todo again 3 seconds after it finishes. Titles are read from the Claude Code and Codex session files, so no hooks are needed.",
+  sessionTitle: "Show the session title on the island",
+  sessionTitleHint: "Shows the agent icon and session title where the todo goes. Titles are read from the Claude Code and Codex session files, so no hooks are needed.",
+  titleMode: "When to show it",
+  titleModeHint: "On changes: for 4 seconds when a session starts, finishes or fails, and while it waits for your approval; otherwise the todo and the center pattern stay. While running: the whole time an agent runs, then the todo again 3 seconds after it finishes.",
+  titleModeOptions: { changes: "On changes", running: "While running" },
   sessionPageSection: "Session list",
   sessionVisibleRows: "Entries shown when open",
   sessionPageHint: "How many sessions the island's Agent page shows at once; scroll for the rest.",

@@ -84,6 +84,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   musicEnabled: true,
   agentStatusEnabled: true,
   agentTitleEnabled: true,
+  agentTitleMode: "changes",
   shelfEnabled: true,
   translationEnabled: true,
   translationTarget: "island",

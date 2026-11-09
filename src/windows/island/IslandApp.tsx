@@ -98,7 +98,7 @@ export function IslandApp() {
   });
   // While a line is sung, lyrics first: an agent only for a moment when its session changes, or
   // while it waits on the user. Agents first: the lyric line only while no agent is named.
-  const agentSession = currentLyric && settings.lyricsIslandPriority === "lyrics" ? agentInterjection : namedAgent;
+  const agentSession = settings.agentTitleMode === "changes" || (currentLyric && settings.lyricsIslandPriority === "lyrics") ? agentInterjection : namedAgent;
   const lyricLine = agentSession ? null : currentLyric;
   const { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth } =
     useCollapsedTodo(
