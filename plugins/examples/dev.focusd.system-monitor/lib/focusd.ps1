@@ -8,12 +8,17 @@
 
 $ErrorActionPreference = 'Stop'
 $focusdUtf8 = New-Object System.Text.UTF8Encoding $false
-# Set before [Console]::In is first used, so todo titles in any language survive.
+# Set before the console streams are first used, so todo titles in any language survive.
 [Console]::InputEncoding = $focusdUtf8
 [Console]::OutputEncoding = $focusdUtf8
 $script:FocusdNextId = 0
 $script:FocusdQueue = New-Object System.Collections.Queue
 $script:FocusdPendingLine = $null
+# Lines from the island are read through this rather than [Console]::In: on Windows
+# PowerShell 5.1 that is a synchronized reader whose ReadLineAsync blocks until a line
+# arrives, so a wait with a timeout never timed out and timer-driven plugins stalled
+# between messages. A StreamReader on the raw input reads on the thread pool.
+$script:FocusdIn = New-Object System.IO.StreamReader -ArgumentList ([Console]::OpenStandardInput()), $focusdUtf8, $false
 
 function Send-FocusdMessage([hashtable]$Message) {
     $Message['jsonrpc'] = '2.0'
@@ -29,7 +34,7 @@ function Write-FocusdLog([string]$Text) {
 # Exits when stdin closes: that is the island stopping the plugin.
 function Read-FocusdLine([int]$TimeoutMs) {
     if ($null -eq $script:FocusdPendingLine) {
-        $script:FocusdPendingLine = [Console]::In.ReadLineAsync()
+        $script:FocusdPendingLine = $script:FocusdIn.ReadLineAsync()
     }
     if (-not $script:FocusdPendingLine.Wait($TimeoutMs)) {
         return $null
