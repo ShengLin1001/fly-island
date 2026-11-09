@@ -81,7 +81,8 @@ export function IslandApp() {
   const collapsedSlots = useCollapsedSlots({
     paused: mode !== "collapsed" || isTucked || game.quiet,
     agents: agentActivity,
-    sessions: agentSessions,
+    // The Agent page's list, so the ring leaves out what the page hides (quit sessions, say).
+    sessions: listedAgentSessions,
     unseen: unseenAgentSessions.keys,
     agentsOn: settings.agentStatusEnabled,
     onOpenAgents: openAgentsPage,
