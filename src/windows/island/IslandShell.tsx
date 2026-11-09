@@ -34,6 +34,8 @@ type IslandShellProps = {
   onOpenMessages: (source: MessageSource) => void;
   mode: IslandMode;
   page: IslandPage;
+  /** Only a popup's card, without the header, on a narrower island (useIslandPopup). */
+  popup?: boolean;
   appearanceMode: AppearanceMode;
   nativeGlassState: NativeGlassState;
   isTucked: boolean;
@@ -101,6 +103,7 @@ export function IslandShell({
   onOpenMessages,
   mode,
   page,
+  popup = false,
   appearanceMode,
   nativeGlassState,
   isTucked,
@@ -162,6 +165,7 @@ export function IslandShell({
     isPreparing && !isExpanded ? "island--preparing" : "",
     isDetached ? "island--detached" : "island--docked",
     isTucked ? "island--tucked" : "",
+    popup ? "island--popup" : "",
     isLiquidGlass ? `island--glass-${nativeGlassState}` : "",
     showTitle ? "" : "island--title-hidden",
   ]

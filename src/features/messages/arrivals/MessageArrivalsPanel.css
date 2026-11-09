@@ -9,7 +9,42 @@
   color: var(--text-1);
 }
 
+.message-arrivals__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Quiet until pointed at: the rows are what the popup is for. */
+.message-arrivals__all {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  min-height: 20px;
+  margin-right: -6px;
+  padding: 0 4px 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.message-arrivals__all:hover {
+  background: var(--color-white-a08);
+  color: var(--text-1);
+}
+
 .message-arrivals__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin: 0;
   color: var(--text-2);
   font-size: 12px;
@@ -130,6 +165,7 @@
 }
 
 .message-arrivals__row:focus-visible,
+.message-arrivals__all:focus-visible,
 .message-arrivals__action:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;

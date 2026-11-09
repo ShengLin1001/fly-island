@@ -39,6 +39,7 @@ import { usePluginPages } from "./usePluginPages";
 import { useMessageView } from "./useMessageView";
 import { useIslandBanner } from "./useIslandBanner";
 import { useIslandMessagePanel } from "./useIslandMessagePanel";
+import { useIslandPopup } from "./useIslandPopup";
 import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
@@ -127,7 +128,7 @@ export function IslandApp() {
     openIslandPage,
     pluginPages: pluginPages.pageIds,
   });
-  const { alertedSession, approvals: agentApprovals, agentCardHeight } = useIslandAgentAlerts({
+  const { alertedSession, approvals: agentApprovals, agentCardHeight, alertPopup } = useIslandAgentAlerts({
     sessions: agentSessions,
     unseen: unseenAgentSessions.keys,
     settings,
@@ -142,6 +143,7 @@ export function IslandApp() {
     durationMs: settings.messagePanelSeconds * 1000,
     notices, mode, page, openIslandPage, collapseIsland, onOpenMessages: openMessages,
   });
+  const { popup, expandedIslandWidth } = useIslandPopup(mode, messagePanel.arrivals !== null || alertPopup);
   const expandedIslandHeight = getExpandedIslandHeight({
     page,
     todoPageMode,
@@ -156,13 +158,14 @@ export function IslandApp() {
     agentUsageLines: settings.agentShowUsage ? usageLineCount(agentUsages) : 0,
     agentAlertRowHeight: agentCardHeight,
     messageArrivalsHeight: messagePanel.arrivals ? messagePanel.height : undefined,
+    popup,
     pluginTemplate: pluginPages.entry?.template,
     pluginListRows: pluginPages.rows,
     pluginWebviewHeight: pluginPages.entry?.height,
   });
   const stageStyle = useMemo(
-    () => getIslandStageStyle(settings, mode, collapsedIslandWidth, expandedIslandHeight),
-    [collapsedIslandWidth, expandedIslandHeight, mode, settings],
+    () => getIslandStageStyle(settings, mode, collapsedIslandWidth, expandedIslandHeight, expandedIslandWidth),
+    [collapsedIslandWidth, expandedIslandHeight, expandedIslandWidth, mode, settings],
   );
 
   const { fileShelf, isShelfDropping } = useIslandShelf(settings, navigation);
@@ -179,6 +182,7 @@ export function IslandApp() {
     settings,
     setSettings,
     expandedIslandHeight,
+    expandedIslandWidth,
     collapsedIslandWidth,
     onCollapse: collapseIsland,
   });
@@ -228,6 +232,7 @@ export function IslandApp() {
         onOpenMessages={openMessages}
         mode={mode}
         page={page}
+        popup={popup}
         appearanceMode={settings.appearanceMode}
         nativeGlassState={nativeGlassState}
         isTucked={isTucked}

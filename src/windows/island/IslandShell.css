@@ -269,7 +269,7 @@
 }
 
 .island--expanded {
-  width: calc(560px * var(--island-scale, 1));
+  width: calc(var(--expanded-island-width, 560px) * var(--island-scale, 1));
   height: calc(var(--expanded-island-height, 306px) * var(--island-scale, 1));
   border-radius: 0 0 var(--island-shell-radius) var(--island-shell-radius);
   cursor: default;
@@ -326,10 +326,12 @@
   transition-delay: 0s;
 }
 
+/* Not transitioned: going from a popup to the whole page, the page lays out at its full width at
+   once and the shell, growing from the middle, uncovers it, rather than every line rewrapping. */
 .island__expanded {
-  width: 560px;
+  width: var(--expanded-island-width, 560px);
   height: var(--expanded-island-height, 306px);
-  margin-left: -280px;
+  margin-left: calc(var(--expanded-island-width, 560px) / -2);
   zoom: var(--island-expanded-scale, 1);
   display: flex;
   flex-direction: column;
@@ -358,6 +360,15 @@
     opacity 260ms ease 160ms,
     top 280ms cubic-bezier(0.16, 1, 0.3, 1) 140ms,
     height 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* A popup (new messages, an Agent alert) shows only its card on a narrower island (C11b). */
+.island--popup .island__header {
+  display: none;
+}
+
+.island--popup .island__expanded {
+  padding-top: 16px;
 }
 
 .island__content {

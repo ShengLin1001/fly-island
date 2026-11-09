@@ -106,5 +106,7 @@ export function useIslandAgentAlerts({ sessions, unseen, settings, enabled, mode
   // popover. Not a card's: a request waits on it, and closing would leave it hanging.
   useOutsideClick(alertedSession !== null && !waiting && isOpenOnAgents, collapseIsland);
   const agentCardHeight = approvals.current ? approvals.cardHeight : alertedSession?.rowHeight;
-  return { alertedSession, approvals, agentCardHeight };
+  // An alert shows as a popup (C11b); a request's card keeps the whole width for its command.
+  const alertPopup = alertedSession !== null && !approvals.current && isOpenOnAgents;
+  return { alertedSession, approvals, agentCardHeight, alertPopup };
 }

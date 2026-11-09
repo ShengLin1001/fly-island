@@ -8,6 +8,14 @@ export const MAX_COLLAPSED_ISLAND_WIDTH = 340;
 export const MIN_COLLAPSED_TEXT_UNITS = 2;
 export const MAX_COLLAPSED_TEXT_UNITS = 12;
 export const BASE_EXPANDED_ISLAND_HEIGHT = 306;
+export const EXPANDED_ISLAND_WIDTH = 560;
+/**
+ * A popup (new messages, an Agent alert) shows only its card, without the page header, on an
+ * island this wide. Keep in step with .island--popup in IslandShell.css.
+ */
+export const POPUP_ISLAND_WIDTH = 400;
+/** What a popup leaves out: the header (34), the gap below it (14) and 2px of top padding. */
+export const POPUP_HEADER_SAVING = 50;
 export const TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT = 352;
 /** The calendar page: two days of events, scrolling past about six. */
 export const CALENDAR_EXPANDED_ISLAND_HEIGHT = 340;

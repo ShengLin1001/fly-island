@@ -27,10 +27,10 @@ impl IslandMode {
         }
     }
 
-    pub(super) fn base_size(self, collapsed_width: f64, expanded_height: f64) -> (f64, f64) {
+    pub(super) fn base_size(self, collapsed_width: f64, expanded_width: f64, expanded_height: f64) -> (f64, f64) {
         match self {
             Self::Collapsed => (collapsed_width, COLLAPSED_ISLAND_HEIGHT),
-            Self::Expanded => (EXPANDED_ISLAND_WIDTH, expanded_height),
+            Self::Expanded => (expanded_width, expanded_height),
         }
     }
 
@@ -98,6 +98,8 @@ pub(crate) struct IslandWindowState {
     pub(super) expanded_scale: f64,
     pub(super) margin_y: f64,
     pub(super) collapsed_width: f64,
+    /// Narrower than the full panel while a message or Agent popup shows only its card.
+    pub(super) expanded_width: f64,
     pub(super) expanded_height: f64,
     pub(super) custom_position: Option<IslandPosition>,
     pub(super) is_dragging: bool,
@@ -157,6 +159,7 @@ impl Default for IslandWindowState {
             expanded_scale: DEFAULT_EXPANDED_SCALE,
             margin_y: DEFAULT_MARGIN_Y,
             collapsed_width: COLLAPSED_ISLAND_WIDTH,
+            expanded_width: EXPANDED_ISLAND_WIDTH,
             expanded_height: DEFAULT_EXPANDED_ISLAND_HEIGHT,
             custom_position: None,
             is_dragging: false,

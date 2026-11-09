@@ -15,6 +15,7 @@ type IslandWindowOptions = {
   settings: IslandSettings;
   setSettings: (settings: IslandSettings) => void;
   expandedIslandHeight: number;
+  expandedIslandWidth: number;
   collapsedIslandWidth: number;
   onCollapse: () => void;
 };
@@ -26,6 +27,7 @@ export function useIslandWindow({
   settings,
   setSettings,
   expandedIslandHeight,
+  expandedIslandWidth,
   collapsedIslandWidth,
   onCollapse,
 }: IslandWindowOptions) {
@@ -42,6 +44,7 @@ export function useIslandWindow({
       nextMode: IslandMode,
       nextSettings: IslandSettings,
       nextExpandedHeight: number,
+      nextExpandedWidth: number,
       nextCollapsedWidth: number,
       nextIsTucked: boolean,
     ) => {
@@ -52,6 +55,7 @@ export function useIslandWindow({
           expandedScale: nextSettings.expandedScale,
           marginY: nextSettings.marginY,
           expandedHeight: nextExpandedHeight,
+          expandedWidth: nextExpandedWidth,
           collapsedWidth: nextCollapsedWidth,
           customPosition: islandPositionRef.current,
           isTucked: nextIsTucked,
@@ -125,6 +129,7 @@ export function useIslandWindow({
       mode,
       settings,
       expandedIslandHeight,
+      expandedIslandWidth,
       collapsedIslandWidth,
       isTucked,
     ).finally(() => {
@@ -135,6 +140,7 @@ export function useIslandWindow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     expandedIslandHeight,
+    expandedIslandWidth,
     collapsedIslandWidth,
     isTucked,
     mode,

@@ -145,7 +145,7 @@ pub(super) fn cursor_is_inside_island(hwnd: HWND) -> bool {
 
     let (base_width, base_height) = state
         .mode
-        .base_size(state.collapsed_width, state.expanded_height);
+        .base_size(state.collapsed_width, state.expanded_width, state.expanded_height);
     let island_width = base_width * state.active_scale() * physical_scale;
     let island_height = base_height * state.active_scale() * physical_scale;
     let island_left = (window_width - island_width) / 2.0;

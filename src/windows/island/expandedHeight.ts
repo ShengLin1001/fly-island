@@ -1,6 +1,6 @@
 import { messagePanelHeight, type MessageView } from "../../features/messages/Messages";
 import type { TodoItem, TodoPageMode } from "../../features/todos/types";
-import { BASE_EXPANDED_ISLAND_HEIGHT, CALENDAR_EXPANDED_ISLAND_HEIGHT, MUSIC_EXPANDED_ISLAND_HEIGHT, TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT, TODO_GROW_START_ROWS, TODO_ROW_HEIGHT, getAgentAlertExpandedHeight, getAgentPageExpandedHeight, getClipboardExpandedHeight, getPluginPageExpandedHeight, getTodoScrollStartRows, getTodoVisualRows } from "./layout";
+import { BASE_EXPANDED_ISLAND_HEIGHT, CALENDAR_EXPANDED_ISLAND_HEIGHT, MUSIC_EXPANDED_ISLAND_HEIGHT, TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT, TODO_GROW_START_ROWS, TODO_ROW_HEIGHT, getAgentAlertExpandedHeight, getAgentPageExpandedHeight, getClipboardExpandedHeight, POPUP_HEADER_SAVING, getPluginPageExpandedHeight, getTodoScrollStartRows, getTodoVisualRows } from "./layout";
 import type { PluginViewTemplate } from "../../features/plugin-views/api";
 import type { AgentSessionView } from "../../features/appearance/types";
 import { isPluginPage } from "./features";
@@ -31,6 +31,8 @@ type ExpandedHeightInput = {
   agentAlertRowHeight?: number;
   /** The Messages page showing only new messages (roadmap C11): the height its rows measured. */
   messageArrivalsHeight?: number;
+  /** A popup (the two above, without an approval card) shows no header (C11b). */
+  popup?: boolean;
   /** The template of the open plugin page; null when it is not known (yet). */
   pluginTemplate?: PluginViewTemplate | null;
   /** Rows the open plugin list shows (items, group titles, search box). */
@@ -59,6 +61,7 @@ export function getExpandedIslandHeight({
   agentUsageLines,
   agentAlertRowHeight,
   messageArrivalsHeight,
+  popup = false,
   pluginTemplate,
   pluginListRows,
   pluginWebviewHeight,
@@ -80,7 +83,7 @@ export function getExpandedIslandHeight({
     getTodoScrollStartRows(maxPanelHeight),
   );
 
-  return page === "todo"
+  const height = page === "todo"
     ? isTodoArchivePage
       ? TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT
       : BASE_EXPANDED_ISLAND_HEIGHT +
@@ -102,4 +105,5 @@ export function getExpandedIslandHeight({
         : messageArrivalsHeight !== undefined
           ? Math.min(MESSAGE_ARRIVALS_CHROME_HEIGHT + messageArrivalsHeight, maxPanelHeight)
           : Math.min(messagePanelHeight(messageSource, isReadingMail), maxPanelHeight);
+  return popup ? height - POPUP_HEADER_SAVING : height;
 }

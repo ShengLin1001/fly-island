@@ -10,6 +10,7 @@ export function getIslandStageStyle(
   mode: IslandMode,
   collapsedIslandWidth: number,
   expandedIslandHeight: number,
+  expandedIslandWidth: number,
 ) {
   const glassStrength = settings.glassIntensity / 100;
   const glassMaskOpacity = settings.opacity / 100;
@@ -24,6 +25,7 @@ export function getIslandStageStyle(
     "--island-expanded-scale": settings.expandedScale,
     "--collapsed-island-width": `${collapsedIslandWidth}px`,
     "--expanded-island-height": `${expandedIslandHeight}px`,
+    "--expanded-island-width": `${expandedIslandWidth}px`,
     // Unitless so IslandTopEdge.css can also fade the fillet layers out at 0.
     "--island-top-fillet-size": settings.topFilletRadius,
     // Unitless; IslandShell.css derives the collapsed, detached and inner panel radii from it.

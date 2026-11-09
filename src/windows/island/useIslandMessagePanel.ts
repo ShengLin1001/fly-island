@@ -88,19 +88,23 @@ export function useIslandMessagePanel({ enabled, durationMs, notices, mode, page
 
   // A press inside is the user taking the panel over; outside the rows it is the whole page again.
   const showing = arrivals !== null;
+  const showAll = useCallback(() => {
+    autoOpenedRef.current = false;
+    window.clearTimeout(closeTimerRef.current);
+    setArrivals(null);
+    setMessagePanelOpen(false);
+  }, [setMessagePanelOpen]);
   useEffect(() => {
     if (!showing) return;
     const takeOver = (event: PointerEvent) => {
       autoOpenedRef.current = false;
       window.clearTimeout(closeTimerRef.current);
-      if (!(event.target instanceof Element && event.target.closest(".message-arrivals"))) {
-        setArrivals(null);
-        setMessagePanelOpen(false);
-      }
+      // The title row too: without the island's header (C11b) it is the way to the whole page.
+      if (!(event.target instanceof Element && event.target.closest(".message-arrivals__list"))) showAll();
     };
     window.addEventListener("pointerdown", takeOver, true);
     return () => window.removeEventListener("pointerdown", takeOver, true);
-  }, [showing, setMessagePanelOpen]);
+  }, [showing, showAll]);
 
   // Collapsing, or moving to another page (an Agent card, say), ends it. Not while collapsed:
   // the panel sets its rows just before the island opens.
@@ -159,6 +163,8 @@ export function useIslandMessagePanel({ enabled, durationMs, notices, mode, page
     measure: setHeight,
     open,
     runAction,
+    /** The whole Messages page instead of the popup. */
+    showAll,
   };
 }
 
