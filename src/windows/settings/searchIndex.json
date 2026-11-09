@@ -588,6 +588,27 @@
       "page": "todos",
       "zh-CN": {
         "group": "任务",
+        "title": "显示风格",
+        "description": "纸张：横线笔记本。岛屿：和岛上其他页面一样的深色列表，文字颜色跟着岛屿底色走。「待办纸张颜色」只对纸张生效。",
+        "options": [
+          "纸张",
+          "岛屿"
+        ]
+      },
+      "en": {
+        "group": "Tasks",
+        "title": "Style",
+        "description": "Paper: a ruled notebook. Island: a list drawn like the island's other pages, its text following the island's colour. The todo paper colour only applies to Paper.",
+        "options": [
+          "Paper",
+          "Island"
+        ]
+      }
+    },
+    {
+      "page": "todos",
+      "zh-CN": {
+        "group": "任务",
         "title": "空闲时显示剩余待办数"
       },
       "en": {

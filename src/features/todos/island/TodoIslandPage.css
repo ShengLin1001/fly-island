@@ -1,0 +1,414 @@
+/*
+ * The todo page in the island style. No panel of its own: it sits on the island like the Agent
+ * page, and its text follows the island background (stageStyle.ts sets --island-ink-rgb), light
+ * on dark and dark on light. Surfaces are the ink at low alpha for the same reason.
+ */
+.todo-island {
+  --todo-ink: var(--island-ink-rgb, 241, 240, 246);
+  --text-1: rgba(var(--todo-ink), 0.96);
+  --text-2: rgba(var(--todo-ink), 0.68);
+  --text-3: rgba(var(--todo-ink), 0.54);
+  --text-placeholder: rgba(var(--todo-ink), 0.42);
+  --todo-surface: rgba(var(--todo-ink), 0.06);
+  --todo-surface-hover: rgba(var(--todo-ink), 0.09);
+  --todo-line: rgba(var(--todo-ink), 0.1);
+  /* Accents leaned toward the ink, so they stay readable on a light island too. */
+  --todo-accent: color-mix(in srgb, var(--color-accent) 72%, rgb(var(--todo-ink)));
+  --todo-later: color-mix(in srgb, #a68bff 75%, rgb(var(--todo-ink)));
+  --todo-radius: var(--island-panel-radius, 10px);
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 2px;
+  color: var(--text-1);
+  font-family: var(--font-ui);
+}
+
+.todo-island *,
+.todo-island *::before {
+  box-sizing: border-box;
+}
+
+/* Pages with nothing between the header and their content. */
+.todo-island--daily,
+.todo-island--upcoming,
+.todo-island--archive {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.todo-island--review {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.todo-island :focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Header: tabs on the left, the page's own control on the right. */
+.todo-island__header {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.todo-island__tabs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.todo-island__tab {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  color: var(--text-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.todo-island__tab:hover {
+  color: var(--text-1);
+  background: var(--todo-surface);
+}
+
+.todo-island__tab--active {
+  color: var(--text-1);
+  background: var(--todo-surface-hover);
+}
+
+.todo-island__tab-count {
+  min-width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 5px;
+  color: var(--text-2);
+  background: var(--todo-line);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-island__tab--active .todo-island__tab-count {
+  color: var(--color-surface-dark);
+  background: var(--color-accent);
+}
+
+.todo-island__save,
+.todo-island__back {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.todo-island__save {
+  width: 28px;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.todo-island__save:hover,
+.todo-island__back:hover {
+  color: var(--text-1);
+  background: var(--todo-surface);
+}
+
+.todo-island__save--saved {
+  color: var(--color-light-working);
+}
+
+.todo-island__save--needs-path,
+.todo-island__save--error {
+  color: var(--color-light-your-turn);
+}
+
+.todo-island__save--saving svg {
+  animation: todoIslandSpin 900ms linear infinite;
+}
+
+@keyframes todoIslandSpin {
+  to { transform: rotate(360deg); }
+}
+
+.todo-island__back {
+  min-width: 0;
+  padding: 0 10px 0 4px;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.todo-island__meta {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Adding a todo. */
+.todo-island__composer {
+  height: 38px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 7px 0 12px;
+  color: var(--text-3);
+  background: var(--todo-surface);
+  border: 1px solid var(--todo-line);
+  border-radius: var(--todo-radius);
+  corner-shape: var(--island-corner-shape, round);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.todo-island__composer:focus-within {
+  border-color: rgba(116, 214, 255, 0.55);
+  background: var(--todo-surface-hover);
+}
+
+.todo-island__composer input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: var(--text-1);
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.todo-island__composer input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.todo-island .todo-date-picker__button {
+  height: 24px;
+  color: var(--text-2);
+  background: var(--todo-line);
+  font-size: 12px;
+}
+
+.todo-island .todo-date-picker__button:hover:not(:disabled) {
+  color: var(--text-1);
+  background: rgba(var(--todo-ink), 0.16);
+}
+
+.todo-island .todo-date-picker__button--later,
+.todo-island .todo-date-picker__button--later:hover:not(:disabled) {
+  color: var(--todo-later);
+  background: rgba(166, 139, 255, 0.2);
+}
+
+/* Empty list, empty archive. */
+.todo-island__empty {
+  min-height: 96px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  text-align: center;
+  font-size: 12px;
+}
+
+.todo-island__empty strong {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The daily note. */
+.todo-island__note {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  padding: 10px 12px;
+  resize: none;
+  color: var(--text-1);
+  background: var(--todo-surface);
+  border: 1px solid var(--todo-line);
+  border-radius: var(--todo-radius);
+  corner-shape: var(--island-corner-shape, round);
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  scrollbar-color: rgba(var(--todo-ink), 0.2) transparent;
+}
+
+.todo-island__note::placeholder {
+  color: var(--text-placeholder);
+}
+
+.todo-island__note:focus {
+  border-color: rgba(116, 214, 255, 0.55);
+}
+
+/* Month and day headings in the archive and the upcoming list. */
+.todo-island__section-label,
+.todo-island .scheduled-list__date {
+  padding: 6px 10px 2px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Upcoming: the shared list, drawn like the rows. */
+.todo-island .scheduled-list {
+  gap: 6px;
+}
+
+.todo-island .scheduled-list__group {
+  gap: 2px;
+}
+
+.todo-island .scheduled-list__item {
+  min-height: 36px;
+  padding: 4px 4px 4px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--todo-radius);
+}
+
+.todo-island .scheduled-list__item:hover {
+  background: var(--todo-surface);
+}
+
+.todo-island .scheduled-list__item > span {
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.todo-island .scheduled-list__item > button {
+  color: var(--text-3);
+  opacity: 0;
+}
+
+.todo-island .scheduled-list__item:hover > button,
+.todo-island .scheduled-list__item > button:focus-visible {
+  opacity: 1;
+}
+
+.todo-island .scheduled-list__item > button:hover {
+  color: var(--color-light-needs);
+  background: var(--todo-surface);
+}
+
+.todo-island .todo-empty {
+  min-height: 96px;
+  color: var(--text-3);
+  border: 0;
+}
+
+/* Archive: one row per saved day. */
+.todo-island__archive {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  scrollbar-color: rgba(var(--todo-ink), 0.2) transparent;
+}
+
+.todo-island__archive-month {
+  display: grid;
+  gap: 2px;
+}
+
+.todo-island__archive-day {
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto 14px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 10px;
+  color: var(--text-3);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: var(--todo-radius);
+  font: inherit;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.todo-island__archive-day:hover {
+  background: var(--todo-surface);
+}
+
+.todo-island__archive-date {
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.todo-island__archive-preview {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-island__archive-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-island__archive-bar {
+  width: 32px;
+  height: 4px;
+  overflow: hidden;
+  background: var(--todo-line);
+  border-radius: var(--radius-pill);
+}
+
+.todo-island__archive-bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-light-working);
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-island__save--saving svg {
+    animation: none;
+  }
+}

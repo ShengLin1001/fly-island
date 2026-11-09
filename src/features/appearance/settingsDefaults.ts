@@ -60,6 +60,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   showIdleTodoCount: true,
   carryOverIncompleteTodos: true,
   enableTodoReorder: false,
+  todoStyle: "paper",
   rotateTodos: false,
   todoRotationSeconds: 5,
   autoTuck: true,

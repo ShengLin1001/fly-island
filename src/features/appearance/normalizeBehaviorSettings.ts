@@ -26,6 +26,7 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
       typeof settings?.enableTodoReorder === "boolean"
         ? settings.enableTodoReorder
         : DEFAULT_SETTINGS.enableTodoReorder,
+    todoStyle: settings?.todoStyle === "island" ? "island" : "paper",
     rotateTodos: settings?.rotateTodos === true,
     todoRotationSeconds: typeof settings?.todoRotationSeconds === "number" && Number.isFinite(settings.todoRotationSeconds)
       ? clamp(Math.round(settings.todoRotationSeconds), 1, 3_600)

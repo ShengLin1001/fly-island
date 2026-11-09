@@ -10,20 +10,23 @@ export function TodoDatePicker({
   today,
   disabled,
   onChange,
+  labels,
 }: {
   /** Chosen day (YYYY-MM-DD), or null for the list's own day. */
   value: string | null;
   today: string;
   disabled: boolean;
   onChange: (date: string | null) => void;
+  /** Words for today and tomorrow, where they differ from the paper notebook's. */
+  labels?: { today: string; tomorrow: string };
 }) {
   const t = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const isLater = value !== null && value > today;
   const label = !isLater
-    ? t.notebook.dateToday
+    ? labels?.today ?? t.notebook.dateToday
     : value === addDays(today, 1)
-      ? t.notebook.dateTomorrow
+      ? labels?.tomorrow ?? t.notebook.dateTomorrow
       : new Intl.DateTimeFormat(t.localeTag, { month: "numeric", day: "numeric" }).format(
           new Date(`${value}T00:00:00`),
         );

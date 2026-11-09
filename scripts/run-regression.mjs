@@ -44,6 +44,7 @@ export const PAGES = [
   "ssh-tunnel.html",
   "tucked-hover.html",
   "update-reminder.html?test=1",
+  "todo-island.html",
 ];
 
 const PAGE_TIMEOUT_MS = 120_000;

@@ -317,3 +317,10 @@ test("translation opens in its window unless the island page was chosen", () => 
   assert.equal(normalizeSettings({ translationTarget: "island" }).translationTarget, "island");
   assert.equal(normalizeSettings({ translationTarget: "page" }).translationTarget, "window");
 });
+
+test("the todo page style defaults to paper and keeps only known styles", () => {
+  assert.equal(DEFAULT_SETTINGS.todoStyle, "paper");
+  assert.equal(normalizeSettings({}).todoStyle, "paper");
+  assert.equal(normalizeSettings({ todoStyle: "island" }).todoStyle, "island");
+  assert.equal(normalizeSettings({ todoStyle: "glass" }).todoStyle, "paper");
+});

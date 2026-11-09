@@ -10,6 +10,7 @@ import type { ClaudeUsageText } from "./sections/claudeUsage";
 import type { SessionRingText } from "./sections/sessionRing";
 import type { NotebookText } from "./sections/notebook";
 import type { ArchiveText } from "./sections/archive";
+import type { TodoIslandText } from "./sections/todoIsland";
 import type { MusicText } from "./sections/music";
 import type { CalendarText } from "./sections/calendar";
 import type { TodoText } from "./sections/todo";
@@ -42,6 +43,7 @@ export type Translations = {
   notebook: NotebookText;
 
   archive: ArchiveText;
+  todoIsland: TodoIslandText;
 
   music: MusicText;
   calendar: CalendarText;

@@ -1,8 +1,10 @@
+import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
+import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsNumberRow } from "../../components/settings/SettingsNumberRow";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import { useTranslation } from "../../i18n";
-import type { IslandSettings } from "./types";
+import type { IslandSettings, TodoStyle } from "./types";
 
 /** Todos → Todos: what the collapsed island shows, carrying unfinished ones over, order and rotation. */
 export function TodoSettingsSection({ settings, onSettingsChange }: {
@@ -16,6 +18,18 @@ export function TodoSettingsSection({ settings, onSettingsChange }: {
 
   return (
     <SettingsGroup title={t.settings.todo.title}>
+      <SettingsRow
+        title={t.settings.todo.style}
+        description={t.settings.todo.styleHint}
+        control={
+          <SettingsChoice<TodoStyle>
+            value={settings.todoStyle}
+            ariaLabel={t.settings.todo.style}
+            options={[{ value: "paper", label: t.settings.todo.stylePaper }, { value: "island", label: t.settings.todo.styleIsland }]}
+            onChange={(todoStyle) => onSettingsChange({ ...settings, todoStyle })}
+          />
+        }
+      />
       {toggle("showIdleTodoCount", t.settings.layout.showIdleTodoCount)}
       {toggle("carryOverIncompleteTodos", t.settings.todo.carryOverIncomplete)}
       {toggle("enableTodoReorder", t.settings.todo.enableReorder)}

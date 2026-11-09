@@ -11,6 +11,7 @@ import * as claudeUsage from "../sections/claudeUsage.ts";
 import * as sessionRing from "../sections/sessionRing.ts";
 import * as notebook from "../sections/notebook.ts";
 import * as archive from "../sections/archive.ts";
+import * as todoIsland from "../sections/todoIsland.ts";
 import * as music from "../sections/music.ts";
 import * as calendar from "../sections/calendar.ts";
 import * as todo from "../sections/todo.ts";
@@ -42,6 +43,7 @@ const zhCN: Translations = {
   notebook: notebook.zhCN,
 
   archive: archive.zhCN,
+  todoIsland: todoIsland.zhCN,
 
   music: music.zhCN,
   calendar: calendar.zhCN,

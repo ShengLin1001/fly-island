@@ -1,5 +1,7 @@
 import type { CalendarSettingValues } from "../calendar/calendarSettings";
 import type { LyricsIslandPriority } from "../media/lyrics/lyricsSettings";
+
+export type TodoStyle = "paper" | "island";
 export type TranslationTarget = "window" | "island";
 
 export type AppearanceMode = "classic" | "liquidGlass";
@@ -101,6 +103,8 @@ export type IslandSettings = CalendarSettingValues & {
   showIdleTodoCount: boolean;
   carryOverIncompleteTodos: boolean;
   enableTodoReorder: boolean;
+  /** How the todo page looks: the paper notebook, or drawn like the island's other pages. */
+  todoStyle: TodoStyle;
   rotateTodos: boolean;
   todoRotationSeconds: number;
   autoTuck: boolean;

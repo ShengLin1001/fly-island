@@ -1,0 +1,214 @@
+/*
+ * A todo row in the island style. A row with its gap is 46px (TODO_ROW_HEIGHT in layout.ts) and
+ * each further title line adds 19px, as in the paper style, so the island grows the same way.
+ */
+.todo-island__list {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-color: rgba(var(--todo-ink), 0.2) transparent;
+}
+
+.todo-island-row {
+  position: relative;
+  min-height: max(42px, calc(var(--todo-title-lines, 1) * 19px + 23px));
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 11px 6px 0 10px;
+  border-radius: var(--todo-radius);
+  corner-shape: var(--island-corner-shape, round);
+  transition: background 140ms ease, opacity 140ms ease;
+}
+
+.todo-island-row:hover,
+.todo-island-row:focus-within {
+  background: var(--todo-surface);
+}
+
+/* The todo being worked on: a tint and an accent bar on its left edge. */
+.todo-island-row--active,
+.todo-island-row--active:hover {
+  background: rgba(116, 214, 255, 0.1);
+}
+
+.todo-island-row--active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  background: var(--color-accent);
+  border-radius: var(--radius-pill);
+}
+
+.todo-island-row--dragging {
+  opacity: 0.45;
+}
+
+.todo-island-row--drag-over {
+  box-shadow: inset 0 2px 0 var(--color-accent);
+}
+
+.todo-island-row__check {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--color-surface-dark);
+  background: transparent;
+  border: 1.5px solid rgba(var(--todo-ink), 0.4);
+  border-radius: var(--radius-circle);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.todo-island-row__check:hover:not(:disabled) {
+  border-color: var(--text-1);
+}
+
+.todo-island-row__check[aria-pressed="true"] {
+  background: var(--color-light-working);
+  border-color: var(--color-light-working);
+}
+
+.todo-island-row__check:disabled {
+  cursor: default;
+}
+
+.todo-island-row__title {
+  min-width: 0;
+  padding: 0;
+  color: var(--text-1);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.todo-island-row__title--editable {
+  cursor: text;
+}
+
+.todo-island-row--done .todo-island-row__title {
+  color: var(--text-3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(var(--todo-ink), 0.35);
+}
+
+.todo-island-row__input {
+  min-width: 0;
+  height: 26px;
+  margin: -4px 0;
+  padding: 0 8px;
+  color: var(--text-1);
+  background: rgba(var(--todo-ink), 0.08);
+  border: 1px solid rgba(116, 214, 255, 0.55);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Actions: shown on hover or keyboard focus; the stop button stays while a todo is in progress. */
+.todo-island-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: -4px;
+}
+
+.todo-island-row__action {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-3);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.todo-island-row:hover .todo-island-row__action,
+.todo-island-row:focus-within .todo-island-row__action {
+  opacity: 1;
+}
+
+.todo-island-row__action:hover {
+  color: var(--text-1);
+  background: var(--todo-line);
+}
+
+.todo-island-row__action--delete:hover {
+  color: var(--color-light-needs);
+}
+
+.todo-island-row__grip {
+  cursor: grab;
+  touch-action: none;
+}
+
+.todo-island-row__grip:active {
+  cursor: grabbing;
+}
+
+.todo-island-row__grip:disabled {
+  cursor: default;
+}
+
+.todo-island-row__stop {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  color: var(--todo-accent);
+  background: rgba(116, 214, 255, 0.16);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.todo-island-row__stop-action,
+.todo-island-row__stop:hover .todo-island-row__stop-state {
+  display: none;
+}
+
+.todo-island-row__stop:hover .todo-island-row__stop-action {
+  display: inline;
+}
+
+.todo-island-row__stop:hover {
+  color: var(--color-light-needs);
+  background: rgba(255, 69, 58, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-island-row,
+  .todo-island-row__action,
+  .todo-island-row__check {
+    transition: none;
+  }
+}
