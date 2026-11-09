@@ -21,6 +21,10 @@ export type PluginViewEntry = {
   template: PluginViewTemplate;
   /** Webview pages only: their height on the island in pixels. */
   height?: number;
+  /** Webview pages only: the width they ask for (E15); the island widens for it. */
+  width?: number;
+  /** Webview pages only: "none" draws the page without the island's card and title (E15). */
+  frame?: "card" | "none";
   status: PluginViewRunState;
   error: string | null;
 };

@@ -22,6 +22,13 @@ pub(super) const COLLAPSED_ISLAND_WIDTH: f64 = 340.0;
 pub(super) const COLLAPSED_ISLAND_HEIGHT: f64 = 38.0;
 pub(super) const COLLAPSED_RADIUS: f64 = 22.0;
 pub(super) const EXPANDED_ISLAND_WIDTH: f64 = 560.0;
+
+/// The widest the expanded island may be at `scale` and still fit the island window, with 2px to
+/// spare on each side; never below the usual width. A plugin page asking for more gets this.
+/// Mirrored by maxExpandedIslandWidth in src/windows/island/layout.ts.
+pub(super) fn max_expanded_width(scale: f64) -> f64 {
+    ((STAGE_WINDOW_WIDTH - 4.0) / scale).floor().max(EXPANDED_ISLAND_WIDTH)
+}
 pub(super) const DEFAULT_EXPANDED_ISLAND_HEIGHT: f64 = 306.0;
 // Low enough for a popup that only holds one message card (no header); a taller floor left an
 // invisible strip below it that caught the cursor.

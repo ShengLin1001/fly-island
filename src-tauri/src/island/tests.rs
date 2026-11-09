@@ -313,3 +313,12 @@ fn popup_width_narrows_the_expanded_hit_area() {
     assert!(!contains(left - 1.0, popup));
     assert!(contains(left - 1.0, full));
 }
+
+#[test]
+fn a_wide_plugin_page_fits_the_island_window_at_any_scale() {
+    assert_eq!(max_expanded_width(1.0), 816.0);
+    assert_eq!(max_expanded_width(0.91), 896.0);
+    // At the largest scale the usual width still holds; wider pages are capped to fit.
+    assert_eq!(max_expanded_width(1.4), 582.0);
+    assert!(max_expanded_width(1.4) * 1.4 <= STAGE_WINDOW_WIDTH);
+}

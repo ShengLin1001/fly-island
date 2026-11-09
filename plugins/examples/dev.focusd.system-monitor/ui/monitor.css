@@ -1,15 +1,18 @@
 /* The island gives every page its colors as --focusd-* variables; the chart colors are the
-   monitor's own so CPU, GPU, memory and the two directions stay apart. */
+   monitor's own so CPU, GPU, memory and the two directions stay apart. The page asks for no
+   card (frame "none"), so it sits on the island itself: no boxes, just two columns. */
 :root {
   --cpu: #4da3ff;
   --gpu: #34c759;
-  --memory: #bf5af2;
+  --memory: #5ac8fa;
   --down: #64d2ff;
   --up: #ff9f0a;
-  --card: color-mix(in srgb, var(--focusd-text) 4.5%, transparent);
+  --warm: #e5c890;
+  --hot: #e78284;
+  --muted: color-mix(in srgb, var(--focusd-text) 54%, transparent);
   --line: color-mix(in srgb, var(--focusd-text) 9%, transparent);
-  --track: color-mix(in srgb, var(--focusd-text) 8%, transparent);
-  --radius: var(--focusd-radius, 10px);
+  --track: color-mix(in srgb, var(--focusd-text) 10%, transparent);
+  --hover: color-mix(in srgb, var(--focusd-text) 6%, transparent);
 }
 
 html,
@@ -21,6 +24,11 @@ body {
   font-family: var(--focusd-font);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
+}
+
+*,
+*::before {
+  box-sizing: border-box;
 }
 
 [hidden] {
@@ -38,317 +46,375 @@ body {
 
 .monitor {
   height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 4px 4px;
-  overflow-y: auto;
-}
-
-.cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 236px;
+  gap: 24px;
+  padding: 2px 2px 0;
+  overflow: hidden;
 }
 
-.card,
-.row,
-.net,
-.processes {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.card {
+/* Left column: CPU and GPU, the cores, memory, network, and what else there is. */
+.stats {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 9px 12px 10px;
+  gap: 12px;
 }
 
-.card__head {
-  display: flex;
-  align-items: baseline;
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.gauge {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 56px;
+  align-items: center;
   gap: 8px;
 }
 
-.card__label,
-.row__label {
-  color: var(--focusd-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+.gauge__text {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
 }
 
-.card__value {
+.gauge__value {
   font-size: 20px;
   font-weight: 600;
-  line-height: 24px;
+  line-height: 1.1;
 }
 
-.card--cpu .card__value {
-  color: var(--cpu);
-}
-
-.card--gpu .card__value {
-  color: var(--gpu);
-}
-
-.card__extra {
-  margin-left: auto;
-  color: var(--focusd-text-muted);
+.gauge__value small {
+  margin-left: 1px;
+  color: var(--muted);
   font-size: 12px;
+  font-weight: 600;
 }
 
-.card__foot {
-  height: 16px;
-  display: flex;
-  gap: 8px;
+.gauge__extra {
   overflow: hidden;
-  color: var(--focusd-text-muted);
-  font-size: 11.5px;
-  line-height: 16px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.card__foot span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.ring {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
 }
+
+.ring__track {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 3;
+}
+
+.ring__arc {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 320ms ease-out;
+}
+
+.ring__label {
+  fill: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.gauge--cpu .ring__arc { stroke: var(--cpu); }
+.gauge--gpu .ring__arc { stroke: var(--gpu); }
+.line--memory .ring__arc { stroke: var(--memory); }
+.ring--warm .ring__arc { stroke: var(--warm) !important; }
+.ring--hot .ring__arc { stroke: var(--hot) !important; }
 
 .spark {
-  --spark: var(--cpu);
-  display: block;
   width: 100%;
-  height: 28px;
+  height: 22px;
   overflow: visible;
-}
-
-.spark--gpu {
-  --spark: var(--gpu);
-}
-
-.spark--down {
-  --spark: var(--down);
-}
-
-.spark--up {
-  --spark: var(--up);
 }
 
 .spark__line {
   fill: none;
-  stroke: var(--spark);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
+  stroke-width: 1.4;
   vector-effect: non-scaling-stroke;
 }
 
 .spark__fill {
-  fill: color-mix(in srgb, var(--spark) 18%, transparent);
+  opacity: 0.16;
 }
 
-/* One bar per logical core. */
+.spark--cpu .spark__line { stroke: var(--cpu); }
+.spark--cpu .spark__fill { fill: var(--cpu); }
+.spark--gpu .spark__line { stroke: var(--gpu); }
+.spark--gpu .spark__fill { fill: var(--gpu); }
+.spark--down .spark__line { stroke: var(--down); }
+.spark--down .spark__fill { fill: var(--down); }
+.spark--up .spark__line { stroke: var(--up); }
+.spark--up .spark__fill { fill: var(--up); }
+
+/* One thin bar per logical core, lit from the bottom. */
 .cores {
-  height: 16px;
+  height: 30px;
   display: flex;
   align-items: stretch;
-  gap: 2px;
+  gap: 3px;
 }
 
 .cores__core {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 2px;
+  max-width: 14px;
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
   background: var(--track);
-  border-radius: 2px;
+  border-radius: 3px;
+  overflow: hidden;
 }
 
 .cores__core > span {
   width: 100%;
   background: var(--cpu);
-  border-radius: 2px;
-  transition: height 600ms ease;
+  border-radius: 3px;
+  transition: height 320ms ease-out;
 }
 
-.row {
-  height: 36px;
-  flex: none;
+.line {
+  min-height: 24px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
-.row__value {
-  flex: none;
-  color: var(--focusd-text-muted);
+.line--memory .ring {
+  width: 24px;
+  height: 24px;
+}
+
+.line__value {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.line__value small {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .meter {
-  --meter: var(--memory);
-  flex: 1;
+  flex: 1 1 auto;
   height: 6px;
   overflow: hidden;
   background: var(--track);
-  border-radius: 3px;
-}
-
-.meter--warm {
-  --meter: var(--focusd-warning, #ff9f0a);
-}
-
-.meter--hot {
-  --meter: var(--focusd-danger, #ff453a);
+  border-radius: 999px;
 }
 
 .meter > span {
   display: block;
   height: 100%;
-  background: var(--meter);
+  background: var(--memory);
   border-radius: inherit;
-  transition: width 600ms ease;
+  transition: width 320ms ease-out;
 }
 
-.net {
-  height: 44px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 12px;
-  font-size: 12.5px;
+.meter--warm > span { background: var(--warm); }
+.meter--hot > span { background: var(--hot); }
+
+.line--net {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 .net__item {
   min-width: 0;
-  flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 12px 76px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
+}
+
+.net__item .spark {
+  height: 16px;
 }
 
 .net__arrow {
   font-weight: 700;
 }
 
-.net__item--down .net__arrow {
-  color: var(--down);
-}
-
-.net__item--up .net__arrow {
-  color: var(--up);
-}
+.net__item--down .net__arrow { color: var(--down); }
+.net__item--up .net__arrow { color: var(--up); }
 
 .net__rate {
-  flex: none;
-  width: 72px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.net__item .spark {
-  min-width: 0;
-  flex: 1;
-  height: 22px;
+.line--extra {
+  min-height: 18px;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.net__battery {
-  flex: none;
-  color: var(--focusd-text-muted);
+.line--extra strong {
+  color: var(--focusd-text);
+  font-weight: 600;
 }
 
+/* Right column: the busiest programs. */
 .processes {
-  flex: none;
-  padding: 6px 12px 8px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .processes__head {
-  height: 24px;
+  min-height: 26px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--focusd-text-muted);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 600;
 }
 
 .toggle {
-  display: flex;
+  display: inline-flex;
+  gap: 2px;
   padding: 2px;
   background: var(--track);
   border-radius: 999px;
 }
 
 .toggle button {
-  height: 20px;
+  height: 22px;
   padding: 0 10px;
-  color: var(--focusd-text-muted);
+  color: var(--muted);
   background: transparent;
   border: 0;
-  border-radius: inherit;
+  border-radius: 999px;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   cursor: pointer;
 }
 
 .toggle button[aria-pressed="true"] {
   color: var(--focusd-text);
-  background: color-mix(in srgb, var(--focusd-text) 14%, transparent);
+  background: color-mix(in srgb, var(--focusd-text) 16%, transparent);
+}
+
+.toggle button:focus-visible {
+  outline: 2px solid var(--focusd-accent);
+  outline-offset: 1px;
 }
 
 .processes__list {
-  margin: 2px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
+  display: grid;
+  gap: 2px;
+  overflow: hidden;
 }
 
 .processes__list li {
-  height: 24px;
-  display: flex;
+  height: 28px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.processes__list li:hover {
+  background: var(--hover);
+}
+
+.processes__icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: contain;
+}
+
+/* No icon to read (system processes): the first letter in a round badge. */
+.processes__initial {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--track);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .processes__name {
   min-width: 0;
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .processes__count {
-  flex: none;
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.processes__figure {
   color: var(--focusd-text-muted);
-  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.processes__cpu,
-.processes__memory {
-  flex: none;
-  color: var(--focusd-text-muted);
-  text-align: right;
-}
+/* Narrower than asked (a large expanded scale caps the island, or an island before 0.3.4 shows
+   the page in its 520px card): a narrower program column and no small charts beside the figures. */
+@media (max-width: 640px) {
+  .monitor {
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 16px;
+  }
 
-.processes__cpu {
-  width: 52px;
-}
+  .gauge {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
 
-.processes__memory {
-  width: 68px;
-}
+  .gauge .spark,
+  .net__item .spark {
+    display: none;
+  }
 
-.processes__sorted {
-  color: var(--focusd-text);
+  .pair,
+  .line--net {
+    gap: 12px;
+  }
+
+  .processes__count {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ring__arc,
   .cores__core > span,
   .meter > span {
     transition: none;

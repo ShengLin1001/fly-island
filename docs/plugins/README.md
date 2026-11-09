@@ -139,7 +139,7 @@ plugins/<插件 id>/        # 文件夹名必须等于插件 id
 | `views[].title` | 中英文都要提供。 |
 | `views[].icon` | lucide 图标名，只能用 `plugins/schema/manifest.schema.json` 里列出的那些（如 `list`、`timer`、`git-pull-request`、`kanban`），省略时为 `puzzle`。 |
 | `views[].template` | `list`、`detail`、`form`、`status` 或 `webview`，见下面的模板说明。 |
-| `views[].entry` / `views[].height` | 只用于 `webview`：页面文件和页面高度，见「自定义界面」。 |
+| `views[].entry` / `views[].height` / `views[].width` / `views[].frame` | 只用于 `webview`：页面文件、高度、宽度和要不要卡片，见「自定义界面」。 |
 | `statusItems[].id` | 同上。 |
 | `statusItems[].priority` | -100 到 100，默认 0。每个有文字的状态项都是收起条上的一个项目（id `plugin:<插件 id>/<状态项 id>`）；用户没排过时按优先级从高到低排在右侧，用户可以在 外观 → 收起条上的项目 里调顺序、换到左侧或隐藏。插件不需要也不能决定位置。（2026-11-09 之前只显示优先级最高的一个。） |
 
@@ -172,7 +172,7 @@ plugins/<插件 id>/        # 文件夹名必须等于插件 id
 
 **自定义界面（`webview` 模板，P8）**：`{ "id": "ring", "title": …, "template": "webview", "entry": "ui/index.html", "height": 200 }`
 
-- `entry` 必填，是插件文件夹里的 `.html` 文件（相对路径，不能有 `..`）。页面只能加载 `entry` 所在文件夹及其子文件夹里的文件；`height` 是页面在岛上的高度，80–480 像素，默认 240。
+- `entry` 必填，是插件文件夹里的 `.html` 文件（相对路径，不能有 `..`）。页面只能加载 `entry` 所在文件夹及其子文件夹里的文件；`height` 是页面在岛上的高度，80–480 像素，默认 240。`width`（可选，320–860 像素）是页面的宽度，打开这一页时岛变宽，切走恢复 560；外观里「展开缩放」调得很大时，宽度会被收到岛屿窗口放得下为止（比如 1.4 倍时约 540），页面要能在较窄时排得下。`frame: "none"`（可选，默认 `"card"`）不套岛屿的卡片和标题，页面直接画在岛上，像岛自己的页面；页面背景要保持透明。插件没在运行、还在启动时仍显示卡片，好让用户看到是哪个插件。这两项从 0.3.4 起支持，旧版岛屿会忽略，照旧按 520 宽、带卡片显示。
 - 页面不在岛屿自己的网页里，而是一个单独的 WebView2：页面里**没有**岛屿的任何接口（`__TAURI__` 之类都不存在），只能和自己的插件进程通信。页面在无痕模式下运行，关掉后不留下 `localStorage` 之类的数据。
 - 页面不能联网：岛屿拦截页面和其中所有框架、Worker 的每一个请求，只回答插件文件夹里的文件，其他一律拒绝；离开插件来源的跳转、新窗口、下载和权限请求（摄像头等）都会被拒绝，WebRTC 不可用。每个文件都带固定的 CSP：`default-src 'none'`，允许本插件的脚本（含内联脚本）、样式、图片和字体，`connect-src 'self'`（只能 `fetch` 自己的文件），禁止 `eval`、Worker、表单提交。页面可以用 `<meta>` 再加限制，不能放宽。
 - 页面来源是 `https://<插件 id>.plugin.focusd.invalid`，用相对路径引用文件即可。

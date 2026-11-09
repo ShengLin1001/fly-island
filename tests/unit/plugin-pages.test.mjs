@@ -9,7 +9,7 @@ import {
   pageShortcutOrder,
   resolveIslandPage,
 } from "../../src/windows/island/features.ts";
-import { getPluginPageExpandedHeight } from "../../src/windows/island/layout.ts";
+import { getPluginPageExpandedHeight, maxExpandedIslandWidth, pluginPageIslandWidth } from "../../src/windows/island/layout.ts";
 
 const all = { agents: true, todo: true, music: true, clipboard: true, shelf: true, qq: true, wechat: false, qqMail: false, translation: false };
 const board = "plugin:dev.example.board/board";
@@ -91,4 +91,16 @@ test("plugin page preferences order and hide pages, and bad stored data means de
   const withGone = { ...prefs, order: ["plugin:gone/q", ...prefs.order] };
   assert.ok(movePluginPage(views, withGone, "plugin:b.two/y", -1).order.includes("plugin:gone/q"));
   assert.deepEqual(ids(visiblePluginViews(views, setPluginPageHidden(prefs, "plugin:a.one/x", false))), ["a.one/x", "c.three/z", "b.two/y"]);
+});
+
+test("a webview page can ask for a wider island and drop its card (E15)", () => {
+  assert.equal(pluginPageIslandWidth(undefined, 1), null);
+  assert.equal(pluginPageIslandWidth(760, 1), 800);
+  // Never narrower than usual, and never past the island window at a large scale.
+  assert.equal(pluginPageIslandWidth(400, 1), 560);
+  assert.equal(pluginPageIslandWidth(860, 1.4), maxExpandedIslandWidth(1.4));
+  assert.ok(maxExpandedIslandWidth(1.4) * 1.4 <= 820);
+  // Without the card and its title, the page sits right under the island header.
+  assert.equal(getPluginPageExpandedHeight("webview", 600, null, 250, true), 336);
+  assert.equal(getPluginPageExpandedHeight("webview", 600, null, 250), 386);
 });

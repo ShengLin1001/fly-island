@@ -39,6 +39,8 @@ type ExpandedHeightInput = {
   pluginListRows?: number | null;
   /** The height the open webview plugin page asks for. */
   pluginWebviewHeight?: number | null;
+  /** The open webview plugin page has no card (frame "none"), so no title above it. */
+  pluginFrameless?: boolean;
 };
 
 /**
@@ -65,9 +67,10 @@ export function getExpandedIslandHeight({
   pluginTemplate,
   pluginListRows,
   pluginWebviewHeight,
+  pluginFrameless,
 }: ExpandedHeightInput) {
   if (isPluginPage(page)) {
-    return getPluginPageExpandedHeight(pluginTemplate, maxPanelHeight, pluginListRows, pluginWebviewHeight);
+    return getPluginPageExpandedHeight(pluginTemplate, maxPanelHeight, pluginListRows, pluginWebviewHeight, pluginFrameless);
   }
   // The upcoming list scrolls inside the archive's fixed height.
   const isTodoArchivePage =

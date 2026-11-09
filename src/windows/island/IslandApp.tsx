@@ -40,6 +40,7 @@ import { useMessageView } from "./useMessageView";
 import { useIslandBanner } from "./useIslandBanner";
 import { useIslandMessagePanel } from "./useIslandMessagePanel";
 import { useIslandPopup } from "./useIslandPopup";
+import { pluginPageIslandWidth } from "./layout";
 import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
@@ -153,7 +154,11 @@ export function IslandApp() {
     durationMs: settings.messagePanelSeconds * 1000,
     notices, mode, page, openIslandPage, collapseIsland, onOpenMessages: openMessages,
   });
-  const { popup, expandedIslandWidth } = useIslandPopup(mode, messagePanel.arrivals !== null || alertPopup);
+  const { popup, expandedIslandWidth } = useIslandPopup(
+    mode,
+    messagePanel.arrivals !== null || alertPopup,
+    pluginPageIslandWidth(pluginPages.entry?.width, settings.expandedScale),
+  );
   const expandedIslandHeight = getExpandedIslandHeight({
     page,
     todoPageMode,
@@ -172,6 +177,7 @@ export function IslandApp() {
     pluginTemplate: pluginPages.entry?.template,
     pluginListRows: pluginPages.rows,
     pluginWebviewHeight: pluginPages.entry?.height,
+    pluginFrameless: pluginPages.entry?.frame === "none",
   });
   const stageStyle = useMemo(
     () => getIslandStageStyle(settings, mode, collapsedIslandWidth, expandedIslandHeight, expandedIslandWidth),

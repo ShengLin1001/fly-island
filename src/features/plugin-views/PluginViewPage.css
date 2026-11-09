@@ -121,3 +121,16 @@
   outline: 2px solid rgba(210, 202, 232, 0.76);
   outline-offset: 2px;
 }
+
+/* A webview page with frame "none" (E15): no card, no title, the page fills the island's content area. */
+.plugin-view--frameless {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.plugin-view--frameless .plugin-view__title {
+  display: none;
+}

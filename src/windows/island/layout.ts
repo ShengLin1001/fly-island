@@ -14,6 +14,24 @@ export const EXPANDED_ISLAND_WIDTH = 560;
  * island this wide. Keep in step with .island--popup in IslandShell.css.
  */
 export const POPUP_ISLAND_WIDTH = 400;
+/** The island window's width (STAGE_WINDOW_WIDTH in src-tauri/src/island/geometry.rs). */
+const STAGE_WINDOW_WIDTH = 820;
+/** The island's side padding around a page, both sides together. */
+const EXPANDED_SIDE_PADDING = 40;
+
+/**
+ * The widest the expanded island may be at `scale` and still fit the island window (2px spare
+ * each side), never below the usual width. Mirrors max_expanded_width in island/geometry.rs.
+ */
+export function maxExpandedIslandWidth(scale: number) {
+  return Math.max(EXPANDED_ISLAND_WIDTH, Math.floor((STAGE_WINDOW_WIDTH - 4) / scale));
+}
+
+/** The island's width for a plugin page asking for `pageWidth` (E15), or null for the usual width. */
+export function pluginPageIslandWidth(pageWidth: number | null | undefined, scale: number) {
+  if (typeof pageWidth !== "number") return null;
+  return Math.min(Math.max(pageWidth + EXPANDED_SIDE_PADDING, EXPANDED_ISLAND_WIDTH), maxExpandedIslandWidth(scale));
+}
 /** What a popup leaves out: the header (34), the gap below it (14) and 10px of top padding. */
 export const POPUP_HEADER_SAVING = 58;
 /** An Agent alert popup also drops the list's 4px top padding (AgentSessionsPanel.css). */
@@ -138,6 +156,8 @@ export function getClipboardExpandedHeight(rows: number) {
 // Plugin pages by template, before the panel height limit.
 const PLUGIN_PAGE_HEIGHT = { list: 400, detail: 380, form: 400, status: 260, webview: 376 } as const;
 
+// The island's padding and header around a page with no card of its own (a frameless webview).
+const PLUGIN_FRAMELESS_CHROME_HEIGHT = 86;
 // A plugin list: island padding and header (86), the page's padding and title (50),
 // then one row (36) plus the gap below it per item, group title or search box.
 const PLUGIN_LIST_CHROME_HEIGHT = 136;
@@ -155,9 +175,10 @@ export function getPluginPageExpandedHeight(
   maxPanelHeight: number,
   listRows?: number | null,
   webviewHeight?: number | null,
+  frameless = false,
 ) {
   if (template === "webview" && typeof webviewHeight === "number") {
-    return Math.min(PLUGIN_LIST_CHROME_HEIGHT + webviewHeight, maxPanelHeight);
+    return Math.min((frameless ? PLUGIN_FRAMELESS_CHROME_HEIGHT : PLUGIN_LIST_CHROME_HEIGHT) + webviewHeight, maxPanelHeight);
   }
   if (template === "list" && typeof listRows === "number") {
     const rows = clamp(listRows, PLUGIN_LIST_MIN_ROWS, PLUGIN_LIST_MAX_ROWS);

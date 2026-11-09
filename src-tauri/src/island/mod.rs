@@ -24,7 +24,7 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 use geometry::{
     monitor_for_island_position, COLLAPSED_ISLAND_WIDTH, DEFAULT_EXPANDED_ISLAND_HEIGHT,
-    EXPANDED_ISLAND_HEIGHT_RANGE, EXPANDED_ISLAND_WIDTH, MAX_CORNER_RADIUS, MIN_COLLAPSED_ISLAND_WIDTH, MIN_CORNER_RADIUS,
+    EXPANDED_ISLAND_HEIGHT_RANGE, max_expanded_width, MAX_CORNER_RADIUS, MIN_COLLAPSED_ISLAND_WIDTH, MIN_CORNER_RADIUS,
     MIN_EXPANDED_ISLAND_HEIGHT, POSITION_ANIMATION_GENERATION,
 };
 use glass::{apply_glass_material, parse_hex_color};
@@ -109,7 +109,7 @@ pub fn set_island_interaction(
         }
         if let Some(expanded_width) = expanded_width {
             state.expanded_width =
-                expanded_width.clamp(MIN_COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH);
+                expanded_width.clamp(MIN_COLLAPSED_ISLAND_WIDTH, max_expanded_width(state.expanded_scale));
         }
         if let Some(collapsed_width) = collapsed_width {
             state.collapsed_width =

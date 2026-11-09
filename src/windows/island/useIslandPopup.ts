@@ -8,9 +8,10 @@ import type { IslandMode } from "./types";
  * the moment the island starts to close, so the island keeps the popup's shape while it collapses
  * instead of flashing the header and the full width on the way.
  */
-export function useIslandPopup(mode: IslandMode, showsCard: boolean) {
+export function useIslandPopup(mode: IslandMode, showsCard: boolean, pageWidth: number | null = null) {
   const [kept, setKept] = useState(showsCard);
   if (mode === "expanded" && kept !== showsCard) setKept(showsCard);
   const popup = mode === "expanded" ? showsCard : kept;
-  return { popup, expandedIslandWidth: popup ? POPUP_ISLAND_WIDTH : EXPANDED_ISLAND_WIDTH };
+  // A page may ask for a wider island (a plugin page's width, E15); a popup still wins.
+  return { popup, expandedIslandWidth: popup ? POPUP_ISLAND_WIDTH : pageWidth ?? EXPANDED_ISLAND_WIDTH };
 }

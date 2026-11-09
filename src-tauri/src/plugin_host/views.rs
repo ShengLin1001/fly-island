@@ -22,7 +22,7 @@ use super::{
     host, lock,
     manifest::{LocalizedText, PluginRuntime},
     runtime::RuntimeStatus,
-    view_specs::{StatusItemSpec, ViewSpec, ViewTemplate},
+    view_specs::{StatusItemSpec, ViewFrame, ViewSpec, ViewTemplate},
 };
 use crate::island;
 
@@ -442,6 +442,12 @@ pub struct PluginViewEntry {
     /// Webview pages only: their height on the island in pixels.
     #[serde(skip_serializing_if = "Option::is_none")]
     height: Option<u32>,
+    /// Webview pages only: the width they ask for, when they do.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    width: Option<u32>,
+    /// Webview pages only: "none" when the page is drawn without the island's card.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    frame: Option<ViewFrame>,
     status: RuntimeStatus,
     error: Option<String>,
 }
@@ -503,6 +509,8 @@ pub(super) fn snapshot() -> Result<PluginViewsSnapshot, String> {
                 icon: view.icon.clone(),
                 template: view.template,
                 height: (view.template == ViewTemplate::Webview).then(|| super::webviews::page_height(view.height)),
+                width: view.width,
+                frame: view.frame,
                 status: runtime.status,
                 error: runtime.error.clone(),
             });

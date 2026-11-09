@@ -1129,7 +1129,7 @@ mod webview_tests {
     use serde_json::json;
     use std::fs;
 
-    use super::super::view_specs::{check, is_valid_entry};
+    use super::super::view_specs::{check, is_valid_entry, ViewFrame};
     use super::super::webviews::{content_type, init_script, may_navigate, origin, parse_page_message, resource_path, PageMessage, CSP};
 
     #[test]
@@ -1143,6 +1143,10 @@ mod webview_tests {
         assert_eq!(views[0].entry.as_deref(), Some("ui/index.html"));
         assert!(view(json!({})).is_err());
         assert!(view(json!({ "entry": "ui/index.html", "height": 900 })).is_err());
+        let (views, _) = view(json!({ "entry": "ui/index.html", "width": 760, "frame": "none" })).unwrap();
+        assert_eq!((views[0].width, views[0].frame), (Some(760), Some(ViewFrame::None)));
+        assert!(view(json!({ "entry": "ui/index.html", "width": 2000 })).is_err());
+        assert!(view(json!({ "entry": "ui/index.html", "frame": "glass" })).is_err());
         for bad in ["../x.html", "ui/../x.html", "/x.html", "C:/x.html", r"ui\x.html", "x.js", "ui//x.html", "x.html?a"] {
             assert!(!is_valid_entry(bad), "{bad}");
             assert!(view(json!({ "entry": bad })).is_err(), "{bad}");

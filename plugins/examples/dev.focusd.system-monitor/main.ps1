@@ -26,6 +26,9 @@ $script:Battery = $null
 $script:BatteryAt = [datetime]::MinValue
 $script:Thermal = $null
 $script:ProcsAt = [datetime]::MinValue
+# Program icons: the page keeps them, so each is read and sent once (the page lists what it has on "ready").
+$script:IconsSent = @{}
+$script:IconFailed = @{}
 $script:NextPage = [datetime]::MinValue
 $script:NextBar = [datetime]::MinValue
 $script:HasSmi = [bool](Get-Command nvidia-smi -ErrorAction SilentlyContinue)
@@ -149,8 +152,26 @@ function Read-Battery {
     $script:Battery
 }
 
-# The five programs using the most CPU and the most memory, each program's processes added up.
-# CPU is the share of the whole machine since the last scan; $null on the first scan.
+# A program's icon as a PNG data URL (20 px shown, 32 px read), or $null when its file gives none
+# (system processes have no readable path without administrator rights).
+function Get-ProgramIcon([string]$Path) {
+    if (-not $Path) { return $null }
+    try {
+        Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+        $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($Path)
+        if ($null -eq $icon) { return $null }
+        $bitmap = $icon.ToBitmap()
+        $stream = New-Object System.IO.MemoryStream
+        $bitmap.Save($stream, [System.Drawing.Imaging.ImageFormat]::Png)
+        $data = 'data:image/png;base64,' + [Convert]::ToBase64String($stream.ToArray())
+        $stream.Dispose(); $bitmap.Dispose(); $icon.Dispose()
+        return $data
+    } catch { return $null }
+}
+
+# The six programs using the most CPU and the most memory, each program's processes added up,
+# with the icons of those the page has not got yet. CPU is the share of the whole machine since
+# the last scan; $null on the first scan.
 function Read-Processes {
     $now = Get-Date
     $times = @{}
@@ -161,8 +182,11 @@ function Read-Processes {
         $ms = 0.0
         try { $ms = $process.TotalProcessorTime.TotalMilliseconds } catch { }
         $times[$process.Id] = $ms
-        if (-not $programs.ContainsKey($name)) { $programs[$name] = @{ name = $name; count = 0; cpuMs = 0.0; memory = 0L } }
+        if (-not $programs.ContainsKey($name)) { $programs[$name] = @{ name = $name; count = 0; cpuMs = 0.0; memory = 0L; path = $null } }
         $entry = $programs[$name]
+        if ($null -eq $entry.path -and -not $script:IconsSent.ContainsKey($name) -and -not $script:IconFailed.ContainsKey($name)) {
+            try { $entry.path = $process.Path } catch { }
+        }
         $entry.count++
         $entry.memory += $process.WorkingSet64
         if ($null -ne $script:LastProcs -and $script:LastProcs.Times.ContainsKey($process.Id)) {
@@ -176,10 +200,18 @@ function Read-Processes {
     $list = @($programs.Values | ForEach-Object {
         @{ name = $_.name; count = $_.count; cpu = [math]::Round($_.cpuMs / $span * 100, 1); memory = $_.memory }
     })
-    @{
-        byCpu = @($list | Sort-Object { $_.cpu } -Descending | Select-Object -First 5)
-        byMemory = @($list | Sort-Object { $_.memory } -Descending | Select-Object -First 5)
+    $byCpu = @($list | Sort-Object { $_.cpu } -Descending | Select-Object -First 6)
+    $byMemory = @($list | Sort-Object { $_.memory } -Descending | Select-Object -First 6)
+    $icons = @{}
+    foreach ($program in @($byCpu) + @($byMemory)) {
+        $name = $program.name
+        if ($script:IconsSent.ContainsKey($name) -or $script:IconFailed.ContainsKey($name) -or $icons.ContainsKey($name)) { continue }
+        $icon = Get-ProgramIcon $programs[$name].path
+        if ($null -eq $icon) { $script:IconFailed[$name] = $true; continue }
+        $icons[$name] = $icon
+        $script:IconsSent[$name] = $true
     }
+    @{ byCpu = $byCpu; byMemory = $byMemory; icons = $icons }
 }
 
 function Get-Tone([object]$Value, [double]$Warm, [double]$Hot) {
@@ -302,6 +334,9 @@ while ($true) {
                     # first with the five minutes recorded while it was closed.
                     if ($message.params.message.type -eq 'ready') {
                         $script:Visible = $true; $script:NextPage = [datetime]::MinValue
+                        # A page opened afresh may have lost its icons; send what it does not list.
+                        $script:IconsSent = @{}
+                        foreach ($name in @($message.params.message.icons)) { if ($name) { $script:IconsSent[[string]$name] = $true } }
                         if (Test-Setting 'backgroundHistory') { [void](Send-FocusdWebviewMessage 'monitor' (@{ type = 'history' } + $script:History)) }
                     }
                 }

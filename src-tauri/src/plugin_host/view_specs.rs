@@ -15,6 +15,9 @@ const MAX_PRIORITY: i32 = 100;
 /// Height of a webview page on the island when the manifest does not say, and the allowed range.
 pub(super) const DEFAULT_WEBVIEW_HEIGHT: u32 = 240;
 const WEBVIEW_HEIGHTS: std::ops::RangeInclusive<u32> = 80..=480;
+/// Widths a webview page may ask for. The island is 40px wider (its padding); the island window
+/// caps it further at large expanded scales (island::geometry::max_expanded_width).
+const WEBVIEW_WIDTHS: std::ops::RangeInclusive<u32> = 320..=860;
 
 /// lucide icon names a view may use; anything else is refused. Listed in
 /// plugins/schema/manifest.schema.json and src/features/plugin-views/icons.ts
@@ -38,6 +41,15 @@ pub enum ViewTemplate {
     Webview,
 }
 
+/// How the island frames a webview page (E15): in the card with the page's title (default), or
+/// not at all, the page drawing on the island itself like the island's own pages.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ViewFrame {
+    Card,
+    None,
+}
+
 /// One page on the island. Mirrored by `PluginViewSpec` in src/features/plugin-views/api.ts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ViewSpec {
@@ -53,6 +65,12 @@ pub struct ViewSpec {
     /// `webview` only: the page's height on the island in pixels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub height: Option<u32>,
+    /// `webview` only: the page's width on the island in pixels; the island widens for it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<u32>,
+    /// `webview` only: "none" draws the page without the island's card and title.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub frame: Option<ViewFrame>,
 }
 
 /// A relative path inside the plugin folder: no "..", no drive or root, "/" separators, ends in .html.
@@ -74,9 +92,12 @@ fn check_webview(view: &ViewSpec) -> Result<(), String> {
             if view.height.is_some_and(|height| !WEBVIEW_HEIGHTS.contains(&height)) {
                 return Err(format!("View \"{}\" has a height outside {}..{}.", view.id, WEBVIEW_HEIGHTS.start(), WEBVIEW_HEIGHTS.end()));
             }
+            if view.width.is_some_and(|width| !WEBVIEW_WIDTHS.contains(&width)) {
+                return Err(format!("View \"{}\" has a width outside {}..{}.", view.id, WEBVIEW_WIDTHS.start(), WEBVIEW_WIDTHS.end()));
+            }
         }
-        _ if view.entry.is_some() || view.height.is_some() => {
-            return Err(format!("View \"{}\": \"entry\" and \"height\" are only for the webview template.", view.id));
+        _ if view.entry.is_some() || view.height.is_some() || view.width.is_some() || view.frame.is_some() => {
+            return Err(format!("View \"{}\": \"entry\", \"height\", \"width\" and \"frame\" are only for the webview template.", view.id));
         }
         _ => {}
     }

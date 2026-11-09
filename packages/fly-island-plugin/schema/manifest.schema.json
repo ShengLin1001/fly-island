@@ -170,7 +170,9 @@
               "icon": { "description": "A lucide icon name from this list; default puzzle.", "enum": ["list", "list-checks", "list-todo", "kanban", "square-check", "timer", "clock", "calendar", "bell", "book-open", "bookmark", "star", "heart", "folder", "file-text", "git-pull-request", "bug", "code", "terminal", "cloud", "sun", "music", "newspaper", "rss", "mail", "message-square", "globe", "link", "activity", "chart-column", "zap", "flame", "coffee", "puzzle", "gauge", "target", "trophy", "rocket", "sparkles", "inbox", "tag", "hash", "search", "house", "notebook", "circle-check", "info"] },
               "template": { "enum": ["list", "detail", "form", "status", "webview"] },
               "entry": { "description": "Template webview only (required there): the page, a relative path inside the plugin folder ending in .html. The page can load files from its folder and below, nothing else.", "type": "string", "pattern": "^(?!/)(?!.*(^|/)\\.{1,2}(/|$))[^\\\\:?#%]+\\.html?$" },
-              "height": { "description": "Template webview only: the page's height on the island in pixels; default 240.", "type": "integer", "minimum": 80, "maximum": 480 }
+              "height": { "description": "Template webview only: the page's height on the island in pixels; default 240.", "type": "integer", "minimum": 80, "maximum": 480 },
+              "width": { "description": "Template webview only: the page's width on the island in pixels; the island widens for it (at large expanded scales it is capped to fit the island window). Without it the page is 520px wide. Islands before 0.3.4 ignore it.", "type": "integer", "minimum": 320, "maximum": 860 },
+              "frame": { "description": "Template webview only: \"none\" draws the page straight on the island, without the island's card and title; default \"card\". Islands before 0.3.4 ignore it.", "enum": ["card", "none"] }
             }
           }
         },

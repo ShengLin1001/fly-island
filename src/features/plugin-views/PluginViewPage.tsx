@@ -74,9 +74,15 @@ export function PluginViewPage({
     body = <StatusTemplate pluginId={entry.pluginId} viewId={entry.viewId} model={model} />;
   }
 
+  // A frameless page (E15) draws on the island itself; while it cannot show (stopped, starting)
+  // the card stays, so the user still sees whose page it is.
+  const frameless = webview && running && entry.frame === "none";
   return (
-    <section className={`plugin-view plugin-view--${entry.template}`} aria-label={t.pluginViews.pageLabel(title, pluginName)}>
-      <header className="plugin-view__title">
+    <section
+      className={`plugin-view plugin-view--${entry.template}${frameless ? " plugin-view--frameless" : ""}`}
+      aria-label={t.pluginViews.pageLabel(title, pluginName)}
+    >
+      <header className="plugin-view__title" hidden={frameless}>
         <Icon size={14} strokeWidth={2.3} aria-hidden="true" />
         <strong>{title}</strong>
         <span>{pluginName}</span>
