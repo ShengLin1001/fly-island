@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AGENT_ICON_MARK_EXTRA_WIDTH,
   AGENT_ICON_PET_HEIGHT,
-  CENTER_MARK_WIDTH,
   CENTER_PATTERN_PLUGIN_ID,
-  CENTER_PATTERN_WIDTH,
-  CENTER_PET_WIDTH,
   CenterPattern,
   CollapsedCenter,
   MARK_HEIGHT,
   MARK_WIDTH,
   PetSprite,
+  agentIconMarkExtraWidth,
+  centerHeight,
   centerPatternChoice,
+  centerPatternSize,
+  centerWidth,
   usePageHidden,
   usePetMood,
   usePetSheet,
@@ -72,6 +72,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const lightShown = markLight && !isCollapsedItemHidden(placements, "status-light");
   const mood = usePetMood(agents, center.enabled || lightShown);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
+  const size = centerPatternSize(center.settings);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
   const sheet = usePetSheet(center.enabled ? choice.petId : null, center);
   // A tray-hidden window keeps running; stop the animations there too.
@@ -81,15 +82,16 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
     const slots: CollapsedSlots = {};
     if (center.enabled) {
       const pet = typeof sheet === "string" ? sheet : null;
-      slots.center = <CollapsedCenter choice={choice} sheet={sheet} mood={mood} paused={still} />;
+      slots.center = <CollapsedCenter choice={choice} sheet={sheet} mood={mood} paused={still} size={size} />;
       const mark = choice.pattern === "mark";
-      slots.centerWidth = pet ? CENTER_PET_WIDTH : mark ? CENTER_MARK_WIDTH : CENTER_PATTERN_WIDTH;
+      // A pet still loading or unreadable is sized as the eyes it falls back to.
+      slots.centerWidth = centerWidth(pet ? "pet" : choice.pattern === "pet" ? "eyes" : choice.pattern, size);
       // While the bar names an agent the center is hidden, so the pet or the mark stands in for its
       // icon; not a second mark next to the one in the light's place.
       if (pet) slots.agentIcon = <PetSprite src={pet} mood={mood} paused={still} height={AGENT_ICON_PET_HEIGHT} />;
       else if (mark && !lightShown) {
-        slots.agentIcon = <CenterPattern pattern="mark" mood={mood} paused={still} height={MARK_HEIGHT} />;
-        slots.agentIconWidth = AGENT_ICON_MARK_EXTRA_WIDTH;
+        slots.agentIcon = <CenterPattern pattern="mark" mood={mood} paused={still} height={centerHeight("mark", size)} />;
+        slots.agentIconWidth = agentIconMarkExtraWidth(size);
       }
     }
     if (sessionRing.enabled && agentsOn) {
@@ -111,7 +113,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       slots.sideWidth = (slots.sideWidth ?? 0) + MARK_LIGHT_EXTRA_WIDTH;
     }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
-  }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still, lightShown]);
+  }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, size, sheet, mood, still, lightShown]);
 }
 
 /** Follows the native island hover here, so the slots above stay the same object. */

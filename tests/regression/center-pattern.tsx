@@ -196,6 +196,9 @@ async function runChecks() {
   mark = await markIn([{ phase: "completed", updatedAt: Date.now() }]);
   expect(mark.dataset.mood === "done" && mark.querySelector(".center-mark-check") !== null, "悬岛刚完成时短横换成对勾");
   expect(!fixture.querySelector(".cp-light"), "状态灯样式是圆点时不给状态灯槽位");
+  await slotWith({ pattern: "mark", pet: "", size: 18 });
+  const smaller = pill(".cp-slot .island__center-slot");
+  expect(smaller !== undefined && Math.abs(smaller.height - 18) < 0.6, `大小设成 18 时悬岛胶囊 18px 高（${smaller?.height.toFixed(1)}px）`);
 
   // As the status light (Settings > AI Agent, the default) the mark follows the agents with the
   // center plugin off, and no second mark stands before the title.

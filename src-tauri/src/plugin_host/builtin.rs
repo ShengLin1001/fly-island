@@ -85,6 +85,18 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
           "en": "Which pet the Pet pattern shows; xiaoba by default. Pet packs (pet.json + spritesheet) go in ~/.codex/pets or the pets folder of the app data directory; without one the eyes show."
         },
         "default": "xiaoba"
+      },
+      {
+        "key": "size",
+        "type": "number",
+        "title": { "zh-CN": "大小（像素）", "en": "Size (px)" },
+        "description": {
+          "zh-CN": "图案的高度，默认 24，和收起条上的环一样高；悬岛量的是胶囊，宠物比它高 4。",
+          "en": "How tall the pattern is; 24 by default, as tall as the rings on the collapsed bar. For the island mark it is the pill; a pet is 4 taller."
+        },
+        "min": 16,
+        "max": 30,
+        "default": 24
       }
     ]
   }
