@@ -299,23 +299,32 @@
   padding: 0;
 }
 
-.plugin-market__toggle {
-  justify-self: start;
+/* The star sits at the start of the action row, away from Install / Manage. */
+.plugin-market__favorite {
+  display: inline-flex;
+  margin-right: auto;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   padding: 0;
-  color: var(--color-accent, #74d6ff);
+  color: var(--color-text-muted);
   background: none;
   border: 0;
+  border-radius: 6px;
   cursor: pointer;
-  font: inherit;
-  font-size: 12px;
 }
 
-.plugin-market__toggle:hover {
-  text-decoration: underline;
+.plugin-market__favorite:hover {
+  color: var(--color-text-strong);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.plugin-market__toggle:focus-visible {
-  border-radius: 4px;
+.plugin-market__favorite[aria-pressed="true"] {
+  color: #f5c84c;
+}
+
+.plugin-market__favorite:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }

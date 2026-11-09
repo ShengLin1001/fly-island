@@ -152,9 +152,11 @@ export type SettingsPluginsText = {
     groupInstallable: (count: number) => string;
     groupInstalled: (count: number) => string;
     groupUpdates: (count: number) => string;
-    /** Installed plugins without an update are hidden until asked for. */
-    showInstalled: (count: number) => string;
-    hideInstalled: string;
+    /** The user's starred plugins (issue #16): the filter button, the empty list and the card's star. */
+    favorites: (count: number) => string;
+    noFavorites: string;
+    favorite: (name: string) => string;
+    unfavorite: (name: string) => string;
     manage: string;
     verified: string;
     noPermissions: string;
@@ -398,8 +400,10 @@ export const zhCN: SettingsPluginsText = {
     groupInstallable: (count: number) => `可安装（${count}）`,
     groupInstalled: (count: number) => `已安装（${count}）`,
     groupUpdates: (count: number) => `可更新（${count}）`,
-    showInstalled: (count: number) => `显示已安装的插件（${count}）`,
-    hideInstalled: "隐藏已安装的插件",
+    favorites: (count: number) => (count > 0 ? `收藏 ${count}` : "收藏"),
+    noFavorites: "还没有收藏的插件。点卡片右侧的星标收藏，收藏只保存在这台电脑上。",
+    favorite: (name: string) => `收藏 ${name}`,
+    unfavorite: (name: string) => `取消收藏 ${name}`,
     manage: "管理",
     verified: "已验证",
     noPermissions: "无需权限",
@@ -652,8 +656,10 @@ export const en: SettingsPluginsText = {
     groupInstallable: (count: number) => `Available (${count})`,
     groupInstalled: (count: number) => `Installed (${count})`,
     groupUpdates: (count: number) => `Updates (${count})`,
-    showInstalled: (count: number) => `Show installed plugins (${count})`,
-    hideInstalled: "Hide installed plugins",
+    favorites: (count: number) => (count > 0 ? `Starred ${count}` : "Starred"),
+    noFavorites: "No starred plugins yet. Use the star on a card; stars are kept on this computer only.",
+    favorite: (name: string) => `Star ${name}`,
+    unfavorite: (name: string) => `Unstar ${name}`,
     manage: "Manage",
     verified: "Verified",
     noPermissions: "No permissions",

@@ -141,13 +141,24 @@ if (!automated) {
     check(document.querySelectorAll("[title]").length === 0, "No hover tooltips anywhere in Settings");
     const verifiedItem = verifiedBadges[0]?.closest<HTMLElement>(".plugin-market__item");
     check(verifiedItem && verifiedItem.scrollWidth <= verifiedItem.clientWidth, "The verified mark does not make the market overflow");
-    // The update above was installed, so the plugin is current now and hidden with the other installed ones.
-    check(groupTitles() === "可安装（1）", "Current installed plugins are hidden at first");
-    const showInstalled = document.querySelector<HTMLButtonElement>(".plugin-market__toggle");
-    check(showInstalled?.textContent?.startsWith("显示已安装的插件（"), "A link offers the installed plugins with their count");
-    await act(async () => { showInstalled?.click(); });
-    check(groupTitles() === "可安装（1）|已安装（1）" && showInstalled?.textContent === "隐藏已安装的插件"
-      && document.querySelectorAll(".plugin-market__grid").length === 2, "Showing them adds the installed group last, cards in a grid");
+    // The update above was installed, so the plugin is current now and listed with the other installed ones.
+    check(groupTitles() === "可安装（1）|已安装（1）" && !document.querySelector(".plugin-market__toggle")
+      && document.querySelectorAll(".plugin-market__grid").length === 2, "Installed plugins are listed at once, last, cards in a grid (issue #16)");
+    const categoryButton = (label: string) => [...document.querySelectorAll<HTMLButtonElement>(".plugin-market__category")].find((item) => item.textContent?.startsWith(label));
+    await act(async () => { categoryButton("收藏")?.click(); });
+    check(groupTitles() === "" && document.body.textContent?.includes("还没有收藏的插件"), "Starred with nothing starred says how to star");
+    await act(async () => { categoryButton("全部")?.click(); });
+    const star = document.querySelector<HTMLButtonElement>(".plugin-market__favorite[aria-pressed='false']");
+    const starredName = star?.closest(".plugin-market__item")?.querySelector(".plugin-market__title strong")?.textContent ?? "";
+    await act(async () => { star?.click(); });
+    check(star?.getAttribute("aria-pressed") === "true" && star.getAttribute("aria-label") === `取消收藏 ${starredName}`
+      && JSON.parse(localStorage.getItem("focusd-island-plugin-market-favorites") ?? "[]").length === 1, "The star on a card saves the plugin on this computer");
+    await act(async () => { categoryButton("收藏")?.click(); });
+    check(categoryButton("收藏")?.textContent === "收藏 1" && document.querySelectorAll(".plugin-market__item").length === 1
+      && document.querySelector(".plugin-market__title strong")?.textContent === starredName, "Starred shows just the starred plugin, with the count on the button");
+    await act(async () => { document.querySelector<HTMLButtonElement>(".plugin-market__favorite")?.click(); });
+    await act(async () => { categoryButton("全部")?.click(); });
+    check(localStorage.getItem("focusd-island-plugin-market-favorites") === null, "Unstarring the last plugin clears the saved list");
     check(document.querySelector(".plugin-market__status")?.textContent?.startsWith("共 ") && !document.querySelector(".plugin-market__header > span:only-child"), "A status line with the plugin count takes the place of a second Plugin market title");
     const officialBadges = document.querySelectorAll(".plugin-market__badge--official");
     check(officialBadges.length > 0 && [...document.querySelectorAll(".plugin-market__meta")].every((meta) => !meta.textContent?.includes("· 官方")), "Official plugins carry one small mark instead of a publisher line");

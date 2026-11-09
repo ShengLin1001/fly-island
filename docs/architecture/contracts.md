@@ -41,6 +41,7 @@
 | `focusd-island-update-preferences`（`{ autoCheck, skippedVersion, lastCheckedAt }`：后台自动检查开关、跳过的版本、上次检查成功的时间；设置窗口写，主窗口通过 `storage` 事件跟随） | `features/updater/storage.ts` |
 | `focusd-island-update-channel`（`"stable"` / `"beta"`；没有时 beta 版本按 `beta`、其他版本按 `stable`） | `features/updater/storage.ts` |
 | `focusd-island-plugin-pages`（`{ order, hidden }`：岛上插件页面的顺序和隐藏的页面，值为页面 id `plugin:<插件 id>/<view id>`；设置窗口写，主窗口通过 `storage` 事件跟随） | `features/plugin-views/storage.ts` |
+| `focusd-island-plugin-market-favorites`（插件 id 的数组：用户在插件市场收藏的插件，只存在本机；一个都没有时删除这个 key） | `features/plugins/marketFavorites.ts` |
 
 ## 事件
 

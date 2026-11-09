@@ -3,18 +3,22 @@ import { RefreshCcw } from "lucide-react";
 import { useLocale, useTranslation } from "../../i18n";
 import { MARKET_CATEGORIES, type MarketCategory, type MarketPlugin, type PluginsSnapshot } from "./api";
 import { filterMarketPlugins, usedCategories } from "./marketFilter";
+import { useMarketFavorites } from "./marketFavorites";
 import { groupMarketPlugins } from "./marketGroups";
 import { MarketPluginItem } from "./MarketPluginItem";
 import { usePluginMarket } from "./usePluginMarket";
 import "./PluginMarketSection.css";
 
+/** The filter button for the starred plugins, next to All and the categories. */
+const FAVORITES = "favorites";
+
 const time = (at: number) => new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 /**
  * Plugins from the market index: a status line with Refresh, search and
- * categories on one row, then updates and the plugins that can be installed, two
- * cards a row; current installed ones only on request. `onManage` opens an
- * installed plugin on the plugins page.
+ * categories (with the user's favorites) on one row, then every plugin, two cards
+ * a row: updates first, then the ones that can be installed, then the installed
+ * ones. `onManage` opens an installed plugin on the plugins page.
  */
 export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (snapshot: PluginsSnapshot) => void; onManage?: (id: string) => void } = {}) {
   const t = useTranslation();
@@ -22,14 +26,15 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
   const { locale } = useLocale();
   const { market, loadedAt, loading, loadError, installError, installingId, refresh, install } = usePluginMarket(onInstalled);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<MarketCategory | "">("");
-  const [showInstalled, setShowInstalled] = useState(false);
+  const [category, setCategory] = useState<MarketCategory | "" | typeof FAVORITES>("");
+  const { favorites, toggleFavorite } = useMarketFavorites();
   const failedPlugin = installError && market?.plugins.find((plugin) => plugin.id === installError.id);
   const categories = useMemo(() => (market ? usedCategories(market.plugins, MARKET_CATEGORIES) : []), [market]);
-  const shown = useMemo(
-    () => (market ? filterMarketPlugins(market.plugins, { query, category }, market.officialPublisher) : []),
-    [market, query, category],
-  );
+  const shown = useMemo(() => {
+    if (!market) return [];
+    const plugins = category === FAVORITES ? market.plugins.filter((plugin) => favorites.includes(plugin.id)) : market.plugins;
+    return filterMarketPlugins(plugins, { query, category: category === FAVORITES ? "" : category }, market.officialPublisher);
+  }, [market, query, category, favorites]);
   const groups = useMemo(() => groupMarketPlugins(shown), [shown]);
   const hasPlugins = Boolean(market && market.plugins.length > 0);
   const status = loading
@@ -51,6 +56,8 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
                   plugin={plugin}
                   market={market}
                   installingId={installingId}
+                  favorite={favorites.includes(plugin.id)}
+                  onToggleFavorite={toggleFavorite}
                   onInstall={(id, trust, acceptKeyChange) => void install(id, trust, acceptKeyChange)}
                   onManage={onManage}
                 />
@@ -96,9 +103,9 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
             aria-label={text.search}
             onChange={(event) => setQuery(event.currentTarget.value)}
           />
-          {market === null || categories.length > 0 ? (
+          {market === null || hasPlugins ? (
             <div className="plugin-market__categories" role="group">
-              {(["", ...categories] as const).map((name) => (
+              {(["", FAVORITES, ...categories] as const).map((name) => (
                 <button
                   key={name || "all"}
                   className="plugin-card__button plugin-market__category"
@@ -106,7 +113,7 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
                   aria-pressed={category === name}
                   onClick={() => setCategory(name)}
                 >
-                  <span>{name === "" ? text.allCategories : text.category[name]}</span>
+                  <span>{name === "" ? text.allCategories : name === FAVORITES ? text.favorites(favorites.length) : text.category[name]}</span>
                 </button>
               ))}
             </div>
@@ -122,15 +129,10 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
             ))}
           </>
         ) : null}
-        {hasPlugins && shown.length === 0 ? <p className="settings-section__hint">{text.noMatches}</p> : null}
+        {hasPlugins && shown.length === 0 ? <p className="settings-section__hint">{category === FAVORITES && !query ? text.noFavorites : text.noMatches}</p> : null}
         {renderGroup(text.groupUpdates(groups.updates.length), groups.updates)}
         {renderGroup(text.groupInstallable(groups.installable.length), groups.installable)}
-        {groups.installed.length > 0 ? (
-          <button className="plugin-market__toggle" type="button" aria-expanded={showInstalled} onClick={() => setShowInstalled(!showInstalled)}>
-            {showInstalled ? text.hideInstalled : text.showInstalled(groups.installed.length)}
-          </button>
-        ) : null}
-        {showInstalled ? renderGroup(text.groupInstalled(groups.installed.length), groups.installed) : null}
+        {renderGroup(text.groupInstalled(groups.installed.length), groups.installed)}
       </div>
       <p className="settings-section__hint">{text.hint}</p>
     </section>

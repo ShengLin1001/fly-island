@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BadgeCheck, KeyRound, Lock } from "lucide-react";
+import { BadgeCheck, KeyRound, Lock, Star } from "lucide-react";
 import { useLocale, useTranslation } from "../../i18n";
 import { MARKET_CATEGORIES, marketPublisher, type MarketCategory, type MarketPlugin, type MarketSnapshot } from "./api";
 import { MarketPluginAction } from "./MarketPluginAction";
@@ -20,12 +20,17 @@ export function MarketPluginItem({
   plugin,
   market,
   installingId,
+  favorite,
+  onToggleFavorite,
   onInstall,
   onManage,
 }: {
   plugin: MarketPlugin;
   market: MarketSnapshot;
   installingId: string | null;
+  /** Starred by the user; kept on this computer only. */
+  favorite: boolean;
+  onToggleFavorite: (id: string) => void;
   /** `trust`: the user agreed to trust the publisher first. `acceptKeyChange`: the user confirmed a new author key. */
   onInstall: (id: string, trust: boolean, acceptKeyChange: boolean) => void;
   onManage?: (id: string) => void;
@@ -89,6 +94,15 @@ export function MarketPluginItem({
         {plugin.description?.[locale] ? <span className={open ? "plugin-market__description" : "plugin-market__description plugin-market__clamp"}>{plugin.description[locale]}</span> : null}
       </button>
       <div className="plugin-market__action">
+        <button
+          className="plugin-market__favorite"
+          type="button"
+          aria-pressed={favorite}
+          aria-label={favorite ? text.unfavorite(plugin.name[locale]) : text.favorite(plugin.name[locale])}
+          onClick={() => onToggleFavorite(plugin.id)}
+        >
+          <Star size={14} strokeWidth={2} fill={favorite ? "currentColor" : "none"} aria-hidden="true" />
+        </button>
         <MarketPluginAction plugin={plugin} trusted={trusted} installingId={installingId} onInstall={onInstall} onManage={onManage} />
       </div>
       <div className="plugin-market__notes">
