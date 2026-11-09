@@ -26,6 +26,7 @@ mod system_levels;
 mod todos;
 mod translation;
 mod tray;
+mod user_error;
 mod wechat_reminders;
 mod win32;
 

@@ -19,6 +19,7 @@ import * as clipboard from "../sections/clipboard.ts";
 import * as fileShelf from "../sections/fileShelf.ts";
 import * as pluginViews from "../sections/pluginViews.ts";
 import * as settings from "../sections/settings/index.ts";
+import * as errors from "../sections/errors.ts";
 
 const en: Translations = {
   localeLabel: "English",
@@ -53,6 +54,7 @@ const en: Translations = {
 
   pluginViews: pluginViews.en,
   settings: settings.en,
+  errors: errors.en,
 };
 
 export default en;

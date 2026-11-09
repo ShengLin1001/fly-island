@@ -5,7 +5,7 @@ import { SettingsLinkButton } from "../../../components/settings/SettingsLinkBut
 import { SettingsRow } from "../../../components/settings/SettingsRow";
 import { SettingsSelect } from "../../../components/settings/SettingsSelect";
 import { SettingsToggleRow } from "../../../components/settings/SettingsToggleRow";
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import { sendCcConnectMessage, useCcConnect } from "../../cc-connect";
 import { deleteBarkKey, hasBarkKey, saveBarkKey, sendBarkPush } from "./api";
 import { CcConnectPushTargets } from "./CcConnectPushTargets";
@@ -13,11 +13,11 @@ import { PUSH_GROUP } from "./sendPush";
 import { AGENT_PUSH_AWAY_MINUTES, AGENT_PUSH_CHANNELS, AGENT_PUSH_EVENTS, type AgentPushChannel } from "./storage";
 import { useAgentPushSettings } from "./useAgentPushSettings";
 
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Settings → AI Agent → Alerts: pushing agent events to the phone with Bark or a cc-connect bot (roadmap B6.5.5). */
 export function AgentPushSettings() {
   const text = useTranslation().settings.agent.push;
+  const errorText = useErrorText();
   const [settings, setSettings] = useAgentPushSettings();
   const [keySaved, setKeySaved] = useState<boolean | null>(null);
   const [keyInput, setKeyInput] = useState("");
@@ -37,7 +37,7 @@ export function AgentPushSettings() {
       await action();
       setStatus(done);
     } catch (error) {
-      setStatus(message(error));
+      setStatus(errorText(error));
     } finally {
       setBusy(false);
     }

@@ -7,7 +7,10 @@ use std::time::Duration;
 use keyring::{Entry, Error as KeyringError};
 use serde_json::{json, Value};
 
-use crate::win32::session_notifications;
+use crate::{
+    user_error::{credential, UserError},
+    win32::session_notifications,
+};
 
 const CREDENTIAL_SERVICE: &str = "com.focusd.island.bark";
 const CREDENTIAL_USER: &str = "device-key";
@@ -15,25 +18,26 @@ const CREDENTIAL_USER: &str = "device-key";
 const DEFAULT_SERVER: &str = "https://api.day.app";
 const MAX_FIELD_CHARS: usize = 300;
 
-fn credential() -> Result<Entry, String> {
-    Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_USER).map_err(|_| "Could not open Windows Credential Manager.".into())
+fn entry() -> Result<Entry, UserError> {
+    Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_USER).map_err(credential::open)
 }
 
-fn read_key() -> Result<Option<String>, String> {
-    match credential()?.get_password() {
+fn read_key() -> Result<Option<String>, UserError> {
+    match entry()?.get_password() {
         Ok(key) => Ok(Some(key)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(_) => Err("Could not read from Windows Credential Manager.".into()),
+        Err(error) => Err(credential::read(error)),
     }
 }
 
 /// The address to post to: `<server>/push`. Only http(s); http is for a bark-server on the LAN.
-pub(crate) fn push_url(server: &str) -> Result<reqwest::Url, String> {
+pub(crate) fn push_url(server: &str) -> Result<reqwest::Url, UserError> {
     let server = server.trim().trim_end_matches('/');
     let server = if server.is_empty() { DEFAULT_SERVER } else { server };
-    let url = reqwest::Url::parse(&format!("{server}/push")).map_err(|_| "The Bark server address is not valid.".to_string())?;
+    let url = reqwest::Url::parse(&format!("{server}/push"))
+        .map_err(|_| UserError::new("bark.server", "The Bark server address is not valid."))?;
     if !matches!(url.scheme(), "https" | "http") || url.host_str().is_none() {
-        return Err("The Bark server address must start with https:// or http://.".into());
+        return Err(UserError::new("bark.scheme", "The Bark server address must start with https:// or http://."));
     }
     Ok(url)
 }
@@ -57,40 +61,42 @@ pub(crate) fn normalize_key(input: &str) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn has_bark_key() -> Result<bool, String> {
+pub fn has_bark_key() -> Result<bool, UserError> {
     Ok(read_key()?.is_some())
 }
 
 #[tauri::command]
-pub fn save_bark_key(key: String) -> Result<(), String> {
-    let key = normalize_key(&key).ok_or_else(|| "That does not look like a Bark device key: copy the push URL in Bark, or the letters and digits in it.".to_string())?;
-    credential()?.set_password(&key).map_err(|_| "Could not save to Windows Credential Manager.".into())
+pub fn save_bark_key(key: String) -> Result<(), UserError> {
+    let key = normalize_key(&key).ok_or_else(|| {
+        UserError::new("bark.key", "That does not look like a Bark device key: copy the push URL in Bark, or the letters and digits in it.")
+    })?;
+    entry()?.set_password(&key).map_err(credential::save)
 }
 
 #[tauri::command]
-pub fn delete_bark_key() -> Result<(), String> {
-    match credential()?.delete_credential() {
+pub fn delete_bark_key() -> Result<(), UserError> {
+    match entry()?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(_) => Err("Could not delete from Windows Credential Manager.".into()),
+        Err(error) => Err(credential::delete(error)),
     }
 }
 
 /// Sends one push to the saved device; `server` empty means Bark's own server.
 #[tauri::command]
-pub async fn send_bark_push(server: String, title: String, body: String, group: String) -> Result<(), String> {
-    let key = read_key()?.ok_or_else(|| "No Bark device key yet.".to_string())?;
+pub async fn send_bark_push(server: String, title: String, body: String, group: String) -> Result<(), UserError> {
+    let key = read_key()?.ok_or_else(|| UserError::new("bark.noKey", "No Bark device key yet."))?;
     let url = push_url(&server)?;
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")))
         .build()
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))?;
     let response = client
         .post(url)
         .json(&push_body(&key, &title, &body, &group))
         .send()
         .await
-        .map_err(|error| format!("Could not reach the Bark server: {error}"))?;
+        .map_err(|error| UserError::new("bark.unreachable", "Could not reach the Bark server.").detail(error))?;
     let status = response.status().as_u16();
     if (200..300).contains(&status) {
         return Ok(());
@@ -98,9 +104,8 @@ pub async fn send_bark_push(server: String, title: String, body: String, group: 
     let reply: Value = response.json().await.unwrap_or(Value::Null);
     let message = reply["message"].as_str().unwrap_or_default();
     Err(match status {
-        400 if message.contains("device") => "Bark does not know this device key; copy it again.".to_string(),
-        _ if message.is_empty() => format!("Bark answered {status}."),
-        _ => format!("Bark answered {status}: {message}"),
+        400 if message.contains("device") => UserError::new("bark.unknownKey", "Bark does not know this device key; copy it again."),
+        _ => UserError::new("bark.status", format!("Bark answered {status}.")).arg("status", status).detail(message),
     })
 }
 
@@ -139,8 +144,8 @@ mod tests {
     fn server_defaults_to_bark_and_takes_self_hosted_ones() {
         assert_eq!(push_url("").unwrap().as_str(), "https://api.day.app/push");
         assert_eq!(push_url("http://192.168.1.5:8080/ ").unwrap().as_str(), "http://192.168.1.5:8080/push");
-        assert!(push_url("ftp://x").is_err());
-        assert!(push_url("not a url").is_err());
+        assert_eq!(push_url("ftp://x").unwrap_err().code(), "bark.scheme");
+        assert_eq!(push_url("not a url").unwrap_err().code(), "bark.server");
     }
 
     #[test]

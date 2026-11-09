@@ -18,6 +18,7 @@ import type { ClipboardText } from "./sections/clipboard";
 import type { FileShelfText } from "./sections/fileShelf";
 import type { PluginViewsText } from "./sections/pluginViews";
 import type { SettingsText } from "./sections/settings/index";
+import type { ErrorsText } from "./sections/errors";
 
 export type LocaleCode = "zh-CN" | "en";
 
@@ -57,4 +58,6 @@ export type Translations = {
   /** Pages and status texts plugins put on the island (drawn from templates). */
   pluginViews: PluginViewsText;
   settings: SettingsText;
+  /** Errors from the native side, by code (nativeError.ts). */
+  errors: ErrorsText;
 };

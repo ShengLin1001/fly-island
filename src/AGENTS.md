@@ -111,7 +111,7 @@ main.tsx → windows/ → features/ → components/、lib/、utils/、i18n/、st
 
 - 所有用户可见文案，包括 `aria-label` 和 `title`，都通过 `useTranslation()` 取得，不硬编码。
 - 新增文案只改对应分区文件 `i18n/sections/<分区>.ts`（设置页文案在 `i18n/sections/settings/<子分区>.ts`）：同一个文件里有类型、`zhCN` 和 `en` 三处，由类型检查保证没有遗漏。只有新增整个分区时才需要改 `i18n/types.ts` 和 `locales/*.ts` 这几个汇总文件。
-- 用户输入的内容（待办、笔记、预设名、消息原文）保持原样，不翻译。原生服务返回的错误信息原样显示。
+- 用户输入的内容（待办、笔记、预设名、消息原文）保持原样，不翻译。原生命令的错误用 `useErrorText()`（`src/i18n`）转成文字：带 code 的按界面语言显示（`sections/errors.ts`，D15），外部服务的原话和还没迁移的字符串原样显示；不要 `String(error)`。没有 React 的地方（日志）用 `utils/error.ts` 的 `getErrorMessage`，得到英文。
 
 ## 测试
 

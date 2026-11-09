@@ -1,4 +1,5 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { errorText } from "./nativeError.ts";
 import type { LocaleCode, Translations } from "./types";
 import zhCN from "./locales/zh-CN.ts";
 import en from "./locales/en.ts";
@@ -96,4 +97,10 @@ export function useLocale() {
 
 export function useTranslation() {
   return useContext(TranslationContext);
+}
+
+/** Words an error for the page: a native one in the island's language (task D15), anything else as it is. */
+export function useErrorText() {
+  const t = useContext(TranslationContext);
+  return useCallback((error: unknown) => errorText(error, t), [t]);
 }

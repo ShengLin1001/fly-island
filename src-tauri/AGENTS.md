@@ -36,6 +36,7 @@ src-tauri/src/
 ├── dev_lane.rs              # lane 预览（pnpm dev:lane）：调试版的独立应用标识、默认位置，不改用户的链接、自启和 hook
 ├── messenger_activation.rs
 ├── notification_diagnostics.rs
+├── user_error.rs            # 用户看到的错误：错误码、文案参数和外部原话（D15），前端按界面语言显示；凭据管理器的通用错误
 └── win32/                   # Win32 / COM 的安全封装，crate 中唯一允许 unsafe 的地方：window（窗口查询、枚举、前台切换）、
                              # message_window（隐藏消息窗口与安全的窗口过程）、hotkey、clipboard、shell_hook、input、
                              # com（COM / WinRT 初始化守卫）、audio、ole（文件拖出）、process / process_times、registry、
@@ -63,7 +64,7 @@ src-tauri/src/
 
 ## 命令
 
-- 命令返回 `Result<T, String>`，错误信息要让用户能读懂，因为前端会原样显示。
+- 命令的错误用 `user_error::UserError`：`UserError::new("<模块>.<情况>", "英文原文")`，需要填值用 `.arg`，外部程序、服务、系统的原话用 `.detail`；新 code 同时在 `src/i18n/sections/errors.ts` 写中英文文案，测试断言 `code()` 而不是文字。还没迁移的模块返回 `Result<T, String>`（英文、让用户能读懂），`?` 会把字符串转成 `UserError`（code `plain`，前端原样显示）。
 - 会阻塞的命令，或调用窗口、COM、Windows UI 的命令，声明为 `async`，避免阻塞 IPC 线程（在 Windows 上可能死锁，见 `settings_window/mod.rs`）。
 - 命令函数保持薄：只做参数校验，然后调用服务或领域函数。
 - 命令名就是函数名，属于对外契约。纯重构中可以移动函数所在模块，但不能改函数名或参数名。

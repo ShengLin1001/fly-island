@@ -19,6 +19,7 @@ import * as clipboard from "../sections/clipboard.ts";
 import * as fileShelf from "../sections/fileShelf.ts";
 import * as pluginViews from "../sections/pluginViews.ts";
 import * as settings from "../sections/settings/index.ts";
+import * as errors from "../sections/errors.ts";
 
 const zhCN: Translations = {
   localeLabel: "简体中文",
@@ -56,6 +57,7 @@ const zhCN: Translations = {
 
   pluginViews: pluginViews.zhCN,
   settings: settings.zhCN,
+  errors: errors.zhCN,
 };
 
 export default zhCN;
