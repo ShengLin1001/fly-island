@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Bell, CalendarDays, CircleDot, ClipboardList, Inbox, Languages, ListTodo, Minus, Music, RotateCcw, Settings, type LucideIcon } from "lucide-react";
+import { Bell, Bot, CalendarDays, ClipboardList, Inbox, Languages, ListTodo, Minus, Music, RotateCcw, Settings, type LucideIcon } from "lucide-react";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { MessageSource } from "../../features/messages/messagePreview";
 import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateCheck";
@@ -111,10 +111,10 @@ export function IslandHeader({
               onPageChange("agents");
             }}
           >
-            <CircleDot className={agentStatusIconClassName} size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+            <Bot className={agentStatusIconClassName} size={16} strokeWidth={1.8} absoluteStrokeWidth aria-hidden="true" />
           </button>
         ) : (
-          <CircleDot
+          <Bot
             className={agentStatusIconClassName}
             size={16}
             strokeWidth={1.5}
