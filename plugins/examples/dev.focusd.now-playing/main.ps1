@@ -1,4 +1,4 @@
-# Example plugin (API version 2): shows the playing song on the island when its
+# Plugin (API version 2): shows the playing song on the island when its
 # command runs, and, when the "notifyOnChange" setting is on (off by default: the
 # island's music page and collapsed bar already show the song), when the track
 # changes. media:read is a sensitive permission, so the first call that uses it
