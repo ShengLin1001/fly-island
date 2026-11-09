@@ -148,14 +148,18 @@ FocuSD Island（仓库名 fly-island）是 Windows 优先的桌面效率工具�
 
 ## Git 与协作
 
+- **谁怎么合入 `main`，看 GitHub 权限**。`main` 上有 GitHub 规则集 `main protection`（仓库 Settings → Rules）：必须通过 PR 合入，CI 的 `check` 必须通过，PR 必须基于最新的 `main`（落后时点 "Update branch" 或 rebase，CI 重跑），禁止强推和删除。仓库管理员（TixXin）可以绕过这些规则。
+  - **仓库管理员的会话**：用下面的 lane + `pnpm mq:land`。land 先 rebase 到最新的 `origin/main`，再检查、推送；检查期间要是别人往 `main` 推了提交，这次推送不是快进，会被 git 拒绝，`main` 不会被覆盖，重新 land 即可。
+  - **协作者（Write 权限，目前是 ShengLin1001）和外部贡献者**：不用 `pnpm mq:land`，跑了也会被规则集拒绝。在自己的分支上开发，推到本仓库的分支或自己的 fork，然后提 PR；CI 通过、分支跟上最新 `main` 后再合入。协作者可以自己合，也可以等仓库管理员按下面「外部 PR」的做法合。合入用 merge 或 squash，不改写别人已经推送的分支。
+  - 开发期间不要求分支一直跟着 `main`：开工前、land 或合入前各同步一次，开发时间长的分支隔天同步一次。不管哪种方式，合入那一刻都基于最新的 `main`，这一点由 land 的 rebase 和规则集保证。
 - **每个代理会话在自己的 lane（worktree + 分支）上工作，经合并队列合入 `main`**（工具是 [claude-code-merge-queue](https://github.com/funador/claude-code-merge-queue)，配置在 `claude-code-merge-queue.config.mjs`）：
   - 开 lane：用 `claude -w <任务名>` 启动，或在会话里调用 EnterWorktree。本机 `.claude/settings.json` 的 WorktreeCreate 钩子会分配 `lane/N` 分支，并在 `../fly-island-lanes/N` 建 worktree（所有 lane 都在这一个文件夹里）。钩子不可用时，手动 `git worktree add ../fly-island-lanes/<N> -b lane/<N> origin/main`，`<N>` 选一个 `../fly-island-lanes/<N>` 文件夹和 `lane/<N>` 分支都不存在的编号：往已有文件夹里建会先建出分支、再因为文件夹非空而失败，留下没有 worktree 的孤儿分支。钩子建 lane 时会自动 `pnpm install`；手动建的 lane 自己运行一次。
   - 在 lane 里开发、验证、提交。验证用 `pnpm verify`（和 land 时跑的检查相同：`pnpm check`，改到 Rust 相关文件时加 `cargo test`；只改 Markdown 文档时只跑文档检查）；通过的代码树会被记住，land 时同一棵树不再重跑。一个功能单元完成并提交后，在 lane 里运行 `pnpm mq:land`，不用问用户。它会排队、rebase 到 `origin/main`、跑 `scripts/land-check.mjs`（`pnpm check`，改到 Rust 相关文件时再加 `cargo test`），然后推送 `origin/main`，并把主工作区快进到新的 `main`。land 成功后会自动把 fork 的 `dev` 推到同一提交（旧版本岛屿从 `dev` 读插件市场），结果记在 `.git/land-sync-dev.log`。
   - land 失败不算完成：rebase 冲突时它会自动中止，自己 `git fetch origin main && git rebase origin/main` 解决冲突后重新 land；检查失败就修好再 land。如果输出里已经有 `landed`，只是后面的快进主工作区失败了，不要重复 land，在主工作区运行 `pnpm mq:sync`。
   - `release` 可执行文件构建（`pnpm build:exe`）不在队列里，按"验证"一节在 land 之后另外做；它会同步桌面快捷方式，多个 lane 同时构建时后来的会等前一个做完（`target/release/.build-exe.lock`）。不要为了构建让用户关掉岛屿或 dev：`build:exe` 会把正在运行的 exe 改名挪开再写新的（Windows 允许改名正在运行的 exe），下次启动就是新版本。
   - **预览**：用户想看某个 lane 的效果时，在那个 lane 里运行 `pnpm dev:lane`。它起一个和用户的岛屿并排的预览岛屿：Vite 端口 1500+lane 编号，应用标识 `com.focusd.island.lane-<N>`（数据、WebView 存储、单实例都和用户的分开，开始时没有数据），不注册 focusd:// 链接，不能改开机自启，也不能安装 AI 代理状态 hook。不要在 lane 里直接跑 `pnpm tauri dev`：它会先关掉所有正在运行的岛屿，还要占用主工作区的 1420 端口。只看界面时也可以起 lane 的 Vite，打开 `tests/regression/*.html`。
-  - 主工作区留给用户（例如运行 `pnpm tauri dev`），必须保持干净并停在 `main` 上，代理不要在里面改文件或提交。`main` 只通过 land 移动：`.githooks/pre-push`（`git config core.hooksPath .githooks`）会拒绝直接推送 `main`，紧急情况才设 `CLAUDE_CODE_MERGE_QUEUE_EMERGENCY_PUSH=1`。
-  - **外部 PR 例外**：别人提的 PR 不走 land。land 推送前会 rebase，PR 的提交号随之改变，GitHub 认不出 PR 已合并（#10 就是这样，只能手动关闭）。做法：
+  - 主工作区留给用户（例如运行 `pnpm tauri dev`），必须保持干净并停在 `main` 上，代理不要在里面改文件或提交。`main` 只通过 land 或在 GitHub 上合入 PR 移动，不手动推送：`.githooks/pre-push`（`git config core.hooksPath .githooks`）会拒绝直接推送 `main`，紧急情况才设 `CLAUDE_CODE_MERGE_QUEUE_EMERGENCY_PUSH=1`。
+  - **外部 PR 例外**（协作者的 PR 由仓库管理员来合时也一样）：别人提的 PR 不走 land。land 推送前会 rebase，PR 的提交号随之改变，GitHub 认不出 PR 已合并（#10 就是这样，只能手动关闭）。做法：
     1. 在 lane 里 `git fetch origin pull/<编号>/head:pr-<编号>`，用 `git merge --no-ff pr-<编号>` 合到最新的 `origin/main` 上，跑 `pnpm check`、`cargo test`、clippy 和 `pnpm test:regression`（范围按「验证」一节）。这一步只用来检查，lane 里的合并提交不推送。
     2. 检查通过后用 `gh pr merge <编号> --merge` 由 GitHub 合并（保留 PR 的提交号，PR 自动关闭），再在主工作区 `pnpm mq:sync`。`gh pr merge` 在 GitHub 端合并，不经过本地 pre-push 钩子，所以第 1 步的检查不能省；推送后 GitHub 上的 CI 会再跑一遍。
     3. 要补的修改另开 lane，照常 land。PR 落后 `main` 太多、GitHub 报冲突时，请作者 rebase，或问用户怎么处理，不要自己改写别人的分支。
