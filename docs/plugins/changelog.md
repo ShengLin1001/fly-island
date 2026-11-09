@@ -4,6 +4,16 @@
 
 下面几批改动都还没有随正式版岛屿发布（2026-11-05 时最新的正式版是 0.2.14），发布时补上版本号。
 
+## npm 包 0.4.0（2026-11-09）
+
+`fly-island-plugin` 和 `create-fly-island-plugin` 0.4.0：
+
+- **修复（PowerShell）**：脚手架和 `plugins/sdk/powershell/focusd.ps1` 带的 PowerShell 辅助库里，`Receive-FocusdNotification` 的超时在 Windows PowerShell 5.1 上不生效：`[Console]::In.ReadLineAsync()` 在那里是同步的，会一直等到岛屿发来下一行。靠超时做定时任务的插件（每秒刷新、倒计时）因此停住。现在改用 `StreamReader` 读标准输入。用旧版脚手架建的 PowerShell 插件，把 `lib/focusd.ps1` 换成新版即可（只差 `Read-FocusdLine` 和顶部的读取器）。PowerShell 模块 `FlyIsland.Plugin` 的源码同样改了，PowerShell Gallery 上的版本另行发布。
+- 下面「折叠条上的列和小环」：Node SDK `plugin.status.update(id, text, { cells, ring })`、能力 `statusCells`，模拟宿主校验并记录 `cells` / `ring`。
+- 清单校验认识 `contributes.sounds`（音效包）和 `contributes.agentEffortLabels`（Agent 页努力程度的显示名）。
+- `plugin.agentStatus.report` 的类型多了 `host`、`agent`、`cwd`（其他电脑上报的会话）。
+- 脚手架建的插件依赖 `fly-island-plugin` ^0.4.0。
+
 ## 按需启动的两处修正
 
 - `onStartupFinished` 的插件如果是岛屿启动后才启用、安装或授权的，现在会立即启动；以前要等岛屿下次重启。
