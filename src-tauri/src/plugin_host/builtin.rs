@@ -66,7 +66,7 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
         "key": "pattern",
         "type": "select",
         "title": { "zh-CN": "图案", "en": "Pattern" },
-        "default": "pet",
+        "default": "eyes",
         "options": [
           { "value": "eyes", "title": { "zh-CN": "眼睛", "en": "Eyes" } },
           { "value": "bird", "title": { "zh-CN": "小鸟", "en": "Bird" } },
