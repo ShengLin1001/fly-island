@@ -101,6 +101,9 @@ pub fn run() {
             if let Err(error) = ssh_tunnel::init(app.handle()) {
                 eprintln!("failed to initialize the SSH proxy tunnel: {error}");
             }
+            if let Err(error) = cc_connect::init(app.handle()) {
+                eprintln!("failed to initialize cc-connect: {error}");
+            }
             if let Err(error) = plugin_host::init(app.handle()) {
                 eprintln!("failed to initialize plugins: {error}");
             }

@@ -4,6 +4,9 @@ import { CC_CONNECT_PLUGIN_ID, getCcConnectStatus, programSetting, type CcConnec
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+/** Read again this often while shown, so a chat appears soon after its first message to the bot. */
+const REFRESH_MS = 5_000;
+
 /** The cc-connect plugin: whether it is on, its program setting, and what was found (read while on). */
 export function useCcConnect() {
   const plugin = useBuiltinPlugin(CC_CONNECT_PLUGIN_ID);
@@ -21,7 +24,10 @@ export function useCcConnect() {
   }, [path]);
 
   useEffect(() => {
-    if (plugin.enabled) void refresh();
+    if (!plugin.enabled) return;
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), REFRESH_MS);
+    return () => window.clearInterval(timer);
   }, [plugin.enabled, refresh]);
 
   return { enabled: plugin.enabled, path, status, error, refresh };
