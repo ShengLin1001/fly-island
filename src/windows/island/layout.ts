@@ -14,8 +14,10 @@ export const EXPANDED_ISLAND_WIDTH = 560;
  * island this wide. Keep in step with .island--popup in IslandShell.css.
  */
 export const POPUP_ISLAND_WIDTH = 400;
-/** What a popup leaves out: the header (34), the gap below it (14) and 2px of top padding. */
-export const POPUP_HEADER_SAVING = 50;
+/** What a popup leaves out: the header (34), the gap below it (14) and 10px of top padding. */
+export const POPUP_HEADER_SAVING = 58;
+/** An Agent alert popup also drops the list's 4px top padding (AgentSessionsPanel.css). */
+export const AGENT_POPUP_LIST_SAVING = 4;
 export const TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT = 352;
 /** The calendar page: two days of events, scrolling past about six. */
 export const CALENDAR_EXPANDED_ISLAND_HEIGHT = 340;

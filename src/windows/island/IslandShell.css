@@ -364,8 +364,9 @@
   display: none;
 }
 
+/* As little above the card as below it: an Agent row's own 8px plus 8 here match the 16 under it. */
 .island--popup .island__expanded {
-  padding-top: 16px;
+  padding-top: 8px;
 }
 
 .island__content {

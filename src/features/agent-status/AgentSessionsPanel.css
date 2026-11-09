@@ -96,6 +96,11 @@
   display: none;
 }
 
+/* An alert popup has no header above it (C11b): the row sits right under the island's edge. */
+.island--popup .agent-sessions {
+  padding-top: 0;
+}
+
 .agent-session {
   width: 100%;
   display: flex;

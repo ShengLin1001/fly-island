@@ -1,6 +1,6 @@
 import { messagePanelHeight, type MessageView } from "../../features/messages/Messages";
 import type { TodoItem, TodoPageMode } from "../../features/todos/types";
-import { BASE_EXPANDED_ISLAND_HEIGHT, CALENDAR_EXPANDED_ISLAND_HEIGHT, MUSIC_EXPANDED_ISLAND_HEIGHT, TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT, TODO_GROW_START_ROWS, TODO_ROW_HEIGHT, getAgentAlertExpandedHeight, getAgentPageExpandedHeight, getClipboardExpandedHeight, POPUP_HEADER_SAVING, getPluginPageExpandedHeight, getTodoScrollStartRows, getTodoVisualRows } from "./layout";
+import { BASE_EXPANDED_ISLAND_HEIGHT, CALENDAR_EXPANDED_ISLAND_HEIGHT, MUSIC_EXPANDED_ISLAND_HEIGHT, TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT, TODO_GROW_START_ROWS, TODO_ROW_HEIGHT, getAgentAlertExpandedHeight, getAgentPageExpandedHeight, getClipboardExpandedHeight, POPUP_HEADER_SAVING, AGENT_POPUP_LIST_SAVING, getPluginPageExpandedHeight, getTodoScrollStartRows, getTodoVisualRows } from "./layout";
 import type { PluginViewTemplate } from "../../features/plugin-views/api";
 import type { AgentSessionView } from "../../features/appearance/types";
 import { isPluginPage } from "./features";
@@ -105,5 +105,5 @@ export function getExpandedIslandHeight({
         : messageArrivalsHeight !== undefined
           ? Math.min(MESSAGE_ARRIVALS_CHROME_HEIGHT + messageArrivalsHeight, maxPanelHeight)
           : Math.min(messagePanelHeight(messageSource, isReadingMail), maxPanelHeight);
-  return popup ? height - POPUP_HEADER_SAVING : height;
+  return popup ? height - POPUP_HEADER_SAVING - (page === "agents" ? AGENT_POPUP_LIST_SAVING : 0) : height;
 }
