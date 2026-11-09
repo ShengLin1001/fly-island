@@ -1,5 +1,6 @@
 import type { IslandSettings } from "../../features/appearance/types";
 import { MusicSourceSettingsSection } from "../../features/media/MusicSourceSettingsSection";
+import { MusicBarSettingsSection } from "../../features/media/MusicBarSettingsSection";
 import { LyricsSettingsSection } from "../../features/media/lyrics/LyricsSettingsSection";
 import { useTranslation } from "../../i18n";
 import { ModuleSwitchSection } from "./ModuleSwitchSection";
@@ -20,6 +21,7 @@ export function MusicSettingsPage({
         checked={settings.musicEnabled}
         onChange={(musicEnabled) => onSettingsChange({ ...settings, musicEnabled })}
       />
+      {settings.musicEnabled && <MusicBarSettingsSection />}
       {settings.musicEnabled && <MusicSourceSettingsSection />}
       {settings.musicEnabled && <LyricsSettingsSection settings={settings} onSettingsChange={onSettingsChange} />}
     </>

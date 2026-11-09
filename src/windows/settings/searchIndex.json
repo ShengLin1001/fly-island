@@ -737,6 +737,19 @@
     {
       "page": "music",
       "zh-CN": {
+        "group": "岛屿",
+        "title": "在收起的岛上显示音乐波形",
+        "description": "收起的岛右侧跳动的竖条，点它打开音乐页。和 外观 → 收起条 里「音乐」的显示开关是同一个，位置也在那里调。"
+      },
+      "en": {
+        "group": "Island",
+        "title": "Show the music wave on the collapsed island",
+        "description": "The moving bars on the collapsed island, which open the music page. The same switch as Music under Appearance → Collapsed bar, where it can also be moved."
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
         "group": "歌词",
         "title": "本地歌词文件夹",
         "description": "放 .lrc 文件，文件名写成「歌手 - 歌名」「歌名 - 歌手」或「歌名」。只找这一层，不找子文件夹。"

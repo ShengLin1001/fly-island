@@ -219,6 +219,17 @@ if (!automated) {
     await act(async () => { glassButton!.click(); });
     check(document.querySelectorAll(".island-preview__island--glass").length === 2, "Choosing liquid glass shows on both preview islands");
 
+    // Settings → Music: the music wave switch is the collapsed bar's "music" item.
+    await openPage("music");
+    const waveRow = [...document.querySelectorAll<HTMLElement>(".settings-row")].find((row) => row.querySelector(".settings-row__title")?.textContent === "在收起的岛上显示音乐波形");
+    const waveSwitch = () => waveRow?.querySelector<HTMLInputElement>("input");
+    check(waveSwitch()?.checked === true && savedItems() === null, "The music wave shows on the collapsed bar by default");
+    await act(async () => { waveSwitch()!.click(); });
+    check(waveSwitch()?.checked === false && savedItems()?.items.find((item) => item.id === "music")?.hidden === true, "Turning the music wave off hides the bar's music item");
+    await act(async () => { waveSwitch()!.click(); });
+    check(waveSwitch()?.checked === true && !savedItems()?.items.find((item) => item.id === "music")?.hidden, "Turning it on shows it again");
+    localStorage.removeItem("focusd-island-collapsed-items");
+
     await openPage("general");
     const tuckedHover = [...document.querySelectorAll<HTMLElement>(".settings-row")].find((row) => row.querySelector(".settings-row__title")?.textContent === "鼠标移到隐藏的岛上");
     const tuckedHoverButton = (label: string) => [...(tuckedHover?.querySelectorAll<HTMLButtonElement>("button") ?? [])].find((button) => button.textContent === label);

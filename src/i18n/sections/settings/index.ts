@@ -13,6 +13,7 @@ import type { SettingsDeviceUseText } from "./deviceUse";
 import type { SettingsLevelPopupText } from "./levelPopup";
 import type { SettingsDeviceAlertsText } from "./deviceAlerts";
 import type { SettingsLyricsText } from "./lyrics";
+import type { SettingsMusicBarText } from "./musicBar";
 import type { SettingsCalendarText } from "./calendar";
 import type { SettingsBackupText } from "./backup";
 import type { SettingsShortcutsText } from "./shortcuts";
@@ -44,6 +45,7 @@ import * as deviceUse from "./deviceUse.ts";
 import * as levelPopup from "./levelPopup.ts";
 import * as deviceAlerts from "./deviceAlerts.ts";
 import * as lyrics from "./lyrics.ts";
+import * as musicBar from "./musicBar.ts";
 import * as calendar from "./calendar.ts";
 import * as backup from "./backup.ts";
 import * as shortcuts from "./shortcuts.ts";
@@ -85,6 +87,7 @@ export type SettingsText = {
   levelPopup: SettingsLevelPopupText;
   deviceAlerts: SettingsDeviceAlertsText;
   lyrics: SettingsLyricsText;
+  musicBar: SettingsMusicBarText;
   calendar: SettingsCalendarText;
   backup: SettingsBackupText;
 
@@ -139,6 +142,7 @@ export const zhCN: SettingsText = {
   levelPopup: levelPopup.zhCN,
   deviceAlerts: deviceAlerts.zhCN,
   lyrics: lyrics.zhCN,
+  musicBar: musicBar.zhCN,
   calendar: calendar.zhCN,
   backup: backup.zhCN,
 
@@ -193,6 +197,7 @@ export const en: SettingsText = {
   levelPopup: levelPopup.en,
   deviceAlerts: deviceAlerts.en,
   lyrics: lyrics.en,
+  musicBar: musicBar.en,
   calendar: calendar.en,
   backup: backup.en,
 
