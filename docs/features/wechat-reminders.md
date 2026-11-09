@@ -79,6 +79,8 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib wechat_reminders::tests::w
 
 ## 微信正文只读探测（尚未接入应用）
 
+> 2026-11-09 决定不做联系人和内容的读取，原因和各条路线的调研见 [wechat-message-content.md](../research/wechat-message-content.md)。
+
 本机微信版本为 `4.1.9.35`。2026-10-19 的 Windows 通知快照和随后 30 秒观察均没有发现微信通知记录；这只说明本次未取得通知正文，不能证明客户端永远不会发出系统通知。
 
 辅助功能探测在微信最小化时仅取得 3 个窗口外壳控件，文本控件和列表项均为 0。需要展开微信主窗口后继续检查，当前不能据此判定展开状态下的正文可读性，也未将此通道用于正式消息接收。
