@@ -16,7 +16,7 @@ import { ClaudeUsageGauge } from "../../features/claude-usage/ClaudeUsageGauge";
 import { CLAUDE_USAGE_GAUGE_WIDTH } from "../../features/claude-usage/usageRing";
 import { useBuiltinPlugin } from "../../features/plugins/useBuiltinPlugin";
 import type { AgentSessionSummary } from "../../features/agent-status/api";
-import { SessionRing } from "../../features/session-ring/SessionRing";
+import { SESSION_RING_STYLES, SessionRing, type SessionRingStyle } from "../../features/session-ring/SessionRing";
 import { sessionRingCounts } from "../../features/session-ring/ringCounts";
 import { listenIslandHover } from "./api";
 import type { CollapsedSlots } from "./types";
@@ -30,7 +30,7 @@ type CollapsedSlotsOptions = {
   paused: boolean;
   /** Agent activity the pet acts out. */
   agents: readonly AgentActivity[];
-  /** The island's agent sessions and the finished ones not yet seen, for the session ring. */
+  /** The sessions the Agent page lists (its filters applied) and the turns not yet seen, for the session ring. */
   sessions: readonly AgentSessionSummary[];
   unseen: ReadonlySet<string>;
   /** The AI Agent switch: the session ring takes the blue session count's place, so only while on. */
@@ -49,6 +49,8 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const usage = useBuiltinPlugin(CLAUDE_USAGE_PLUGIN_ID);
   const sessionRing = useBuiltinPlugin(SESSION_RING_PLUGIN_ID);
   const showRemaining = usage.settings.show === "remaining";
+  const ringStyle = SESSION_RING_STYLES.find((known) => known === sessionRing.settings.style) ?? ("ring" satisfies SessionRingStyle);
+  const ringCount = sessionRing.settings.showCount !== false;
   const mood = usePetMood(agents, center.enabled);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
@@ -66,12 +68,12 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       if (pet) slots.agentIcon = <PetSprite src={pet} mood={mood} paused={still} height={AGENT_ICON_PET_HEIGHT} />;
     }
     if (sessionRing.enabled && agentsOn) {
-      // Sessions are re-read every second, so their time is close enough to now.
-      const now = Date.now();
-      const counts = sessionRingCounts(sessions, unseen, now);
+      const counts = sessionRingCounts(sessions, unseen);
       // Nothing to show: the blue count stays (it is empty too when no session runs).
       if (counts.total > 0) {
-        slots.agentCount = <SessionRing sessions={sessions} unseen={unseen} counts={counts} now={now} onOpen={onOpenAgents} />;
+        slots.agentCount = (
+          <SessionRing sessions={sessions} unseen={unseen} counts={counts} style={ringStyle} showCount={ringCount} paused={still} onOpen={onOpenAgents} />
+        );
       }
     }
     if (usage.enabled) {
@@ -79,7 +81,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       slots.sideWidth = CLAUDE_USAGE_GAUGE_WIDTH;
     }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
-  }, [center.enabled, usage.enabled, showRemaining, sessionRing.enabled, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
+  }, [center.enabled, usage.enabled, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
 }
 
 /** Follows the native island hover here, so the slots above stay the same object. */
