@@ -45,6 +45,7 @@ test("pupils look toward the point and stop at the edge of the eye", () => {
 
 test("plugin settings pick a pattern, falling back to the eyes", () => {
   assert.deepEqual(centerPatternChoice({ pattern: "cat" }), { pattern: "cat", petId: null });
+  assert.deepEqual(centerPatternChoice({ pattern: "mark" }), { pattern: "mark", petId: null });
   assert.deepEqual(centerPatternChoice({ pattern: "pet", pet: " noir " }), { pattern: "pet", petId: "noir" });
   assert.deepEqual(centerPatternChoice({ pattern: "pet", pet: "" }), { pattern: "eyes", petId: null });
   assert.deepEqual(centerPatternChoice({ pattern: "dragon" }), { pattern: "eyes", petId: null });

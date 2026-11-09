@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  AGENT_ICON_MARK_EXTRA_WIDTH,
   AGENT_ICON_PET_HEIGHT,
+  CENTER_MARK_WIDTH,
   CENTER_PATTERN_PLUGIN_ID,
   CENTER_PATTERN_WIDTH,
   CENTER_PET_WIDTH,
+  CenterPattern,
   CollapsedCenter,
+  MARK_HEIGHT,
   PetSprite,
   centerPatternChoice,
   usePageHidden,
@@ -71,9 +75,14 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
     if (center.enabled) {
       const pet = typeof sheet === "string" ? sheet : null;
       slots.center = <CollapsedCenter choice={choice} sheet={sheet} mood={mood} paused={still} />;
-      slots.centerWidth = pet ? CENTER_PET_WIDTH : CENTER_PATTERN_WIDTH;
-      // While the bar names an agent the center is hidden, so the pet stands in for its icon.
+      const mark = choice.pattern === "mark";
+      slots.centerWidth = pet ? CENTER_PET_WIDTH : mark ? CENTER_MARK_WIDTH : CENTER_PATTERN_WIDTH;
+      // While the bar names an agent the center is hidden, so the pet or the mark stands in for its icon.
       if (pet) slots.agentIcon = <PetSprite src={pet} mood={mood} paused={still} height={AGENT_ICON_PET_HEIGHT} />;
+      else if (mark) {
+        slots.agentIcon = <CenterPattern pattern="mark" mood={mood} paused={still} height={MARK_HEIGHT} />;
+        slots.agentIconWidth = AGENT_ICON_MARK_EXTRA_WIDTH;
+      }
     }
     if (sessionRing.enabled && agentsOn) {
       const counts = sessionRingCounts(sessions, unseen);

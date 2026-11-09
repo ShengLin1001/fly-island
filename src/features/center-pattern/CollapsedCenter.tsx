@@ -15,6 +15,13 @@ export const CENTER_PET_WIDTH = 30;
  * "MM" the collapsed width reserves for the icon still fits it.
  */
 export const AGENT_ICON_PET_HEIGHT = 18;
+/**
+ * The mark, in the center and in place of the agent icon: its pill 24 px tall like the rings on
+ * the bar (the box adds room for its spring), 54 px wide. Px it needs beyond the 16 px icon.
+ */
+export const MARK_HEIGHT = 25.5;
+export const CENTER_MARK_WIDTH = 56;
+export const AGENT_ICON_MARK_EXTRA_WIDTH = 38;
 
 /**
  * The collapsed island's center: the chosen drawing, or the pet from `sheet` (`usePetSheet`),
@@ -31,7 +38,10 @@ export function CollapsedCenter({
   mood: PetMood;
   paused: boolean;
 }) {
-  if (choice.pattern !== "pet") return <CenterPattern pattern={choice.pattern} paused={paused} height={PATTERN_HEIGHT} />;
+  if (choice.pattern !== "pet") {
+    const height = choice.pattern === "mark" ? MARK_HEIGHT : PATTERN_HEIGHT;
+    return <CenterPattern pattern={choice.pattern} paused={paused} height={height} mood={mood} />;
+  }
   if (sheet === undefined) return null;
   if (sheet === null) return <CenterPattern pattern="eyes" paused={paused} height={PATTERN_HEIGHT} />;
   return <PetSprite src={sheet} mood={mood} paused={paused} height={CENTER_PET_HEIGHT} />;

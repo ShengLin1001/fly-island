@@ -102,6 +102,14 @@ function Gallery({ paused, mood }: { paused: boolean; mood?: PetMood }) {
           ))}
         </div>
       </section>
+      <section className="cp-section">
+        <h2>悬岛标志随 Agent 状态（放大 3 倍）：idle / running / waiting / failed / done</h2>
+        <div className="cp-row cp-zoom">
+          {(mood ? [mood] : MOODS).map((markMood) => (
+            <div className="cp-island cp-small" key={markMood} data-mark={markMood}><CenterPattern pattern="mark" mood={markMood} paused={paused} /></div>
+          ))}
+        </div>
+      </section>
       {pets.map((pet) => (
         <section className="cp-section" key={pet.id}>
           <h2>宠物 {pet.id}：idle / running / waiting / failed / done</h2>
@@ -162,6 +170,30 @@ async function runChecks() {
   expect(!fixture.querySelector(".cp-agent-icon"), "内置 SVG 图案不替换 Agent 图标");
   await slotWith({ pattern: "cat", pet: "" }, [], false);
   expect(fixture.querySelector(".cp-slot")!.childElementCount === 0, "插件关闭时不填槽位");
+
+  // The mark follows the same mood as the pet, but stays in the center.
+  const markIn = (agents: AgentActivity[]) => slotWith({ pattern: "mark", pet: "" }, agents)
+    .then(() => fixture.querySelector<SVGSVGElement>(".cp-slot .center-mark")!);
+  const lightFill = (mark: SVGSVGElement) => getComputedStyle(mark.querySelector(".center-mark-light circle")!).fill;
+  let mark = await markIn([]);
+  expect(mark.dataset.mood === "idle" && lightFill(mark) === "rgb(106, 191, 155)" && mark.querySelector(".center-mark-dash path") !== null,
+    "悬岛空闲：绿点、短横");
+  expect(getComputedStyle(mark.querySelector(".center-mark-pill")!).animationName === (reducedMotion ? "none" : "center-mark-open"),
+    reducedMotion ? "减弱动态时悬岛不弹开" : "悬岛空闲时胶囊定时弹开");
+  // The pill (16 of the box's 17 units) is 24 px tall, as the rings on the bar, in the center and before the title.
+  const pill = (selector: string) => fixture.querySelector(`${selector} .center-mark-pill`)?.getBoundingClientRect();
+  const centerPill = pill(".cp-slot .island__center-slot");
+  const iconPill = pill(".cp-agent-icon");
+  expect(centerPill !== undefined && Math.abs(centerPill.height - 24) < 0.6 && iconPill !== undefined && Math.abs(iconPill.height - 24) < 0.6,
+    `悬岛胶囊 24px 高（中心 ${centerPill?.height.toFixed(1)}px、标题前 ${iconPill?.height.toFixed(1)}px），和环一样`);
+  mark = await markIn([{ phase: "running", updatedAt: Date.now() }]);
+  expect(mark.querySelectorAll(".center-mark-typing circle").length === 3 && !mark.querySelector(".center-mark-dash path"), "悬岛运行时短横换成三个点");
+  mark = await markIn([{ phase: "waiting", updatedAt: Date.now() }]);
+  expect(lightFill(mark) === "rgb(255, 214, 10)", "悬岛等待确认时绿点变黄");
+  mark = await markIn([{ phase: "failed", updatedAt: Date.now() }]);
+  expect(lightFill(mark) === "rgb(255, 69, 58)", "悬岛失败时绿点变红");
+  mark = await markIn([{ phase: "completed", updatedAt: Date.now() }]);
+  expect(mark.dataset.mood === "done" && mark.querySelector(".center-mark-check") !== null, "悬岛刚完成时短横换成对勾");
 
   await render(<Gallery paused={false} />);
   for (const pattern of CENTER_PATTERNS) {

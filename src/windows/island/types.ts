@@ -33,6 +33,8 @@ export type CollapsedSlots = {
   gauges?: { id: string; node: ReactNode }[];
   /** Shown instead of the blue running-session count while AI Agent is on; empty keeps the count. */
   agentCount?: ReactNode;
+  /** Px `agentIcon` needs beyond the 16 px icon it replaces; the collapsed island widens by it while the bar names an agent. */
+  agentIconWidth?: number;
   /** Px that `center` needs; the collapsed island widens by it while the centre shows. */
   centerWidth?: number;
   /** Px that the shown `gauges` and `agentCount` need with their gaps; the collapsed island widens by it. */
