@@ -14,6 +14,7 @@ mod magpie;
 mod markers;
 mod notifications;
 mod orca;
+mod plan_usage;
 pub(crate) mod reply_marker;
 mod reply_text;
 pub(crate) mod remote_fetch;
@@ -424,6 +425,33 @@ pub async fn get_codex_usage() -> Result<Option<usage::AgentUsage>, String> {
         .map_err(|error| format!("Failed to join the Codex usage task: {error}"))
 }
 
+/// GLM's or Kimi's coding plan usage (`provider` "glm" or "kimi") for the usage rings, asked with
+/// the API key saved for it; `refresh` (a click on the ring) asks again unless it just did.
+#[tauri::command]
+pub async fn get_plan_usage(provider: String, refresh: bool) -> Result<usage::AgentUsage, String> {
+    let provider = plan_usage::PlanProvider::parse(&provider)?;
+    Ok(plan_usage::read(provider, refresh).await)
+}
+
+/// Saves GLM's or Kimi's API key in the Windows Credential Manager (empty removes it); returns
+/// whether one is saved now.
+#[tauri::command]
+pub async fn set_plan_key(provider: String, key: String) -> Result<bool, String> {
+    let provider = plan_usage::PlanProvider::parse(&provider)?;
+    tauri::async_runtime::spawn_blocking(move || plan_usage::save_key(provider, &key))
+        .await
+        .map_err(|error| format!("Failed to join the key task: {error}"))?
+}
+
+/// Whether an API key is saved for GLM or Kimi; the key itself never leaves the native side.
+#[tauri::command]
+pub async fn has_plan_key(provider: String) -> Result<bool, String> {
+    let provider = plan_usage::PlanProvider::parse(&provider)?;
+    tauri::async_runtime::spawn_blocking(move || plan_usage::has_key(provider))
+        .await
+        .map_err(|error| format!("Failed to join the key task: {error}"))?
+}
+
 /// The icon of a session host (`host.exe` of a listed session) as a PNG data URL; null when the
 /// path is not an existing .exe or it has no icon.
 #[tauri::command]
@@ -575,6 +603,9 @@ macro_rules! tauri_commands {
             crate::agent_status::refresh_agent_remote_hosts,
             crate::agent_status::get_agent_usage,
             crate::agent_status::get_codex_usage,
+            crate::agent_status::get_plan_usage,
+            crate::agent_status::set_plan_key,
+            crate::agent_status::has_plan_key,
             crate::agent_status::reply_marker::get_reply_marker_state,
             crate::agent_status::reply_marker::set_reply_marker,
             crate::agent_status::sound_packs::list_sound_packs,

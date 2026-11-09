@@ -1,0 +1,11 @@
+/* Under the key field: whether a key is saved on the left, save and remove on the right. */
+.plan-key__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.plan-key__status {
+  margin: 0;
+}

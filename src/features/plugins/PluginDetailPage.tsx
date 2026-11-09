@@ -4,6 +4,7 @@ import { SelectControl } from "../../components/controls/SelectControl";
 import { ToggleControl } from "../../components/controls/ToggleControl";
 import { useLocale, useTranslation } from "../../i18n";
 import { CENTER_PATTERN_PET_KEY, CENTER_PATTERN_PLUGIN_ID, petChoices, usePetChoices } from "../center-pattern";
+import { PlanKeyFields } from "../claude-usage/PlanKeyFields";
 import { SSH_TUNNEL_PLUGIN_ID, SshTunnelHosts, useSshTunnelProxy } from "../ssh-tunnel";
 import { PLUGIN_MEMORY_LIMITS_MB, type PluginInfo } from "./api";
 import type { PromptedPermission } from "./promptedPermissions";
@@ -133,6 +134,8 @@ export function PluginDetailPage({
         )}
       </section>
 
+      {/* The usage rings' GLM and Kimi keys, which plugin settings (plain JSON on disk) must not hold. */}
+      {plugin.id === "focusd.claude-usage" ? <PlanKeyFields settings={plugin.settings} disabled={busy} /> : null}
       {plugin.builtin && plugin.id === SSH_TUNNEL_PLUGIN_ID ? <SshTunnelHosts /> : null}
 
       {plugin.permissions.includes("island:notify") ? (

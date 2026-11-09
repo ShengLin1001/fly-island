@@ -30,15 +30,17 @@ export function isStale(usage: AgentUsage, now: number) {
 }
 
 /**
- * Where the numbers come from and how old they are, after why asking Anthropic directly failed
- * when it did: the end of the usage ring's card and the Agent page's usage line card.
+ * Where the numbers come from and how old they are, after why asking directly (Anthropic, or GLM
+ * and Kimi with the saved key) failed when it did: the end of the usage ring's card and the Agent
+ * page's usage line card.
  */
 export function usageSourceLines(usage: AgentUsage, now: number, text: ClaudeUsageText): HoverCardLine[] {
   const lines: HoverCardLine[] = [];
-  if (usage.error) lines.push({ text: text.errors[usage.error.kind] });
+  const plan = usage.source === "glm" || usage.source === "kimi";
+  if (usage.error) lines.push({ text: (plan ? text.planErrors : text.errors)[usage.error.kind] });
   if (usage.updatedAt !== null) {
     const minutes = Math.max(0, Math.floor((now - usage.updatedAt) / 60_000));
-    const source = { api: text.fromApi, magpie: text.fromMagpie, codex: text.fromCodex, hud: text.fromHud }[usage.source ?? "hud"];
+    const source = { api: text.fromApi, magpie: text.fromMagpie, codex: text.fromCodex, hud: text.fromHud, glm: text.fromGlm, kimi: text.fromKimi }[usage.source ?? "hud"];
     lines.push({ text: text.updated(text.updatedAgo(minutes), source), muted: true });
   }
   return lines;
