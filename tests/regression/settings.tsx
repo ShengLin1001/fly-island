@@ -202,6 +202,19 @@ if (!automated) {
     check(storedSettings().opacity === DEFAULT_SETTINGS.opacity, "Confirming resets the appearance");
     check(storedSettings().carryOverIncompleteTodos === false, "Resetting the appearance keeps todo settings");
     check(!document.querySelector(".island-preview__island--glass"), "The island preview starts classic");
+    // Items on the collapsed bar (C12): the default layout, then moving, hiding and resetting.
+    const zoneRows = (name: string) => [...(document.querySelector(`.collapsed-items__zone[aria-label="${name}"]`)?.querySelectorAll(".plugin-pages__name") ?? [])].map((row) => row.textContent);
+    const itemButton = (label: string) => document.querySelector<HTMLButtonElement>(`.collapsed-items button[aria-label="${label}"]`);
+    const savedItems = () => JSON.parse(localStorage.getItem("focusd-island-collapsed-items") ?? "null") as { items: { id: string; zone: string; hidden?: boolean }[] } | null;
+    check(zoneRows("左侧").join("|") === "Agent 状态灯" && zoneRows("右侧")[0] === "新邮件提醒" && zoneRows("右侧").includes("待办同步示例")
+      && zoneRows("右侧")[zoneRows("右侧").length - 1] === "会话数 / 会话环" && savedItems() === null, "The collapsed bar items list the default layout, plugin status items included, without saving anything");
+    await act(async () => { itemButton("移到左侧：会话数 / 会话环")!.click(); });
+    await act(async () => { itemButton("上移：会话数 / 会话环")!.click(); });
+    check(zoneRows("左侧").join("|") === "会话数 / 会话环|Agent 状态灯" && savedItems()?.items[0].id === "session-count", "An item moves to the other side and up, and the order is saved");
+    await act(async () => { document.querySelector<HTMLElement>(".collapsed-items__zone[aria-label='左侧'] li:nth-child(2) .toggle-control, .collapsed-items__zone[aria-label='左侧'] li:nth-child(2) [role='switch']")?.click(); });
+    check(savedItems()?.items.find((item) => item.id === "status-light")?.hidden === true, "The status light can be hidden");
+    await act(async () => { [...document.querySelectorAll<HTMLButtonElement>(".collapsed-items__reset")][0].click(); });
+    check(savedItems() === null && zoneRows("左侧").join("|") === "Agent 状态灯", "Reset to default clears the saved order");
     const glassButton = [...document.querySelectorAll<HTMLButtonElement>(".editor-panel button")].find((button) => button.textContent === "液态玻璃");
     await act(async () => { glassButton!.click(); });
     check(document.querySelectorAll(".island-preview__island--glass").length === 2, "Choosing liquid glass shows on both preview islands");

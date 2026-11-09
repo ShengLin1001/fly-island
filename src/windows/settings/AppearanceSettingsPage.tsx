@@ -1,3 +1,4 @@
+import { CollapsedItemsSection } from "../../features/appearance/CollapsedItemsSection";
 import { ColorSettingsSection } from "../../features/appearance/ColorSettingsSection";
 import { DisplaySettingsSection } from "../../features/appearance/DisplaySettingsSection";
 import { IslandPreview } from "../../features/appearance/IslandPreview";
@@ -28,6 +29,7 @@ export function AppearanceSettingsPage({
         onPreviewIsland={(expanded) => requestPanelPreview(expanded ? "expanded" : "collapsed")}
       />
       <DisplaySettingsSection settings={settings} onSettingsChange={onSettingsChange} />
+      <CollapsedItemsSection />
       {/* Last: saving the look you just tuned, or going back to one saved before. */}
       <PresetSettingsSection {...presets} />
     </>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { listenPluginViewChanged, listPluginViews, type PluginStatusEntry, type PluginViewEntry, type PluginViewsSnapshot } from "./api";
+import { listenPluginViewChanged, listPluginViews, type PluginStatusEntry, type PluginStatusItemEntry, type PluginViewEntry, type PluginViewsSnapshot } from "./api";
 
-type Part = "views" | "status";
+type Part = "views" | "status" | "statusItems";
 
 /**
  * One part of the plugin views snapshot, read again only on the events that
@@ -16,7 +16,8 @@ function usePluginViewsPart<K extends Part>(part: K): PluginViewsSnapshot[K] {
   const refresh = useCallback(() => {
     listPluginViews()
       .then((snapshot) => {
-        const next = snapshot[part];
+        // Older answers (and test mocks) may lack a part: read it as empty.
+        const next = snapshot[part] ?? ([] as PluginViewsSnapshot[K]);
         const text = JSON.stringify(next);
         if (text === lastText.current) return;
         lastText.current = text;
@@ -54,4 +55,9 @@ export function usePluginViews(): PluginViewEntry[] {
 /** The status texts plugins set now (status.update). */
 export function usePluginStatus(): PluginStatusEntry[] {
   return usePluginViewsPart("status");
+}
+
+/** Every status item the plugins that are on declare, set or not (for the collapsed bar settings). */
+export function usePluginStatusItemList(): PluginStatusItemEntry[] {
+  return usePluginViewsPart("statusItems");
 }

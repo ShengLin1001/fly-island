@@ -57,8 +57,11 @@ export type PluginStatusEntry = {
   ring?: number;
 };
 
+/** A status item a plugin declares, set or not, for the collapsed bar settings (C12). */
+export type PluginStatusItemEntry = { pluginId: string; pluginName: ViewLocalizedText; itemId: string };
+
 // 与 src-tauri/src/plugin_host/views.rs 中的 PluginViewsSnapshot 对应。
-export type PluginViewsSnapshot = { views: PluginViewEntry[]; status: PluginStatusEntry[] };
+export type PluginViewsSnapshot = { views: PluginViewEntry[]; status: PluginStatusEntry[]; statusItems: PluginStatusItemEntry[] };
 
 // 与 src-tauri/src/plugin_host/views.rs 中的 VIEW_EVENT 对应。
 const PLUGIN_VIEW_CHANGED_EVENT = "plugin-view-changed";

@@ -13,7 +13,7 @@ import {
   type AgentActivity,
 } from "../../features/center-pattern";
 import { ClaudeUsageGauge } from "../../features/claude-usage/ClaudeUsageGauge";
-import { CLAUDE_USAGE_GAUGE_WIDTH, shownUsageProviders, type UsageProvider } from "../../features/claude-usage/usageRing";
+import { CLAUDE_USAGE_GAUGE_WIDTH, shownUsageProviders, usageItemId, type UsageProvider } from "../../features/claude-usage/usageRing";
 import { useBuiltinPlugin } from "../../features/plugins/useBuiltinPlugin";
 import type { AgentSessionSummary } from "../../features/agent-status/api";
 import { SESSION_RING_STYLES, SessionRing, type SessionRingStyle } from "../../features/session-ring/SessionRing";
@@ -92,9 +92,6 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
     return Object.keys(slots).length === 0 ? EMPTY : slots;
   }, [center.enabled, usage.enabled, providers, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
 }
-
-/** The collapsed bar item of one provider's usage ring. */
-export const usageItemId = (provider: UsageProvider) => `usage:${provider.id}`;
 
 /** Follows the native island hover here, so the slots above stay the same object. */
 function UsageGaugeSlot({ providers, showRemaining }: { providers: readonly UsageProvider[]; showRemaining: boolean }) {

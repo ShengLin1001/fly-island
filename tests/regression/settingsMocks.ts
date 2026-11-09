@@ -61,6 +61,7 @@ mockIPC((command, payload) => {
     case "get_updater_proxy": return null;
     case "plugin:app|version": return "0.0.0-test";
     case "get_cached_plugin_market": return null;
+    case "list_plugin_views": return { views: [], status: [], statusItems: [{ pluginId: "dev.example.todo-sync", pluginName: { "zh-CN": "待办同步示例", en: "Todo sync example" }, itemId: "count" }] };
     case "get_plugin_market_likes": return { "dev.example.new": { count: 12, url: "https://github.com/TixXin/focusd-plugins/discussions/9" }, "dev.example.todo-sync": { count: 3, url: "https://github.com/TixXin/focusd-plugins/discussions/8" } };
     case "get_plugin_market": return {
       indexUrl: "https://raw.githubusercontent.com/TixXin/focusd-plugins/main/index.json",

@@ -35,6 +35,9 @@ export const USAGE_PROVIDERS: readonly { id: UsageProviderId; name: string; colo
 
 export type UsageProvider = (typeof USAGE_PROVIDERS)[number];
 
+/** The collapsed bar item of one provider's usage ring (features/appearance/collapsedItems.ts). */
+export const usageItemId = (provider: Pick<UsageProvider, "id">) => `usage:${provider.id}`;
+
 /** The providers switched on in the plugin's settings; an unset switch takes its default. */
 export function shownUsageProviders(settings: Record<string, unknown>): UsageProvider[] {
   return USAGE_PROVIDERS.filter(({ id, defaultOn }) => (typeof settings[id] === "boolean" ? settings[id] : defaultOn));

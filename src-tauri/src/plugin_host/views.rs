@@ -457,11 +457,23 @@ pub struct PluginStatusEntry {
     text: StatusText,
 }
 
+/// A status item a plugin declares, set or not: the collapsed bar settings list them
+/// so the user can place them (C12). Mirrored by `PluginStatusItemEntry` in src/features/plugin-views/api.ts.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginStatusItemEntry {
+    plugin_id: String,
+    plugin_name: LocalizedText,
+    item_id: String,
+}
+
 /// Mirrored by `PluginViewsSnapshot` in src/features/plugin-views/api.ts.
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginViewsSnapshot {
     views: Vec<PluginViewEntry>,
     status: Vec<PluginStatusEntry>,
+    status_items: Vec<PluginStatusItemEntry>,
 }
 
 /// The views of plugins that are switched on and allowed to run, with each
@@ -473,6 +485,7 @@ pub(super) fn snapshot() -> Result<PluginViewsSnapshot, String> {
     let store = lock(store());
     let mut views = Vec::new();
     let mut status = Vec::new();
+    let mut status_items = Vec::new();
     for plugin in lock(&host.installed).iter() {
         let Ok(manifest) = &plugin.manifest else { continue };
         // Development plugins (dev.rs) are on without a switch, like in grants.rs.
@@ -495,6 +508,11 @@ pub(super) fn snapshot() -> Result<PluginViewsSnapshot, String> {
             });
         }
         for item in &manifest.contributes.status_items {
+            status_items.push(PluginStatusItemEntry {
+                plugin_id: manifest.id.clone(),
+                plugin_name: manifest.name.clone(),
+                item_id: item.id.clone(),
+            });
             if let Some(text) = store.status.get(&slot(&manifest.id, "status", &item.id)) {
                 status.push(PluginStatusEntry {
                     plugin_id: manifest.id.clone(),
@@ -505,5 +523,5 @@ pub(super) fn snapshot() -> Result<PluginViewsSnapshot, String> {
             }
         }
     }
-    Ok(PluginViewsSnapshot { views, status })
+    Ok(PluginViewsSnapshot { views, status, status_items })
 }
