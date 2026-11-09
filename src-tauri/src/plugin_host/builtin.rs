@@ -151,8 +151,8 @@ const SESSION_RING_MANIFEST: &str = r#"{
   "id": "focusd.session-ring",
   "name": { "zh-CN": "Agent 会话环", "en": "Agent session ring" },
   "description": {
-    "zh-CN": "在收起条上代替蓝色会话数，三种样式：每个会话一个像素格（最多 3 × 3）、中间写会话数的分段小环、会话数加一段状态条。等你确认、等你回复、运行、完成各有颜色，悬停列出等你处理的会话，点击打开 Agent 页。显示的就是 Agent 页列出的会话（Claude Code 和 Codex），跟着它隐藏、移除；需要开启 AI Agent。",
-    "en": "Takes the blue session count's place on the collapsed bar, in one of three styles: a pixel per session (up to 3 × 3), a small segmented ring with the count in the middle, or the count with a state bar. Needs you, your turn, running and done each have a colour; hovering lists the sessions waiting on you and a click opens the Agent page. It shows exactly the sessions the Agent page lists (Claude Code and Codex) and drops them as the page hides or removes them; needs AI Agent switched on."
+    "zh-CN": "在收起条上代替蓝色会话数，四种样式：每个会话一个像素格（最多 3 × 3）、中间写会话数的分段小环、会话数加一段状态条、信号格（每种颜色一根柱子，每个会话一格横条，柱子越高会话越多）。等你确认、等你回复、运行、完成各有颜色，悬停列出等你处理的会话，点击打开 Agent 页。显示的就是 Agent 页列出的会话（Claude Code 和 Codex），跟着它隐藏、移除；需要开启 AI Agent。",
+    "en": "Takes the blue session count's place on the collapsed bar, in one of four styles: a pixel per session (up to 3 × 3), a small segmented ring with the count in the middle, the count with a state bar, or signal bars (a column per colour, a bar per session, so the taller the column the more sessions). Needs you, your turn, running and done each have a colour; hovering lists the sessions waiting on you and a click opens the Agent page. It shows exactly the sessions the Agent page lists (Claude Code and Codex) and drops them as the page hides or removes them; needs AI Agent switched on."
   },
   "version": "1.1.0",
   "apiVersion": 1,
@@ -168,7 +168,8 @@ const SESSION_RING_MANIFEST: &str = r#"{
         "options": [
           { "value": "grid", "title": { "zh-CN": "像素格", "en": "Pixel grid" } },
           { "value": "ring", "title": { "zh-CN": "分段环", "en": "Segmented ring" } },
-          { "value": "bar", "title": { "zh-CN": "状态条", "en": "State bar" } }
+          { "value": "bar", "title": { "zh-CN": "状态条", "en": "State bar" } },
+          { "value": "signal", "title": { "zh-CN": "信号格", "en": "Signal bars" } }
         ]
       }
     ]

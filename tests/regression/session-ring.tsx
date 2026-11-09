@@ -77,6 +77,9 @@ const OPEN_AGENTS = () => { openedPage = "agents"; };
 // One array for every render: a new one each time would read as new agent activity.
 const NO_AGENTS: AgentActivity[] = [];
 
+// The appearance's corners as stageStyle.ts sets them on the stage; none: the stylesheet's defaults.
+let corners: CSSProperties = {};
+
 function Island({ agents, count, list, report }: { agents: boolean; count: number; list: AgentSessionSummary[]; report: (slots: CollapsedSlots) => void }) {
   const slots = useCollapsedSlots({ paused: true, agents: NO_AGENTS, sessions: list, unseen: UNSEEN, agentsOn: agents, onOpenAgents: OPEN_AGENTS });
   report(slots);
@@ -84,7 +87,7 @@ function Island({ agents, count, list, report }: { agents: boolean; count: numbe
   const wechat = useWeChatReminders(true);
   const qqMail = useMail(true);
   const preview = useLatestMessagePreview(qq, wechat, qqMail, NO_PLUGIN_NOTIFICATIONS);
-  return <div className="stage" style={{ "--collapsed-island-width": "300px" } as CSSProperties}>
+  return <div className="stage" style={{ "--collapsed-island-width": "300px", ...corners } as CSSProperties}>
     <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={NO_PLUGIN_NOTIFICATIONS} preview={preview}
       mode="collapsed" page="todo" isTucked={false} isDetached={true} showTitle={false}
       showCollapsedText={true} collapsedTaskTitle="剩余3个待办" collapsedTodoCount={null} agentSession={null} activeAgentSessionCount={count}
@@ -156,8 +159,34 @@ async function runChecks() {
     check(bar.querySelector(".session-bar__count")?.textContent === "6" && parts.map((part) => part.dataset.state).join(",") === "needs,yourturn,working,done"
       && parts[2].getBoundingClientRect().width > parts[0].getBoundingClientRect().width,
       "状态条：写总数，每种状态一段，按会话数分长短");
-    pluginSettings = {};
+    pluginSettings = { style: "signal" };
+    corners = { "--island-corner-radius-size": 16, "--island-corner-shape": "squircle" } as CSSProperties;
+    [bar] = await mount("样式选信号格：每种颜色一根柱子，每个会话一格（岛屿圆角 16、方圆）", true);
+    const columns = [...bar.querySelectorAll<HTMLElement>(".session-signal__column")];
+    const bars = (index: number) => [...columns[index].querySelectorAll<HTMLElement>(".session-signal__bar")];
+    const box16 = bars(0)[0].getBoundingClientRect();
+    check(columns.map((column) => `${column.dataset.column}${column.querySelectorAll("[data-state]").length}`).join(",") === "done2,working2,yourturn1,needs1",
+      "信号格：从左到右完成、运行、等你回复、等你确认，每个会话亮一格");
+    check(box16.height === 3 && box16.width === 6 && getComputedStyle(bars(3)[0]).backgroundColor === "rgb(255, 69, 58)"
+      && columns.every((column) => column.children.length === 5 && column.getBoundingClientRect().height === 19)
+      && box16.bottom === columns[0].getBoundingClientRect().bottom && !bars(3)[1].dataset.state,
+    "横条 6×3px、状态色，每根柱子 5 格一样高，从下往上亮，没亮的是暗格");
+    const radius16 = parseFloat(getComputedStyle(bars(0)[0]).borderTopLeftRadius);
+    corners = { "--island-corner-radius-size": 40, "--island-corner-shape": "round" } as CSSProperties;
+    [bar] = await mount("信号格：岛屿圆角 40、圆角样式「圆角」", true);
+    const round = bar.querySelector<HTMLElement>(".session-signal__bar")!;
+    check(Math.abs(radius16 - (16 * 22 / 30) * 3 / 38) < 0.01 && getComputedStyle(round).borderTopLeftRadius === "1.5px"
+      && getComputedStyle(round).getPropertyValue("corner-shape") !== getComputedStyle(bars(0)[0]).getPropertyValue("corner-shape"),
+    "横条圆角跟外观的岛屿圆角等比缩放（最大半个条高），圆角样式（方圆 / 圆角）跟着变");
+    corners = {};
     sessions = CROWD;
+    [bar] = await mount("信号格：12 个会话，绿柱超过 5 格时横条变 2px", true);
+    const green = [...bar.querySelectorAll<HTMLElement>(".session-signal__column[data-column='working'] .session-signal__bar")];
+    check(green.length === 7 && green[0].getBoundingClientRect().height === 2 && green[6].dataset.state === "stale"
+      && bar.querySelectorAll(".session-signal__column[data-column='done'] .session-signal__bar").length === 7,
+    "一根柱子超过 5 格时每根柱子都加到最多 7 格、横条变 2px，可能已停的画在上面");
+
+    pluginSettings = {};
     [bar] = await mount("12 个会话：最后一格是加号", true);
     const crowd = [...bar.querySelectorAll<HTMLElement>(".session-grid__cell")];
     check(crowd.length === 9 && crowd[8].dataset.state === "more" && crowd[0].dataset.state === "needs", "超过 9 个会话：亮最急的 8 个，最后一格是加号");
@@ -196,12 +225,19 @@ else {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: false });
   // Every style with 1, 3, 6 and 12 sessions, for looking at side by side.
   const sets: [string, AgentSessionSummary[]][] = [["1", BUSY.slice(2, 3)], ["3", BUSY.slice(0, 3)], ["6", BUSY], ["12", CROWD]];
-  for (const [style, name] of [["grid", "像素格"], ["ring", "分段环"], ["bar", "状态条"]]) {
+  for (const [style, name] of [["grid", "像素格"], ["ring", "分段环"], ["bar", "状态条"], ["signal", "信号格"]]) {
     pluginSettings = { style };
     for (const [count, list] of sets) {
       sessions = list;
       await mount(`${name}：${count} 个会话`, true);
     }
   }
+  // Signal bars under the appearance's corners: the smallest radius, the largest, and round.
+  sessions = BUSY;
+  for (const [radius, shape] of [[16, "squircle"], [40, "squircle"], [16, "round"]] as const) {
+    corners = { "--island-corner-radius-size": radius, "--island-corner-shape": shape } as CSSProperties;
+    await mount(`信号格：岛屿圆角 ${radius}，${shape === "round" ? "圆角" : "方圆"}`, true);
+  }
+  corners = {};
   results.textContent = "演示：收起条上的 Agent 会话环。加 ?test=1 运行检查。";
 }

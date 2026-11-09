@@ -73,6 +73,31 @@ export function sessionGridCells(counts: SessionRingCounts): SessionGridCell[] {
   return cells.length > SESSION_GRID_MAX ? [...cells.slice(0, SESSION_GRID_MAX - 1), "more"] : cells;
 }
 
+/** Most bars a signal column holds; the hover card still counts them all. */
+export const SESSION_SIGNAL_MAX = 7;
+
+/** A signal column: its colour's state and one bar per session, bottom first. */
+export type SessionSignalColumn = { key: SessionRingState; bars: SessionRingState[] };
+
+/** Signal columns from left to right, least urgent first; silent running sessions sit dimmed on the green one. */
+const SIGNAL_COLUMNS: readonly SessionRingState[][] = [["done"], ["working", "stale"], ["yourturn"], ["needs"]];
+
+/**
+ * The signal style's columns: one per colour that has sessions (a colour with none has no column),
+ * one lit bar per session, up to SESSION_SIGNAL_MAX. Every column has `slots` bars, five or as
+ * many as the tallest needs, the unlit ones dim, so the columns keep one height and the lit part
+ * reads as the count. Bars are 3px with five slots, 2px past that.
+ */
+export function sessionSignal(counts: SessionRingCounts): { columns: SessionSignalColumn[]; slots: number; bar: 2 | 3 } {
+  const columns = SIGNAL_COLUMNS.map((states) => ({
+    key: states[0],
+    bars: states.flatMap((state) => Array<SessionRingState>(counts[state]).fill(state)).slice(0, SESSION_SIGNAL_MAX),
+  })).filter(({ bars }) => bars.length > 0);
+  const tallest = Math.max(0, ...columns.map(({ bars }) => bars.length));
+  const slots = Math.max(5, tallest);
+  return { columns, slots, bar: slots === 5 ? 3 : 2 };
+}
+
 /** One segment per state that has sessions, in ring order. */
 export function sessionRingSegments(counts: SessionRingCounts): RingSegment[] {
   return SESSION_RING_STATES.filter(({ key }) => counts[key] > 0).map(({ key, color }) => ({ value: counts[key], color }));

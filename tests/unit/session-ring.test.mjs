@@ -3,12 +3,14 @@ import test from "node:test";
 import {
   SESSION_GRID_MAX,
   SESSION_RING_STATES,
+  SESSION_SIGNAL_MAX,
   sessionGridCells,
   sessionRingCardLines,
   sessionRingCounts,
   sessionRingSegments,
   sessionRingState,
   sessionRingSummary,
+  sessionSignal,
 } from "../../src/features/session-ring/ringCounts.ts";
 import { en, zhCN } from "../../src/i18n/sections/sessionRing.ts";
 
@@ -118,4 +120,24 @@ test("the pixel grid lights one cell per session in ring order, with a plus past
   // The least urgent are the ones left off; the last cell says there are more.
   assert.deepEqual(cells, ["needs", "needs", "yourturn", "yourturn", "yourturn", "working", "working", "working", "more"]);
   assert.deepEqual(sessionGridCells(sessionRingCounts([], NONE)), []);
+});
+
+test("signal bars: a column per colour with sessions, least urgent left, a bar per session", () => {
+  const counts = { needs: 1, yourturn: 0, working: 2, stale: 1, done: 3, total: 7 };
+  assert.deepEqual(sessionSignal(counts), {
+    columns: [
+      { key: "done", bars: ["done", "done", "done"] },
+      // Silent running sessions are dimmed bars on top of the green column.
+      { key: "working", bars: ["working", "working", "stale"] },
+      { key: "needs", bars: ["needs"] },
+    ],
+    slots: 5,
+    bar: 3,
+  });
+  const six = sessionSignal({ needs: 0, yourturn: 6, working: 1, stale: 0, done: 0, total: 7 });
+  assert.deepEqual([six.slots, six.bar], [6, 2], "past five in a column, every column gets more, thinner bars");
+  const crowd = sessionSignal({ needs: 0, yourturn: 0, working: 12, stale: 0, done: 0, total: 12 });
+  assert.equal(crowd.columns[0].bars.length, SESSION_SIGNAL_MAX);
+  assert.equal(crowd.slots, SESSION_SIGNAL_MAX);
+  assert.deepEqual(sessionSignal(sessionRingCounts([], NONE)).columns, []);
 });

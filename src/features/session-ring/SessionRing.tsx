@@ -9,6 +9,7 @@ import {
   sessionRingCardLines,
   sessionRingSegments,
   sessionRingSummary,
+  sessionSignal,
   type SessionRingCounts,
 } from "./ringCounts.ts";
 import "./SessionRing.css";
@@ -17,7 +18,7 @@ import "./SessionRing.css";
 export const SESSION_RING_SIZE = 24;
 
 /** The plugin's "style" setting. */
-export const SESSION_RING_STYLES = ["grid", "ring", "bar"] as const;
+export const SESSION_RING_STYLES = ["grid", "ring", "bar", "signal"] as const;
 export type SessionRingStyle = (typeof SESSION_RING_STYLES)[number];
 
 const STATE_COLORS: Record<string, string> = Object.fromEntries(SESSION_RING_STATES.map(({ key, color }) => [key, color]));
@@ -66,8 +67,27 @@ function SessionBar({ counts }: { counts: SessionRingCounts }) {
 }
 
 /**
+ * Signal bars: a column per colour that has sessions, least urgent on the left, a bar lit per
+ * session from the bottom, the rest dim, like a level meter.
+ */
+function SessionSignal({ counts }: { counts: SessionRingCounts }) {
+  const { columns, slots, bar } = sessionSignal(counts);
+  return (
+    <span className="session-signal" style={{ "--signal-bar": bar } as CSSProperties} aria-hidden="true">
+      {columns.map(({ key, bars }) => (
+        <span key={key} className="session-signal__column" data-column={key}>
+          {Array.from({ length: slots }, (_, index) => (
+            <span key={index} className="session-signal__bar" data-state={bars[index]} style={colorOf(bars[index])} />
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
  * The Agent page's sessions on the collapsed bar: a pixel grid, a segmented ring with the count
- * in the middle, or a count with a state bar.
+ * in the middle, a count with a state bar, or signal bars.
  */
 export function SessionRing({ sessions, unseen, counts, style, paused, onOpen }: SessionRingProps) {
   const t = useTranslation();
@@ -98,6 +118,8 @@ export function SessionRing({ sessions, unseen, counts, style, paused, onOpen }:
           />
         ) : style === "bar" ? (
           <SessionBar counts={counts} />
+        ) : style === "signal" ? (
+          <SessionSignal counts={counts} />
         ) : (
           <SessionGrid counts={counts} />
         )}
