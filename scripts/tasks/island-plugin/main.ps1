@@ -32,29 +32,51 @@ function Read-Settings($settings) {
 
 function Get-Field($task, [string]$Name) { [string]$task.$Name }
 
-function New-Item-Row($task) {
-    $parts = @()
+# "12 minutes ago" for a claim made today, else the date: the board says how fresh a claim is.
+function Format-Ago([string]$Claimed) {
+    try { $at = [DateTime]::ParseExact($Claimed, 'yyyy-MM-dd HH:mm', [Globalization.CultureInfo]::InvariantCulture) } catch { return $Claimed }
+    $minutes = [int][Math]::Floor(([DateTime]::Now - $at).TotalMinutes)
+    if ($minutes -lt 1) { return (Text '\u521a\u521a') }
+    if ($minutes -lt 60) { return "$minutes$(Text '\u5206\u949f\u524d')" }
+    if ($minutes -lt 1440) { return "$([int][Math]::Floor($minutes / 60))$(Text '\u5c0f\u65f6\u524d')" }
+    $at.ToString('M-d')
+}
+
+# One row: the title alone on top; under it the id, who and where, how long ago, and what it
+# waits on; on the right one short mark (children done, its issue, or a handoff). The icon
+# says which group it is in, so a row read on its own still says what it is.
+function New-Item-Row($task, [string]$Icon) {
+    $parts = @(Get-Field $task 'id')
     if (Get-Field $task 'owner') { $parts += Get-Field $task 'owner' }
     if (Get-Field $task 'lane') { $parts += "lane $(Get-Field $task 'lane')" }
-    if (Get-Field $task 'claimed') { $parts += Get-Field $task 'claimed' }
-    if ($task.stale) { $parts += "! $($task.stale)" }
+    if (Get-Field $task 'claimed') { $parts += Format-Ago (Get-Field $task 'claimed') }
+    if ($task.stale) { $parts += [string]$task.stale }
     if (@($task.blockedBy).Count -gt 0) { $parts += "$(Text '\u7b49') $(@($task.blockedBy) -join ', ')" }
+    if ((Get-Field $task 'needs') -eq 'user') { $parts += (Text '\u9700\u8981\u4f60\u672c\u4eba') }
     $row = @{
         id = "task-$(Get-Field $task 'id')"
-        title = "$(Get-Field $task 'id')  $(Get-Field $task 'title')"
+        title = Get-Field $task 'title'
+        subtitle = $parts -join " $([char]0x00B7) "
+        icon = $Icon
         action = 'open'
     }
-    if ($parts.Count -gt 0) { $row.subtitle = $parts -join ' - ' }
-    if ($task.handoff) { $row.note = (Text '\u6709\u4ea4\u63a5') }
+    if ($task.children) { $row.note = "$($task.children.done)/$($task.children.total)" }
+    elseif (Get-Field $task 'issue') { $row.note = "#$(Get-Field $task 'issue')" }
+    elseif ($task.handoff) { $row.note = (Text '\u6709\u4ea4\u63a5') }
     $row
 }
 
 function Send-Model([bool]$Loading = $false) {
     # needsUser: waiting for the user's answer, or work only the user can do (needs: user).
-    $waiting = @($script:Tasks | Where-Object { $_.needsUser })
-    $stale = @($script:Tasks | Where-Object { $_.stale })
-    $active = @($script:Tasks | Where-Object { $_.status -eq (Text '\u8fdb\u884c\u4e2d') -and -not $_.stale })
-    $todo = @($script:Tasks | Where-Object { $_.status -eq (Text '\u5f85\u505a') -and -not $_.needsUser })
+    $done = Text '\u5df2\u5b8c\u6210'
+    $dropped = Text '\u4e0d\u505a'
+    $open = @($script:Tasks | Where-Object { $_.status -ne $done -and $_.status -ne $dropped })
+    $waiting = @($open | Where-Object { $_.needsUser })
+    $stale = @($open | Where-Object { $_.stale })
+    $active = @($open | Where-Object { $_.status -eq (Text '\u8fdb\u884c\u4e2d') -and -not $_.stale })
+    $todo = @($open | Where-Object { $_.status -eq (Text '\u5f85\u505a') -and -not $_.needsUser })
+    $today = (Get-Date).ToString('yyyy-MM-dd')
+    $finished = @($script:Tasks | Where-Object { $_.status -eq $done -and [string]$_.done -eq $today })
 
     $status = if ($waiting.Count -gt 0) { "$(Text '\u4efb\u52a1\u5f85\u5b9a') $($waiting.Count)" } else { '' }
     if ($status -ne $script:ShownStatus) {
@@ -65,13 +87,17 @@ function Send-Model([bool]$Loading = $false) {
 
     $groups = @()
     foreach ($group in @(
-        @{ title = (Text '\u9700\u8981\u4f60'); list = $waiting },
-        @{ title = (Text '\u8ba4\u9886\u5df2\u5931\u6548'); list = $stale },
-        @{ title = (Text '\u8fdb\u884c\u4e2d'); list = $active },
-        @{ title = (Text '\u5f85\u505a'); list = $todo }
+        @{ title = (Text '\u9700\u8981\u4f60'); list = $waiting; icon = 'bell' },
+        @{ title = (Text '\u8ba4\u9886\u5df2\u5931\u6548'); list = $stale; icon = 'flame' },
+        @{ title = (Text '\u8fdb\u884c\u4e2d'); list = $active; icon = 'activity' },
+        @{ title = (Text '\u5f85\u505a'); list = $todo; icon = 'list-todo' },
+        @{ title = (Text '\u4eca\u5929\u5b8c\u6210'); list = $finished; icon = 'circle-check' }
     )) {
         if ($group.list.Count -gt 0) {
-            $groups += @{ title = "$($group.title) $($group.list.Count)"; items = @($group.list | ForEach-Object { New-Item-Row $_ }) }
+            $icon = $group.icon
+            # A task still waiting on another shows a clock instead of the to-do mark.
+            $items = @($group.list | ForEach-Object { New-Item-Row $_ $(if ($icon -eq 'list-todo' -and @($_.blockedBy).Count -gt 0) { 'clock' } else { $icon }) })
+            $groups += @{ title = "$($group.title) $($group.list.Count)"; items = $items }
         }
     }
     $model = @{
@@ -95,7 +121,7 @@ function Update-Tasks {
     }
     try {
         Push-Location $script:Repo
-        try { $json = & node $cli --json 2>$null | Out-String } finally { Pop-Location }
+        try { $json = & node $cli --json --all 2>$null | Out-String } finally { Pop-Location }
         if ($LASTEXITCODE -ne 0) { throw "tasks.mjs exited with $LASTEXITCODE" }
         $script:Tasks = @(($json | ConvertFrom-Json) | ForEach-Object { $_ })
         $script:LoadError = $null
@@ -134,9 +160,11 @@ while ($true) {
             'view.action' {
                 $id = ([string]$message.params.itemId) -replace '^task-', ''
                 if ($id -match '^[A-Z][A-Za-z0-9.]*$') {
-                    # Open tasks sit in the folder of their group, the id's first letter.
-                    $file = Join-Path $script:Repo "docs\tasks\$($id.Substring(0, 1))\$id.md"
-                    if (Test-Path $file) { Invoke-Item $file }
+                    # Open tasks sit in the folder of their group, the id's first letter; closed ones in 0-archive.
+                    foreach ($folder in @("docs\tasks\$($id.Substring(0, 1))", "docs\tasks\0-archive\$($id.Substring(0, 1))")) {
+                        $file = Join-Path $script:Repo "$folder\$id.md"
+                        if (Test-Path $file) { Invoke-Item $file; break }
+                    }
                 }
             }
             'command' {

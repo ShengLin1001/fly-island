@@ -1,28 +1,73 @@
 {
   "id": "dev.focusd.dev-tasks",
-  "name": { "zh-CN": "开发任务看板", "en": "Dev task board" },
-  "description": {
-    "zh-CN": "在岛上列出 fly-island 仓库 docs/tasks 里的没结束的任务：需要你的（等你确认、或只有你本人能做）、认领已失效的、进行中的（谁、哪条 lane）和待做的（在等哪个任务）；有需要你的事时，收起条上显示数量。点一条用默认程序打开任务文件。数据来自仓库里的 pnpm tasks --json，需要 Node。只给开发这个仓库时用，用 pnpm tasks:plugin 安装。",
-    "en": "Lists the tasks in the fly-island repo's docs/tasks on an island page: the open ones that need you (waiting for your answer, or only you can do them), stale claims, in progress (who, which lane) and to do (and what they wait on); the collapsed bar shows how many need you. Click one to open its file. Reads pnpm tasks --json from the repo, so it needs Node. For developing this repo only; install with pnpm tasks:plugin."
+  "name": {
+    "zh-CN": "开发任务看板",
+    "en": "Dev task board"
   },
-  "version": "1.1.1",
+  "description": {
+    "zh-CN": "在岛上列出 fly-island 仓库 docs/tasks 里的任务，分组是需要你的（等你确认、或只有你本人能做）、认领已失效的、进行中的、待做的和今天完成的，每组一个图标。每行上面是任务标题，下面是编号、谁在做、哪条 lane、认领多久了和在等哪个任务，右边是子任务进度、issue 或「有交接」。有需要你的事时，收起条上显示数量。点一条用默认程序打开任务文件。数据来自仓库里的 pnpm tasks --json，需要 Node。只给开发这个仓库时用，用 pnpm tasks:plugin 安装。",
+    "en": "Lists the tasks in the fly-island repo's docs/tasks on an island page, grouped with an icon each: those that need you (waiting for your answer, or only you can do them), stale claims, in progress, to do, and done today. Each row has the title on top and, under it, the id, who works on it, which lane, how long ago it was claimed and what it waits on; on the right its children done, its issue or a handoff. The collapsed bar shows how many need you. Click one to open its file. Reads pnpm tasks --json from the repo, so it needs Node. For developing this repo only; install with pnpm tasks:plugin."
+  },
+  "version": "1.2.0",
   "apiVersion": 2,
   "author": "TixXin",
-  "runtime": { "type": "process", "command": "main.ps1" },
+  "runtime": {
+    "type": "process",
+    "command": "main.ps1"
+  },
   "permissions": [],
   "contributes": {
-    "commands": [{ "id": "refresh", "title": { "zh-CN": "立即刷新", "en": "Refresh now" } }],
-    "views": [{ "id": "tasks", "title": { "zh-CN": "任务", "en": "Tasks" }, "icon": "list-checks", "template": "list" }],
-    "statusItems": [{ "id": "waiting", "priority": 20 }],
+    "commands": [
+      {
+        "id": "refresh",
+        "title": {
+          "zh-CN": "立即刷新",
+          "en": "Refresh now"
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "tasks",
+        "title": {
+          "zh-CN": "任务",
+          "en": "Tasks"
+        },
+        "icon": "list-checks",
+        "template": "list"
+      }
+    ],
+    "statusItems": [
+      {
+        "id": "waiting",
+        "priority": 20
+      }
+    ],
     "settings": [
       {
         "key": "repo",
         "type": "string",
-        "title": { "zh-CN": "仓库目录", "en": "Repository folder" },
-        "description": { "zh-CN": "fly-island 主工作区的路径。留空用安装时记下的目录。", "en": "The fly-island main checkout. Empty uses the folder recorded at install." },
+        "title": {
+          "zh-CN": "仓库目录",
+          "en": "Repository folder"
+        },
+        "description": {
+          "zh-CN": "fly-island 主工作区的路径。留空用安装时记下的目录。",
+          "en": "The fly-island main checkout. Empty uses the folder recorded at install."
+        },
         "default": ""
       },
-      { "key": "minutes", "type": "number", "title": { "zh-CN": "刷新间隔（分钟）", "en": "Refresh every (minutes)" }, "min": 1, "max": 30, "default": 2 }
+      {
+        "key": "minutes",
+        "type": "number",
+        "title": {
+          "zh-CN": "刷新间隔（分钟）",
+          "en": "Refresh every (minutes)"
+        },
+        "min": 1,
+        "max": 30,
+        "default": 2
+      }
     ]
   }
 }
