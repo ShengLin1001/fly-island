@@ -69,10 +69,9 @@ export function useWeChatReminders(canPreview: boolean) {
         isWeChatRemindersEnabled(),
       );
       if (!cancelled) acceptSnapshot(next);
-      const exposed = await setWeChatExposeUi(isWeChatExposeUiEnabled());
-      if (!cancelled) acceptSnapshot(exposed);
-      const hidden = await setWeChatHideTaskbarButton(isWeChatHideTaskbarButtonEnabled());
-      if (!cancelled) acceptSnapshot(hidden);
+      // A setting that changes comes back as an event; one already in place changes nothing.
+      await setWeChatExposeUi(isWeChatExposeUiEnabled());
+      await setWeChatHideTaskbarButton(isWeChatHideTaskbarButtonEnabled());
     })().catch((error: unknown) => {
       if (!cancelled) setActionError(String(error));
     }).finally(() => {

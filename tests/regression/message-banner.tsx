@@ -95,7 +95,7 @@ async function notify(source: "qq" | "wechat" | "qqMail" | "plugin", title = "�
   const receivedAt = Date.now();
   await update(async () => {
     if (source === "wechat") await emit("wechat-reminder-changed", {
-      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null }, windowVisible: true,
+      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null, message: null }, windowVisible: true,
     });
     if (source === "qq") await emit("qq-notifications-changed", {
       snapshot: { revision: ++revision, enabled: true, status: "listening", items: [{ id: `qq-${revision}`, title, body: "下午三点一起讨论新项目的设计方案，记得带上之前整理的资料和上周的评审记录。", createdAt: receivedAt }], error: null },

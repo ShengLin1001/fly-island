@@ -129,7 +129,7 @@ async function notify(source: MessageSource, long = false, visible = true) {
   const receivedAt = Date.now();
   await update(async () => {
     if (source === "wechat") await emit("wechat-reminder-changed", {
-      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null }, windowVisible: visible,
+      snapshot: { revision: ++revision, enabled: true, status: "listening", pending: true, lastAttentionAt: revision, error: null, message: null }, windowVisible: visible,
     });
     if (source === "qq") await emit("qq-notifications-changed", {
       snapshot: { revision: ++revision, enabled: true, status: "listening", items: [{ id: `qq-${revision}`, title: long ? "这是一位名字特别特别长的好友" : "小林", body: long ? "明天下午三点一起讨论新项目的设计方案，记得带上之前整理的资料。" : "下午一起开会吗？", createdAt: receivedAt }], error: null }, newestId: `qq-${revision}`, windowVisible: visible,
