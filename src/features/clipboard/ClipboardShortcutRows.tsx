@@ -89,6 +89,12 @@ export function ClipboardShortcutRows({ clipboardSettings, onClipboardSettingsCh
         </div>
         {error && <p className="shortcut-control__error" role="alert">{error}</p>}
       </div>
+      <SettingsToggleRow
+        title={t.settings.clipboard.winV}
+        description={t.settings.clipboard.winVHint}
+        checked={clipboardSettings.winV}
+        onChange={(winV) => onClipboardSettingsChange({ ...clipboardSettings, winV })}
+      />
     </>
   );
 }

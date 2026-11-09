@@ -7,6 +7,7 @@ import { IslandApp } from "./windows/island/IslandApp";
 import { TodosGate } from "./windows/island/TodosGate";
 import { TranslationWindow } from "./windows/translation/TranslationWindow";
 import { SettingsWindow } from "./windows/settings/SettingsWindow";
+import { ClipboardWindow } from "./windows/clipboard/ClipboardWindow";
 import { I18nProvider } from "./i18n";
 import { trackIslandTopEdge } from "./windows/island/topEdge";
 
@@ -41,6 +42,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <TranslationWindow />
       ) : windowKind === "settings" ? (
         <SettingsWindow />
+      ) : windowKind === "clipboard" ? (
+        <ClipboardWindow />
       ) : (
         <TodosGate>
           <IslandApp />

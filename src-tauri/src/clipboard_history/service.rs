@@ -22,7 +22,7 @@ use windows::Win32::{
 
 use super::hotkey::{
     refresh_registered_hotkey, request_hotkey_refresh, unregister_current_hotkey,
-    CLIPBOARD_HOTKEY_WINDOW, HOTKEY_EVENT, HOTKEY_ID, HOTKEY_REFRESH_MESSAGE,
+    CLIPBOARD_HOTKEY_WINDOW, HOTKEY_EVENT, HOTKEY_ID, HOTKEY_REFRESH_MESSAGE, WIN_V_MESSAGE,
 };
 use super::store::{
     create_item_id, encode_png, hash_bytes, make_thumbnail, preview_text,
@@ -40,6 +40,13 @@ use crate::win32::{
 };
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
+
+const DAY_MS: i64 = 24 * 60 * 60 * 1000;
+
+/// Whether an entry last copied at `copied_at` is older than the retention `cutoff` (both ms).
+pub(super) fn is_expired(copied_at: i64, cutoff: i64) -> bool {
+    copied_at < cutoff
+}
 
 /// Long enough for the listener to see the path written by "copy path" and skip it.
 const PATH_CAPTURE_PAUSE: Duration = Duration::from_millis(800);
@@ -231,6 +238,10 @@ impl ClipboardHistoryService {
         if !settings.enabled {
             return;
         }
+        // A password manager's copy: Windows' own history skips it too (C22.4).
+        if settings.skip_sensitive && win32::clipboard::is_marked_private() {
+            return;
+        }
 
         let capture = match read_clipboard_capture(settings.capture_images) {
             Ok(Some(capture)) => capture,
@@ -362,6 +373,17 @@ impl ClipboardHistoryService {
     }
 
     fn enforce_limit_locked(&self, state: &mut ClipboardHistoryState) {
+        let days = state.settings.retention_days;
+        if days > 0 {
+            let cutoff = current_unix_millis().saturating_sub(i64::from(days) * DAY_MS);
+            let (kept, expired): (Vec<_>, Vec<_>) = std::mem::take(&mut state.items)
+                .into_iter()
+                .partition(|item| item.favorite || !is_expired(item.copied_at, cutoff));
+            for item in &expired {
+                self.remove_item_files(item);
+            }
+            state.items = kept;
+        }
         while state.items.len() > state.settings.max_items {
             let removal_index = state
                 .items
@@ -410,6 +432,14 @@ impl ClipboardHistoryService {
     }
 
     fn emit_shortcut(&self) {
+        // The clipboard window (C22.2), unless the settings ask for the island's page.
+        let settings = self.state.lock().map(|state| state.settings.clone()).ok();
+        if let Some(settings) = settings.filter(|settings| settings.open_in == super::OpenIn::Window) {
+            if let Err(error) = super::popup::toggle(&self.app, settings.popup_position) {
+                eprintln!("failed to open the clipboard window: {error}");
+            }
+            return;
+        }
         if let Some(window) = self.app.get_webview_window(MAIN_WINDOW_LABEL) {
             let _ = window.show();
             crate::island::focus::focus_island_for_shortcut(&window);
@@ -485,6 +515,13 @@ fn write_clipboard_file(path: &Path) -> Result<(), String> {
 /// The path in double quotes, as a terminal's drag and drop gives it; spaces stay one argument.
 pub(super) fn quoted_path(path: &Path) -> String {
     format!("\"{}\"", path.display())
+}
+
+#[cfg(test)]
+#[test]
+fn entries_expire_after_the_retention_cutoff() {
+    assert!(is_expired(999, 1000));
+    assert!(!is_expired(1000, 1000));
 }
 
 #[cfg(test)]
@@ -611,7 +648,7 @@ impl WindowMessages for ClipboardWindow {
             return Some(LRESULT(0));
         }
 
-        if message == WM_HOTKEY && wparam.0 == HOTKEY_ID as usize {
+        if (message == WM_HOTKEY && wparam.0 == HOTKEY_ID as usize) || message == WIN_V_MESSAGE {
             if let Ok(service) = service() {
                 service.emit_shortcut();
             }

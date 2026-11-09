@@ -2,6 +2,7 @@
 
 mod hotkey;
 mod plugin_view;
+mod popup;
 mod service;
 mod store;
 
@@ -19,6 +20,7 @@ use store::{load_history, HISTORY_FILE_NAME, IMAGE_DIRECTORY_NAME};
 
 pub(crate) use hotkey::parse_shortcut_binding;
 pub(crate) use plugin_view::{plugin_history, plugin_item};
+pub(crate) use popup::WINDOW_LABEL as POPUP_WINDOW_LABEL;
 
 const HISTORY_CHANGED_EVENT: &str = "clipboard-history-changed";
 
@@ -81,7 +83,46 @@ pub struct ClipboardHistorySettings {
     shortcut: String,
     #[serde(default = "default_true")]
     shortcut_enabled: bool,
+    /// Where the shortcut opens the history (C22): its own window by default, or the island's page.
+    #[serde(default)]
+    open_in: OpenIn,
+    /// Where the window appears: at the pointer or in the middle of the screen.
+    #[serde(default)]
+    popup_position: PopupPosition,
+    /// Picking an entry in the window pastes it into the window that was in front.
+    #[serde(default = "default_true")]
+    auto_paste: bool,
+    /// Pasting an image into a terminal pastes its file path, which Claude Code takes as an image.
+    #[serde(default = "default_true")]
+    terminal_image_path: bool,
+    /// Entries older than this many days go, favourites aside; 0 keeps them until `max_items`.
+    #[serde(default)]
+    retention_days: u32,
+    /// Skips what password managers mark as not for clipboard history.
+    #[serde(default = "default_true")]
+    skip_sensitive: bool,
+    /// Win+V opens the history instead of Windows' own clipboard history (C22.3).
+    #[serde(default)]
+    win_v: bool,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OpenIn {
+    #[default]
+    Window,
+    Island,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PopupPosition {
+    #[default]
+    Cursor,
+    Center,
+}
+
+const MAX_RETENTION_DAYS: u32 = 365;
 
 impl Default for ClipboardHistorySettings {
     fn default() -> Self {
@@ -91,6 +132,13 @@ impl Default for ClipboardHistorySettings {
             max_items: DEFAULT_MAX_ITEMS,
             shortcut: default_clipboard_shortcut(),
             shortcut_enabled: true,
+            open_in: OpenIn::Window,
+            popup_position: PopupPosition::Cursor,
+            auto_paste: true,
+            terminal_image_path: true,
+            retention_days: 0,
+            skip_sensitive: true,
+            win_v: false,
         }
     }
 }
@@ -98,6 +146,7 @@ impl Default for ClipboardHistorySettings {
 impl ClipboardHistorySettings {
     fn normalized(mut self) -> Self {
         self.max_items = self.max_items.clamp(MIN_MAX_ITEMS, MAX_MAX_ITEMS);
+        self.retention_days = self.retention_days.min(MAX_RETENTION_DAYS);
         // The default parses to its own label (see hotkey tests), so falling back
         // to the constant matches falling back to its parsed binding.
         self.shortcut = parse_shortcut_binding(&self.shortcut)
@@ -215,6 +264,18 @@ pub fn copy_clipboard_history_item_as(id: String, copy_as: CopyAs) -> Result<Cli
     service()?.copy_item_as(&id, copy_as)
 }
 
+/// From the clipboard window: puts the entry on the clipboard and pastes it into the window that
+/// was in front (C22.2).
+#[tauri::command]
+pub async fn paste_clipboard_history_item(app: AppHandle, id: String) -> Result<(), String> {
+    popup::paste(&app, &id)
+}
+
+#[tauri::command]
+pub async fn hide_clipboard_popup(app: AppHandle) -> Result<(), String> {
+    popup::hide(&app)
+}
+
 #[tauri::command]
 pub fn toggle_clipboard_history_favorite(id: String) -> Result<ClipboardHistorySnapshot, String> {
     service()?.toggle_favorite(&id)
@@ -296,6 +357,8 @@ macro_rules! tauri_commands {
             crate::clipboard_history::get_clipboard_shortcut_error,
             crate::clipboard_history::copy_clipboard_history_item,
             crate::clipboard_history::copy_clipboard_history_item_as,
+            crate::clipboard_history::paste_clipboard_history_item,
+            crate::clipboard_history::hide_clipboard_popup,
             crate::clipboard_history::toggle_clipboard_history_favorite,
             crate::clipboard_history::set_clipboard_history_item_note,
             crate::clipboard_history::delete_clipboard_history_item,

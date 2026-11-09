@@ -27,4 +27,5 @@ pub(crate) mod shell_hook;
 pub(crate) mod uia_tabs;
 pub(crate) mod url_protocol;
 pub(crate) mod webview_page;
+pub(crate) mod win_key_hook;
 pub(crate) mod window;

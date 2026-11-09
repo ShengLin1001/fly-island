@@ -39,6 +39,16 @@ pub(crate) fn send_copy_shortcut() {
     send_key_up(VK_CONTROL);
 }
 
+/// Synthesizes Ctrl+V, so the foreground app pastes. Ctrl+V rather than Shift+Insert: Monaco
+/// editors (VS Code) take Insert as the overwrite toggle.
+pub(crate) fn send_paste_shortcut() {
+    let key_v = VIRTUAL_KEY(u16::from(b'V'));
+    send_key_down(VK_CONTROL);
+    send_key_down(key_v);
+    send_key_up(key_v);
+    send_key_up(VK_CONTROL);
+}
+
 fn send_key_event(key: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) {
     // SAFETY: keybd_event takes only plain values and inserts the event into the
     // input stream; it reads no caller memory. Virtual-key codes fit in a u8.
