@@ -67,7 +67,7 @@
   display: inline-flex;
   align-items: center;
   justify-self: start;
-  gap: 9px;
+  gap: 2px;
   min-width: 96px;
   height: 34px;
   padding-left: 4px;
@@ -89,79 +89,59 @@
   outline-offset: -5px;
 }
 
+/* Built-in page buttons: grey icons; the open page's turns its own colour on a tint of it.
+   The colours are the pages' accents (todo blue, music purple, calendar orange, clipboard pink,
+   shelf mint), shown only on the open page so the row stays quiet. */
 .dot-button {
-  width: 12px;
-  height: 12px;
+  --page-color: var(--color-accent);
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
   padding: 0;
+  color: var(--text-2);
+  background: transparent;
   border: 0;
   border-radius: var(--radius-pill);
   outline: none;
   cursor: pointer;
   transition:
-    transform 140ms ease,
-    opacity 140ms ease,
-    box-shadow 140ms ease;
+    color 140ms ease,
+    background 140ms ease;
 }
 
-.dot-button:hover,
-.dot-button--calendar {
-  background: #ff9a76;
-  box-shadow: 0 0 12px rgba(255, 154, 118, 0.46);
+.dot-button:hover {
+  color: var(--text-1);
+  background: var(--color-white-a10);
 }
 
-.dot-button--active {
-  transform: scale(1.18);
-  opacity: 1;
+.dot-button--active,
+.dot-button--active:hover {
+  color: var(--page-color);
+  background: color-mix(in srgb, var(--page-color) 20%, transparent);
 }
 
 .dot-button:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: 4px;
-}
-
-.dot-button--todo {
-  background: var(--color-accent);
-  box-shadow: 0 0 12px rgba(116, 214, 255, 0.48);
+  outline: 2px solid var(--color-focus-ring-soft);
+  outline-offset: 1px;
 }
 
 .dot-button--music {
-  background: #b69cff;
-  box-shadow: 0 0 12px rgba(182, 156, 255, 0.46);
+  --page-color: #b69cff;
+}
+
+.dot-button--calendar {
+  --page-color: #ff9a76;
 }
 
 .dot-button--clipboard {
   /* Pink, not yellow: yellow means "needs attention" (agent status). */
-  background: #f4a7c4;
-  box-shadow: 0 0 12px rgba(244, 167, 196, 0.48);
+  --page-color: #f4a7c4;
 }
 
 .dot-button--shelf {
-  background: #6ee7c8;
-  box-shadow: 0 0 12px rgba(110, 231, 200, 0.46);
-}
-
-.dot-button--active {
-  box-shadow:
-    0 0 0 3px var(--color-white-a18),
-    0 0 14px rgba(116, 214, 255, 0.42);
-}
-
-.dot-button--music.dot-button--active {
-  box-shadow:
-    0 0 0 3px var(--color-white-a18),
-    0 0 14px rgba(182, 156, 255, 0.54);
-}
-
-.dot-button--clipboard.dot-button--active {
-  box-shadow:
-    0 0 0 3px var(--color-white-a18),
-    0 0 14px rgba(244, 167, 196, 0.56);
-}
-
-.dot-button--shelf.dot-button--active {
-  box-shadow:
-    0 0 0 3px var(--color-white-a18),
-    0 0 14px rgba(110, 231, 200, 0.54);
+  --page-color: #6ee7c8;
 }
 
 .window-actions {

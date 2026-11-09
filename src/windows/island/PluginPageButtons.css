@@ -1,8 +1,8 @@
-/* Plugin page buttons sit with the page dots in the expanded header. */
+/* Plugin page buttons sit with the built-in page buttons (.dot-button) in the expanded header. */
 .plugin-page-button {
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -16,7 +16,11 @@
     background 140ms ease;
 }
 
-.plugin-page-button:hover,
+.plugin-page-button:hover {
+  color: var(--text-1);
+  background: var(--color-white-a10);
+}
+
 .plugin-page-button--active {
   color: var(--color-white);
   background: var(--color-white-a16);

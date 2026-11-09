@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Bell, CircleDot, Languages, Minus, RotateCcw, Settings } from "lucide-react";
+import { Bell, CalendarDays, CircleDot, ClipboardList, Inbox, Languages, ListTodo, Minus, Music, RotateCcw, Settings, type LucideIcon } from "lucide-react";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { MessageSource } from "../../features/messages/messagePreview";
 import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateCheck";
@@ -8,6 +8,17 @@ import { isPageEnabled, pageShortcutLabel, type IslandFeatures } from "./feature
 import type { IslandPage } from "./types";
 import { usePageHoverSwitch } from "./usePageHoverSwitch";
 import "./IslandHeader.css";
+
+type BuiltinPageButton = "todo" | "music" | "calendar" | "clipboard" | "shelf";
+
+/** The built-in pages' buttons, left to right, with the icons Settings uses for them (SettingsSidebar.tsx). */
+const PAGE_BUTTONS: { page: BuiltinPageButton; Icon: LucideIcon }[] = [
+  { page: "todo", Icon: ListTodo },
+  { page: "music", Icon: Music },
+  { page: "calendar", Icon: CalendarDays },
+  { page: "clipboard", Icon: ClipboardList },
+  { page: "shelf", Icon: Inbox },
+];
 
 type IslandHeaderProps = {
   page: IslandPage;
@@ -33,13 +44,13 @@ type IslandHeaderProps = {
   /** Resting the pointer on a page button opens its page. */
   hoverSwitchPage: boolean;
   hoverSwitchDelayMs: number;
-  /** Buttons for plugin pages, after the built-in page dots. */
+  /** Buttons for plugin pages, after the built-in page buttons. */
   pluginPageButtons?: ReactNode;
   /** Buttons of the open page, first among the window actions. */
   pageActions?: ReactNode;
 };
 
-/** Header of the expanded island: agent status, page dots, collapse target and window actions. */
+/** Header of the expanded island: agent status, page buttons (icons), collapse target and window actions. */
 export function IslandHeader({
   page,
   features,
@@ -72,6 +83,13 @@ export function IslandHeader({
     const shortcut = pageShortcutLabel(features, target, pageDigitModifiers);
     return shortcut ? `${label} (${shortcut})` : label;
   };
+  const pageLabel = (target: BuiltinPageButton) => ({
+    todo: t.island.todoList,
+    music: t.island.music,
+    calendar: t.island.calendar,
+    clipboard: t.island.clipboardHistory,
+    shelf: t.island.shelf,
+  })[target];
   const agentStatusIconClassName = [
     "island__agent-status-icon",
     `island__agent-status-icon--${agentVisualState}`,
@@ -107,80 +125,23 @@ export function IslandHeader({
         {showTitle && <span>fly-island</span>}
       </div>
 
-      <div
-        className="editor-dots"
-        aria-label={t.island.editor}
-      >
-        {features.todo && (
+      <div className="editor-dots" aria-label={t.island.editor}>
+        {PAGE_BUTTONS.filter(({ page: target }) => features[target]).map(({ page: target, Icon }) => (
           <button
-            className={`dot-button dot-button--todo ${
-              page === "todo" ? "dot-button--active" : ""
-            }`}
+            key={target}
+            className={`dot-button dot-button--${target}${page === target ? " dot-button--active" : ""}`}
             type="button"
-            aria-label={withShortcut(t.island.todoList, "todo")}
-            {...hoverSwitch("todo")}
+            aria-label={withShortcut(pageLabel(target), target)}
+            aria-pressed={page === target}
+            {...hoverSwitch(target)}
             onClick={(event) => {
               event.stopPropagation();
-              onPageChange("todo");
+              onPageChange(target);
             }}
-          />
-        )}
-        {features.music && (
-          <button
-            className={`dot-button dot-button--music ${
-              page === "music" ? "dot-button--active" : ""
-            }`}
-            type="button"
-            aria-label={withShortcut(t.island.music, "music")}
-            {...hoverSwitch("music")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onPageChange("music");
-            }}
-          />
-        )}
-        {features.calendar && (
-          <button
-            className={`dot-button dot-button--calendar ${
-              page === "calendar" ? "dot-button--active" : ""
-            }`}
-            type="button"
-            aria-label={withShortcut(t.island.calendar, "calendar")}
-            {...hoverSwitch("calendar")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onPageChange("calendar");
-            }}
-          />
-        )}
-        {features.clipboard && (
-          <button
-            className={`dot-button dot-button--clipboard ${
-              page === "clipboard" ? "dot-button--active" : ""
-            }`}
-            type="button"
-            aria-label={withShortcut(t.island.clipboardHistory, "clipboard")}
-            {...hoverSwitch("clipboard")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onPageChange("clipboard");
-            }}
-          />
-        )}
-        {features.shelf && (
-          <button
-            className={`dot-button dot-button--shelf ${
-              page === "shelf" ? "dot-button--active" : ""
-            }`}
-            type="button"
-            aria-label={withShortcut(t.island.shelf, "shelf")}
-            {...hoverSwitch("shelf")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onPageChange("shelf");
-            }}
-          />
-        )}
+          >
+            <Icon size={15} strokeWidth={1.8} absoluteStrokeWidth aria-hidden="true" />
+          </button>
+        ))}
         {pluginPageButtons}
       </div>
 
