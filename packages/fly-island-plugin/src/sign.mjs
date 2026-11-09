@@ -1,4 +1,4 @@
-// Author signatures of plugin packages (docs/architecture/plugin-author-signing.md).
+// Author signatures of plugin packages (docs/architecture/plugins/author-signing.md).
 // The author signs "focusd-plugin-package/1\n<id>\n<version>\n<sha256 of the zip>"
 // with an Ed25519 key and publishes <id>-<version>.zip.sig ({ keyId, signature })
 // next to the zip. The market lists the key; the island checks the signature and

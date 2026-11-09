@@ -1,6 +1,6 @@
 //! What the hooks send, and what they get back for each choice on the island: `PermissionRequest`
 //! for approvals, and Claude Code's `PreToolUse` on `AskUserQuestion` for questions (phase 3).
-//! The answer format is Claude Code's (docs/architecture/agent-island-interaction-tasks.md,
+//! The answer format is Claude Code's (docs/architecture/agent/island-interaction-notes.md,
 //! 实测记录); Codex's command hook forwards the same input and passes the answer back.
 
 use serde::{Deserialize, Serialize};

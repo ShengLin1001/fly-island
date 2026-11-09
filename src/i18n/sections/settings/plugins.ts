@@ -132,7 +132,7 @@ export type SettingsPluginsText = {
     publisher: (name: string) => string;
     trustAndInstall: string;
     trustHint: (publisher: string) => string;
-    /** Author signatures (docs/architecture/plugin-author-signing.md). */
+    /** Author signatures (docs/architecture/plugins/author-signing.md). */
     signed: string;
     keyChanged: (keyId: string) => string;
     signatureDropped: string;

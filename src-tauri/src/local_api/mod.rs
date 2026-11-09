@@ -2,7 +2,7 @@
 //! daily note over HTTP on 127.0.0.1. It is the built-in plugin
 //! `focusd.local-api` (plugin_host/builtin.rs), which switches it on and off;
 //! the port and token stay in `local-api.json` so scripts can find them.
-//! See docs/local-api.md.
+//! See docs/features/local-api.md.
 
 mod bridge;
 mod config;

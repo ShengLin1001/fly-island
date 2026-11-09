@@ -1,7 +1,7 @@
 //! A WebView2 page that is not a Tauri webview, for plugin pages (P8).
 //!
 //! Tauri injects its IPC script and invoke key into every frame of the
-//! webviews it creates (docs/architecture/p8-webview-validation.md), so plugin
+//! webviews it creates (docs/investigations/p8-webview-validation.md), so plugin
 //! markup never goes into one of them. This page is a separate WebView2
 //! controller on the same environment: nothing of Tauri is added to it, it
 //! runs InPrivate (no storage shared with the island or kept on disk), and

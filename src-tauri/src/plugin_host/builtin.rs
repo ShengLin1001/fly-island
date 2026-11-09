@@ -23,8 +23,8 @@ const LOCAL_API_MANIFEST: &str = r#"{
   "id": "focusd.local-api",
   "name": { "zh-CN": "本地接口", "en": "Local API" },
   "description": {
-    "zh-CN": "让脚本和其他程序通过 HTTP 读写待办和每日笔记，并上报 AI Agent 状态。只接受本机请求，并且需要访问令牌。用法见 docs/local-api.md。",
-    "en": "Lets scripts and other programs read and change todos and the daily note and report AI agent status over HTTP. Only accepts requests from this computer, with an access token. See docs/local-api.md."
+    "zh-CN": "让脚本和其他程序通过 HTTP 读写待办和每日笔记，并上报 AI Agent 状态。只接受本机请求，并且需要访问令牌。用法见 docs/features/local-api.md。",
+    "en": "Lets scripts and other programs read and change todos and the daily note and report AI agent status over HTTP. Only accepts requests from this computer, with an access token. See docs/features/local-api.md."
   },
   "version": "1.0.0",
   "apiVersion": 1,

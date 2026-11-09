@@ -23,7 +23,7 @@ export function rememberedPhase(session: Pick<AgentSessionSummary, "phase" | "re
 
 /**
  * A session's light, the one judgement every place showing agent state uses (roadmap B11,
- * docs/architecture/agent-session-states.md):
+ * docs/architecture/agent/session-states.md):
  * - `needs`: stuck mid-turn on the user (a question, an approval or a plan to confirm);
  * - `yourTurn`: the turn is over and Claude asked something;
  * - `working`: running, or waiting on a background task it started (marker ⋯);

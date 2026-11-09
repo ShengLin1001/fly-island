@@ -47,7 +47,7 @@ Fly Island 是一座轻量、无边框、始终置顶的悬浮岛。平时收在
 
 1. 从 [Releases](https://github.com/TixXin/fly-island/releases/latest) 下载安装包并安装（安装包没有代码签名，SmartScreen 提示时点「更多信息 → 仍要运行」）。
 2. 鼠标移到屏幕顶部的岛上即可展开，点齿轮或托盘图标打开设置。
-3. 邮箱、翻译和 AI Agent 需要先在设置里配置一次，具体见各自的说明：[邮箱](docs/mail.md)、[AI Agent](docs/agent-status-hooks.md)、[QQ 通知](docs/qq-notification-compatibility.md)、[微信提醒](docs/wechat-reminder-compatibility.md)。
+3. 邮箱、翻译和 AI Agent 需要先在设置里配置一次，具体见各自的说明：[邮箱](docs/features/mail.md)、[AI Agent](docs/features/agent-status-hooks.md)、[QQ 通知](docs/features/qq-notifications.md)、[微信提醒](docs/features/wechat-reminders.md)。
 
 想自己写插件，见 [插件文档](docs/plugins/README.md)。
 
@@ -73,7 +73,7 @@ pnpm tauri dev      # 开发模式
 pnpm tauri build    # 打包安装程序
 ```
 
-技术栈：Tauri 2、React 19 + TypeScript、Rust。发布与应用内更新见 [docs/updater.md](docs/updater.md)。
+技术栈：Tauri 2、React 19 + TypeScript、Rust。发布与应用内更新见 [docs/features/updater.md](docs/features/updater.md)。
 
 ## 开源协议
 

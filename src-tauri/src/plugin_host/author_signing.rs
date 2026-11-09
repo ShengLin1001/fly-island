@@ -1,4 +1,4 @@
-//! Author signatures of market packages (docs/architecture/plugin-author-signing.md).
+//! Author signatures of market packages (docs/architecture/plugins/author-signing.md).
 //! The index lists, for a plugin whose author signs, the author's keys and the
 //! signature of "focusd-plugin-package/1\n<id>\n<version>\n<sha256>"; signed by
 //! `fly-island-plugin pack --sign` (packages/fly-island-plugin/src/sign.mjs).

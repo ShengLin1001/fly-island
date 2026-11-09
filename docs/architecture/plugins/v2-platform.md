@@ -1,8 +1,8 @@
 # 插件平台第 2 版：向 VS Code 式扩展靠拢的实施计划
 
-> 状态：**P5、P6、P7、P9、P10 已完成**（2026-11-05，见各节末尾的「完成记录」；P6 的单独发版和真实数据升级验证还要人工完成）；P10 的 npm 包已发布 0.1.0（2026-11-05），PowerShell Gallery 还没发；P8 第一轮技术验证不通过，换成不经过 Tauri 的独立 WebView2 后第二轮验证通过并已实现（见 [p8-webview-validation.md](p8-webview-validation.md)），2026-11-06 人工验收通过；P11 完成了岛屿端（多签名、黑名单、发布者信任、后台检查与自动更新、市场搜索与分类），独立索引仓库 [TixXin/focusd-plugins](https://github.com/TixXin/focusd-plugins) 和 CI 签名已建好，岛屿还没改读新仓库。
-> 现状见 [插件开发文档](../plugins/README.md) 和 [与 VS Code 的对比](../plugins/vscode.md)；第 1 版的设计与路线图（P1–P4）见 [plugins.md](plugins.md)。本文接着它的 P5。
-> 编码规则仍以 [AGENTS.md](../../AGENTS.md)、[src/AGENTS.md](../../src/AGENTS.md)、[src-tauri/AGENTS.md](../../src-tauri/AGENTS.md) 为准；每个阶段都要登记新增的对外契约（[contracts.md](contracts.md)）。
+> 状态：**P5、P6、P7、P9、P10 已完成**（2026-11-05，见各节末尾的「完成记录」；P6 的单独发版和真实数据升级验证还要人工完成）；P10 的 npm 包已发布 0.1.0（2026-11-05），PowerShell Gallery 还没发；P8 第一轮技术验证不通过，换成不经过 Tauri 的独立 WebView2 后第二轮验证通过并已实现（见 [p8-webview-validation.md](../../investigations/p8-webview-validation.md)），2026-11-06 人工验收通过；P11 完成了岛屿端（多签名、黑名单、发布者信任、后台检查与自动更新、市场搜索与分类），独立索引仓库 [TixXin/focusd-plugins](https://github.com/TixXin/focusd-plugins) 和 CI 签名已建好，岛屿还没改读新仓库。
+> 现状见 [插件开发文档](../../plugins/README.md) 和 [与 VS Code 的对比](../../plugins/vscode.md)；第 1 版的设计与路线图（P1–P4）见 [plugins.md](v1-design.md)。本文接着它的 P5。
+> 编码规则仍以 [AGENTS.md](../../../AGENTS.md)、[src/AGENTS.md](../../../src/AGENTS.md)、[src-tauri/AGENTS.md](../../../src-tauri/AGENTS.md) 为准；每个阶段都要登记新增的对外契约（[contracts.md](../contracts.md)）。
 
 ## 0. 摘要
 
@@ -20,7 +20,7 @@
 
 顺序：P5 → P6 → P7 → P9 → P10 → P11，P8 先做技术验证，通过后再排期。理由见第 4 节。
 
-**不做**：插件改岛的布局或注入 CSS、在主 WebView 里运行插件 JS、加载 DLL、付费插件、评分评论。这些和第 1 版的结论一致（[plugins.md §3](plugins.md#3-方案比较)）。
+**不做**：插件改岛的布局或注入 CSS、在主 WebView 里运行插件 JS、加载 DLL、付费插件、评分评论。这些和第 1 版的结论一致（[plugins.md §3](v1-design.md#3-方案比较)）。
 
 ## 1. 调研：VS Code 是怎么做的
 
@@ -140,7 +140,7 @@ VS Code 在 `package.json` 的 `contributes` 里静态声明能力，包括：`c
 
 ### 3.3 对外契约
 
-新增的清单字段、JSON-RPC 方法和通知、`plugins.json` 字段、索引格式都属于对外契约，登记到 [contracts.md](contracts.md) 和 [docs/plugins/README.md](../plugins/README.md)。
+新增的清单字段、JSON-RPC 方法和通知、`plugins.json` 字段、索引格式都属于对外契约，登记到 [contracts.md](../contracts.md) 和 [docs/plugins/README.md](../../plugins/README.md)。
 
 ### 3.4 代码规模
 
@@ -296,7 +296,7 @@ VS Code 在 `package.json` 的 `contributes` 里静态声明能力，包括：`c
    - 插件调用 `view.update { viewId, model }` 替换整个模型，或 `view.patch { viewId, items }` 只更新条目。模型序列化后不超过 256 KB，每个视图每秒最多 10 次更新，超过就合并。
    - 用户操作以通知发回：`view.action { viewId, itemId?, actionId }`、`view.submit { viewId, values }`、`view.search { viewId, query }`、`view.visible { viewId, visible }`。
    - 折叠条：`status.update { itemId, text, tooltip?, tone? }`，文字最多 24 个字符；折叠条只显示优先级最高的一个，与现有的待办摘要、消息预览、Agent 标题按现有规则排队，不挤掉它们。
-4. **性能**：插件页面只在可见时订阅更新（宿主收到 `view.visible false` 后暂停转发）；模板组件放在叶子组件中，避免带动整个岛重渲染（见 `docs/investigations/expansion-performance-investigation.md`）；展开高度由 `expandedHeight.ts` 按模板计算行数，滚动规则沿用剪贴板页。
+4. **性能**：插件页面只在可见时订阅更新（宿主收到 `view.visible false` 后暂停转发）；模板组件放在叶子组件中，避免带动整个岛重渲染（见 `docs/investigations/expansion-performance.md`）；展开高度由 `expandedHeight.ts` 按模板计算行数，滚动规则沿用剪贴板页。
 
 **改动位置**
 
@@ -334,9 +334,9 @@ VS Code 在 `package.json` 的 `contributes` 里静态声明能力，包括：`c
 
 **通过的标准**：插件页面里的脚本无法调用任何 Tauri 命令；无法加载插件包以外的资源（除非清单声明并且用户同意）；一个 Webview 的额外内存在可接受范围（目标 < 30 MB）。任何一条做不到就不做 P8，在文档里写明原因。
 
-**验证结果（2026-11-05）：不通过，暂不实现。** 详见 [p8-webview-validation.md](p8-webview-validation.md)。要点：Windows 上 Tauri 的 IPC 脚本和调用密钥会被注入沙箱 iframe，现在只因为 iframe 的来源是 `null` 才调用不了命令，不是设计上的保证；本应用没有应用级 ACL，单独的 webview 从本地来源加载时能调用全部应用命令；CSP 挡得住子资源，但挡不住 iframe 把自己导航到外部网址（实测可以带出数据）。内存一条通过（沙箱 `srcdoc` iframe 在同一渲染进程，测不出差别）。文档里列了重新评估的条件。下面的设计保留，供以后参考。
+**验证结果（2026-11-05）：不通过，暂不实现。** 详见 [p8-webview-validation.md](../../investigations/p8-webview-validation.md)。要点：Windows 上 Tauri 的 IPC 脚本和调用密钥会被注入沙箱 iframe，现在只因为 iframe 的来源是 `null` 才调用不了命令，不是设计上的保证；本应用没有应用级 ACL，单独的 webview 从本地来源加载时能调用全部应用命令；CSP 挡得住子资源，但挡不住 iframe 把自己导航到外部网址（实测可以带出数据）。内存一条通过（沙箱 `srcdoc` iframe 在同一渲染进程，测不出差别）。文档里列了重新评估的条件。下面的设计保留，供以后参考。
 
-**第二轮验证与实现（2026-11-05）：通过，已实现。** 插件页面改用岛屿自己创建的 WebView2（与岛屿共用 WebView2 环境，但不是 Tauri 的 webview，没有任何 Tauri 脚本），所有请求和跳转在原生层拦截。隔离实例里以页面脚本的身份重跑了第一轮的检查和更多外传手段，全部挡住；页面打开时多占约 25 MB，关闭后释放。详见 [p8-webview-validation.md](p8-webview-validation.md#第二轮独立的-webview2)。
+**第二轮验证与实现（2026-11-05）：通过，已实现。** 插件页面改用岛屿自己创建的 WebView2（与岛屿共用 WebView2 环境，但不是 Tauri 的 webview，没有任何 Tauri 脚本），所有请求和跳转在原生层拦截。隔离实例里以页面脚本的身份重跑了第一轮的检查和更多外传手段，全部挡住；页面打开时多占约 25 MB，关闭后释放。详见 [p8-webview-validation.md](../../investigations/p8-webview-validation.md#第二轮独立的-webview2)。
 
 **完成记录（2026-11-05）** ✅ 本地提交：`win32/webview_page.rs`（创建与加固 WebView2，unsafe 只在这里）、`plugin_host/webviews.rs`（放行规则、提供插件文件、消息与状态、页面的创建和关闭）、前端 `WebviewTemplate`、RPC `webview.postMessage` / `webview.message`、能力 `webview`、SDK 与模拟宿主、示例 `dev.focusd.todo-ring`、市场"自定义界面"标签。
 
@@ -503,7 +503,7 @@ plugins/schema/                 # 协议的唯一来源，岛屿和上面的包�
 - **发布者信息**来自 `plugins/market/<id>.json`，不显示 GitHub 头像（避免在设置页请求外部图片）。
 - **预发布版本**（2026-11-06）：按插件选择。插件详情页有「接收这个插件的预发布版本」开关（`plugins.json` 的 `plugins.<id>.preRelease`，新命令 `set_plugin_pre_release`）；打开后更新取比正式版新的最新预发布版本。版本比较按 semver（`compare_versions`：`1.3.0-beta.1` < `1.3.0-beta.2` < `1.3.0`），只用于判断市场版本是否更新；岛屿版本兼容检查仍忽略预发布后缀。市场页只列正式版，只有预发布版本的插件不上架。没有采用设计里“偶数次版本号为正式版”的约定。
 - **详情页**（2026-11-06）：插件文件夹里的 `README.md` 和 `CHANGELOG.md` 由 `pnpm plugins:index` 写进索引的 `readme`、`changelog`（各最多 16 KB，和索引一起签名），市场详情里显示为「插件说明」和可展开的「版本历史」。渲染用 `src/components/markdown/` 的小型 Markdown 子集，只生成元素、不插入 HTML，链接只放行 http(s) 并交给默认浏览器打开。示例插件把这两个文件写进 `.focusdignore`，所以加文档不会改变已发布的包。没有单独的“这个版本的更新说明”，看版本历史的第一节。「报告问题」在索引写了 `repo` 时指向那个仓库的 issue，否则指向本仓库。
-- **作者签名、“已验证”发布者**没做（设计里本来就是以后再做）；设计见 [plugin-author-signing.md](plugin-author-signing.md)（2026-11-06 已审：签名可选、自动更新只给签了名的插件、“已验证”发布者要做）。
+- **作者签名、“已验证”发布者**没做（设计里本来就是以后再做）；设计见 [plugin-author-signing.md](author-signing.md)（2026-11-06 已审：签名可选、自动更新只给签了名的插件、“已验证”发布者要做）。
 
 **索引仓库（2026-11-05）** ✅ [`TixXin/focusd-plugins`](https://github.com/TixXin/focusd-plugins) 已建好并运行：
 
@@ -529,7 +529,7 @@ plugins/schema/                 # 协议的唯一来源，岛屿和上面的包�
 
 确认后不改的：
 
-- **插件进程能读当前用户的凭据**（包括邮箱授权码）：插件以用户身份运行，权限只管岛屿接口。AppContainer 或受限令牌会让 Node.js / PowerShell 插件无法正常工作，所以不做；改为在设置页的风险提示和“信任发布者”提示里写清楚，见 [插件文档](../plugins/README.md)。
+- **插件进程能读当前用户的凭据**（包括邮箱授权码）：插件以用户身份运行，权限只管岛屿接口。AppContainer 或受限令牌会让 Node.js / PowerShell 插件无法正常工作，所以不做；改为在设置页的风险提示和“信任发布者”提示里写清楚，见 [插件文档](../../plugins/README.md)。
 - **插件网页的 WebRTC 屏蔽可能被同源 `about:blank` iframe 绕过**：页面数据都来自它自己的插件进程，而插件进程本来就能联网，绕过不会多拿到东西；要彻底禁用得改整个岛屿共用的 WebView2 启动参数，不值得。
 - **索引仓库的签名没有人工审批**：每小时的构建无法每次等人批准。只有维护者能推送 `main`；`main` 加了分支保护（禁止强推和删除，对管理员也生效），外部作者只能通过 PR 提交，由维护者审核源码后合并。
 

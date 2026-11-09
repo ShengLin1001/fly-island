@@ -1,4 +1,4 @@
-//! Sensitive permissions (docs/architecture/plugin-platform.md §3.2): granted
+//! Sensitive permissions (docs/architecture/plugins/v2-platform.md §3.2): granted
 //! when the plugin is switched on like any other, but the first call that
 //! uses one also asks the user on the island: allow, deny or allow once. The
 //! request waits for the answer for at most ANSWER_TIMEOUT; no answer is a

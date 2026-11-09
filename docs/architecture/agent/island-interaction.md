@@ -4,7 +4,7 @@
 >
 > 我们借鉴的是功能和交互逻辑。界面、文案、图标和音效都自己做，不照搬。
 
-任务和进度见 [B6](../tasks/B/B6.md)（`pnpm tasks show B6`），音效选型和实测记录见 [agent-island-interaction-tasks.md](agent-island-interaction-tasks.md)。
+任务和进度见 [B6](../../tasks/B/B6.md)（`pnpm tasks show B6`），音效选型和实测记录见 [agent-island-interaction-tasks.md](island-interaction-notes.md)。
 
 ## 一、参考软件有哪些能力
 

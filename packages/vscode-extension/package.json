@@ -11,7 +11,7 @@
     "url": "https://github.com/TixXin/fly-island.git",
     "directory": "packages/vscode-extension"
   },
-  "homepage": "https://github.com/TixXin/fly-island/blob/main/docs/agent-status-hooks.md",
+  "homepage": "https://github.com/TixXin/fly-island/blob/main/docs/features/agent-status-hooks.md",
   "engines": {
     "vscode": "^1.75.0"
   },

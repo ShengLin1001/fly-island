@@ -1,7 +1,7 @@
 //! Moving the todo keys out of the island window's localStorage into
 //! `todos.json`. Rust cannot read localStorage, so the window sends the stored
 //! text of each key together with the same data run through normalize.ts.
-//! Rules: docs/architecture/plugin-platform.md, P6 「从已发布的旧版本升级」.
+//! Rules: docs/architecture/plugins/v2-platform.md, P6 「从已发布的旧版本升级」.
 //!
 //! The old keys stay in localStorage, the stored text goes to
 //! `todos-migration-backup.json` (never deleted: their hashes tell stale copies

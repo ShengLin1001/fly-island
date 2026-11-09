@@ -47,7 +47,7 @@ Windows 文档将 `RegisterShellHookWindow` 标为非通用接口，未来版本
 
 ## 本机验证（2026-10-19）
 
-全新应用数据和安装包内程序的真实提醒验收，见 [首次使用消息接收验收](investigations/notification-first-run-verification.md)。该验收没有重置 Windows 账户或客户端设置。
+全新应用数据和安装包内程序的真实提醒验收，见 [首次使用消息接收验收](../investigations/notification-first-run-verification.md)。该验收没有重置 Windows 账户或客户端设置。
 
 用户在接收真实消息后确认任务栏微信图标闪动。首次 120 秒只读探测捕获 4 次微信请求关注、4 次重绘和 1 次窗口创建事件，进程元数据错误为 0，未读取聊天文本。用户确认首版先采用仅提醒的范围。
 
@@ -100,4 +100,4 @@ cargo run --manifest-path src-tauri/Cargo.toml --example wechat_accessibility_pr
 - [Microsoft：RegisterShellHookWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registershellhookwindow)
 - [Microsoft：Notification listener](https://learn.microsoft.com/en-us/windows/uwp/design/shell/tiles-and-notifications/notification-listener)
 - [Microsoft：UI Automation Clients Overview](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-clientsoverview)
-- [QQ 通知接入与修复](qq-notification-compatibility.md)
+- [QQ 通知接入与修复](qq-notifications.md)

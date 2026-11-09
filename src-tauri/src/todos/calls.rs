@@ -1,4 +1,4 @@
-//! The todo and note calls of plugins and the local API (docs/local-api.md),
+//! The todo and note calls of plugins and the local API (docs/features/local-api.md),
 //! answered from todos.json. Same rules, messages and results as
 //! src/features/todos/apiCommands.ts, which still answers them while the todos
 //! are in localStorage.

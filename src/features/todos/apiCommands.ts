@@ -2,7 +2,7 @@ import { daysBetween, listDay, noteOfDay } from "./todoHistory.ts";
 import type { ScheduledTodo, TodoArchive, TodoItem } from "./types";
 
 /**
- * Todo and daily-note calls from the local API (see docs/local-api.md). Pure: each
+ * Todo and daily-note calls from the local API (see docs/features/local-api.md). Pure: each
  * call gets the current state and says what to change; useTodoApiHandlers applies it.
  */
 

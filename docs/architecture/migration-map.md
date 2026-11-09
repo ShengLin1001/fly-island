@@ -1,6 +1,6 @@
 # 迁移映射
 
-重构（Phase 0–6）时旧文件到新位置的对照，见 [refactor-plan.md](refactor-plan.md)。
+重构（Phase 0–6）时旧文件到新位置的对照，见 [refactor-plan.md](history/refactor-plan.md)。
 
 ## 迁移映射：前端
 

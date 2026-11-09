@@ -98,7 +98,7 @@ pub struct MarketEntry {
     /// The keys the author registered with the market.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     author_keys: Vec<AuthorKey>,
-    /// The publisher is verified (docs/architecture/plugin-author-signing.md §4).
+    /// The publisher is verified (docs/architecture/plugins/author-signing.md §4).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     verified: Option<VerifiedPublisher>,
 }

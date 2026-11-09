@@ -7,7 +7,7 @@
 //! versions show their own prompt while the hook waits and leave the hook's connection open once
 //! the user answers there; an activity hook (`PostToolUse`, `Stop`, ...) tells the island, which
 //! then closes the card (B6.2.7).
-//! Test results behind this: docs/architecture/agent-island-interaction-tasks.md, 实测记录.
+//! Test results behind this: docs/architecture/agent/island-interaction-notes.md, 实测记录.
 
 mod config;
 mod decision;

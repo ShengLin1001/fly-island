@@ -1,6 +1,6 @@
 # 编写 FocuSD Island 插件
 
-插件是一个由岛屿启动的程序。它通过 stdin / stdout 与岛屿通信，可以按授予的权限读写待办和每日笔记，并在设置页里提供按钮。设计背景见 [架构提案](../architecture/plugins.md)，和 VS Code 的差别见 [和 VS Code 插件系统的对比](vscode.md)，后续计划见 [插件平台第 2 版](../architecture/plugin-platform.md)。
+插件是一个由岛屿启动的程序。它通过 stdin / stdout 与岛屿通信，可以按授予的权限读写待办和每日笔记，并在设置页里提供按钮。设计背景见 [架构提案](../architecture/plugins/v1-design.md)，和 VS Code 的差别见 [和 VS Code 插件系统的对比](vscode.md)，后续计划见 [插件平台第 2 版](../architecture/plugins/v2-platform.md)。
 
 > 当前状态：插件 API 第 2 版（第 1 版的插件照常运行，见下文的「API 版本」）。可以在 设置 → 插件市场 中安装，也可以手动放进插件目录。机器可读的协议描述在 [`plugins/schema/`](../../plugins/schema/)：`manifest.schema.json`（清单）和 `rpc.json`（方法、事件、权限、错误码），岛屿的单元测试会对照检查，本文和它不一致时以它为准。
 
@@ -30,7 +30,7 @@
 
 目前的内置插件：
 
-- [本地接口](../local-api.md)（`focusd.local-api`）；
+- [本地接口](../features/local-api.md)（`focusd.local-api`）；
 - 中心图案（`focusd.center-pattern`，默认关闭）：折叠岛没有摘要文字时，在中间显示眼睛、小鸟、光点、小猫或一只 Codex Pets 宠物，宠物随 Agent 会话的状态变换动作。
 - Claude 用量环（`focusd.claude-usage`，默认关闭）：收起条上的同心双环，外环 5 小时、内环 7 天，悬停显示详情卡片。数据与 Agent 页顶部的用量相同（`get_agent_usage`）：Claude Code 经本机 magpie 网关时读它的 `/v1/magpie/quotas`（只请求本机），否则读 claude-hud 写出的用量快照；都不联网、不读登录凭据。设置「直接向 Anthropic 查询」（默认关）打开后，原生端（`src-tauri/src/claude_usage/`）只读 Claude Code 的 `~/.claude/.credentials.json` 里的 access token（不刷新、不改写，不进日志、前端和事件），经 http(s) 代理请求 `api.anthropic.com/api/oauth/usage`：代理依次取插件设置、`HTTPS_PROXY`、Windows 系统代理，都没有就不请求，**从不直连**；不跟随重定向；间隔 5–120 分钟（设置「刷新间隔」），失败时加倍退避，429 遵守 `Retry-After`。`get_agent_usage` 在两份数据中取较新的，并带上最近一次失败的原因。这个接口没有公开文档，可能随时失效。
 - Agent 会话环（`focusd.session-ring`，默认关闭）：AI Agent 开启时，在收起条上用分段小环代替蓝色会话数，按状态着色（等你确认、等你回复、运行、可能已停、刚完成），中间是会话数，悬停列出等你处理的会话，点击打开 Agent 页。数据就是 Agent 页的会话列表（Claude Code 和 Codex），只在岛屿窗口工作，没有原生部分。
@@ -429,7 +429,7 @@ QQ 邮箱授权码、翻译服务密钥这类凭据，任何权限都拿不到�
 | `shelf.add` | 2 | `shelf:write` | `{ paths }`（1–20 个已存在的文件或文件夹的绝对路径，其他的会被跳过） | 同 `shelf.list` |
 | `shelf.remove` | 2 | `shelf:write` | `{ ids }`（1–20 个） | 同 `shelf.list`；只把条目移出列表，不删除文件 |
 
-`todos.*`、`note.*`、`agentStatus.*` 和 [本地接口](../local-api.md) 的 HTTP 接口一一对应，参数和结果完全相同。`agentStatus.*` 的字段规则见本地接口文档的“AI Agent 状态”一节；`name` 省略时默认使用插件清单里的英文名称。插件停止、停用或出错退出时，它上报的来源会被自动清除。
+`todos.*`、`note.*`、`agentStatus.*` 和 [本地接口](../features/local-api.md) 的 HTTP 接口一一对应，参数和结果完全相同。`agentStatus.*` 的字段规则见本地接口文档的“AI Agent 状态”一节；`name` 省略时默认使用插件清单里的英文名称。插件停止、停用或出错退出时，它上报的来源会被自动清除。
 
 插件还可以发送通知 `log`，参数为 `{ message }`，内容会写入日志。
 
@@ -627,7 +627,7 @@ plugin.onCommand("sync-now", async () => {
 
 ### 作者签名
 
-可选。签了名，用户的岛屿才会**自动更新**你的插件；岛屿还会记下第一次看到的密钥，之后换了密钥的版本要用户确认才装。这样即使你的 GitHub 账号或仓库被盗，攻击者发的新版本也不会悄悄装到用户电脑上。设计见 [plugin-author-signing.md](../architecture/plugin-author-signing.md)。
+可选。签了名，用户的岛屿才会**自动更新**你的插件；岛屿还会记下第一次看到的密钥，之后换了密钥的版本要用户确认才装。这样即使你的 GitHub 账号或仓库被盗，攻击者发的新版本也不会悄悄装到用户电脑上。设计见 [plugin-author-signing.md](../architecture/plugins/author-signing.md)。
 
 1. 只需一次：`npx fly-island-plugin keygen` 生成签名密钥。私钥存在 `~/.fly-island-plugin/signing.key`（Windows 上用 DPAPI 加密，只有当前 Windows 账户能解开），也可以用环境变量 `FLY_ISLAND_PLUGIN_SIGNING_KEY`（PEM 文本）提供。它打印的 `{ keyId, publicKey }` 写进 `focusd-plugins` 里你的提交 `plugins/<插件 id>.json` 的 `"signingKeys": [ ... ]`。
 2. 每次发版：`npx fly-island-plugin pack --sign`，把 `<id>-<version>.zip` 和 `<id>-<version>.zip.sig` 一起附到 Release。已经打好的包可以用 `npx fly-island-plugin sign <zip>` 补签。
@@ -642,7 +642,7 @@ plugin.onCommand("sync-now", async () => {
 
 签名对象是 `focusd-plugin-package/1`、插件 id、版本和 zip 的 SHA-256 四行文本（Ed25519），所以签名不能挪到别的插件或别的版本上。**备份私钥**：丢了只能换新密钥，而换密钥后的第一个版本要每个用户手动确认。最安全的做法是在自己电脑上签名再上传，不要把私钥放进仓库的 CI。
 
-**换密钥**（旧密钥还在时）：`npx fly-island-plugin keys rotate`（在插件文件夹里运行；一把密钥签多个插件时加 `--ids a,b`）。它把旧密钥改名为 `<密钥文件>.<旧 keyId>.old` 保留下来，在原位置生成新密钥，并打印每个插件要加进 `signingKeys` 的新条目，里面的 `endorsedBy` 是旧密钥对“插件 id + 新密钥”的签名。把新条目加在旧密钥**后面**（旧密钥先别删）开 PR，合并后用新密钥签名发版。岛屿看到新密钥有已记下的密钥的证明（可以一环接一环），就当作同一个作者，照常自动更新，并改记新密钥。证明只对写在里面的插件 id 有效。丢了旧密钥就做不出证明，只能按 [设计](../architecture/plugin-author-signing.md#35-换密钥与丢失密钥) 里的“丢了密钥”处理，用户要手动确认。
+**换密钥**（旧密钥还在时）：`npx fly-island-plugin keys rotate`（在插件文件夹里运行；一把密钥签多个插件时加 `--ids a,b`）。它把旧密钥改名为 `<密钥文件>.<旧 keyId>.old` 保留下来，在原位置生成新密钥，并打印每个插件要加进 `signingKeys` 的新条目，里面的 `endorsedBy` 是旧密钥对“插件 id + 新密钥”的签名。把新条目加在旧密钥**后面**（旧密钥先别删）开 PR，合并后用新密钥签名发版。岛屿看到新密钥有已记下的密钥的证明（可以一环接一环），就当作同一个作者，照常自动更新，并改记新密钥。证明只对写在里面的插件 id 有效。丢了旧密钥就做不出证明，只能按 [设计](../architecture/plugins/author-signing.md#35-换密钥与丢失密钥) 里的“丢了密钥”处理，用户要手动确认。
 
 ### 官方插件
 
@@ -712,5 +712,5 @@ plugin.onCommand("sync-now", async () => {
 
 - 设置 → 插件扩展 → 展开插件卡片上的 **日志**。启动失败的原因（例如找不到 Node.js）也会显示在卡片上。
 - **开发模式**：设置 → 插件扩展 → **开发者**（默认收起）→ 打开 **开发模式**。之后可以从任意文件夹加载插件（文件夹名不必等于插件 id），不需要打开"允许运行第三方插件"；开发中的插件卡片标着"开发中"，自动获得清单里申请的全部权限（敏感权限第一次使用时仍会询问），可以使用 `experimentalApis`，和插件目录里同 id 的插件同时存在时以开发中的为准。选中一个开发中的插件可以看到最近 200 行原始 JSON-RPC 收发记录，也可以手动给它发一个事件（不管有没有订阅）。开发模式只在内存里，岛屿重启后需要重新打开、重新加载。
-- **命令行**：`npx fly-island-plugin dev` 通过[本地 API](../local-api.md#开发模式) 让岛屿加载当前文件夹，文件变化后自动重启插件，并在终端打印插件日志。需要打开本地 API 插件和它的"允许修改"，以及开发模式。
+- **命令行**：`npx fly-island-plugin dev` 通过[本地 API](../features/local-api.md#开发模式) 让岛屿加载当前文件夹，文件变化后自动重启插件，并在终端打印插件日志。需要打开本地 API 插件和它的"允许修改"，以及开发模式。
 - **不启动岛屿**：`npx fly-island-plugin test` 用模拟宿主运行插件，或在自己的测试里用 `fly-island-plugin/test` 的 `startMockHost`，见 [快速开始](quickstart.md#4-测试不用启动岛屿)。

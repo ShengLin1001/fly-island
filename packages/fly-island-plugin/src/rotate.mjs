@@ -1,5 +1,5 @@
 // `fly-island-plugin keys rotate`: replaces the signing key and has the old key
-// vouch for the new one (docs/architecture/plugin-author-signing.md §3.5), so
+// vouch for the new one (docs/architecture/plugins/author-signing.md §3.5), so
 // islands that remember the old key take updates signed by the new one without
 // asking. The endorsement names the plugin, so a key shared by several plugins
 // is endorsed once per plugin id.

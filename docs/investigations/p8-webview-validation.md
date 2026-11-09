@@ -1,6 +1,6 @@
 # P8 技术验证：插件自定义界面（Webview）能否安全地做
 
-> 日期：2026-11-05。环境：Tauri 2.11.5、wry 0.55.1、webview2-com 0.38.2，Windows 11，WebView2 运行时随系统。验证在隔离的应用标识（`com.focusd.island.verification.*`）下用 release 程序进行，脚本通过 WebView2 远程调试端口在岛屿窗口里插入测试页面，没有改动产品代码。计划见 [plugin-platform.md](plugin-platform.md#p8-webview先验证再决定)。
+> 日期：2026-11-05。环境：Tauri 2.11.5、wry 0.55.1、webview2-com 0.38.2，Windows 11，WebView2 运行时随系统。验证在隔离的应用标识（`com.focusd.island.verification.*`）下用 release 程序进行，脚本通过 WebView2 远程调试端口在岛屿窗口里插入测试页面，没有改动产品代码。计划见 [plugin-platform.md](../architecture/plugins/v2-platform.md#p8-webview先验证再决定)。
 
 ## 结论
 

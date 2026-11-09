@@ -2,7 +2,7 @@ import type { AgentSessionSummary, ExternalAgentStatus } from "./api";
 
 /**
  * A report from another computer: it names the machine (`host`) and the agent (`agent`), sent by
- * a plugin or over the local API, often through an SSH tunnel (docs/agent-status-hooks.md,
+ * a plugin or over the local API, often through an SSH tunnel (docs/features/agent-status-hooks.md,
  * "Sessions on Other Computers"). The Agent page lists these with the local sessions.
  */
 export function isRemoteSessionReport(report: ExternalAgentStatus) {

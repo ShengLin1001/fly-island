@@ -4,7 +4,7 @@
 
 - 修改 `src/` 时还须遵守 [src/AGENTS.md](src/AGENTS.md)（前端规则）。
 - 修改 `src-tauri/` 时还须遵守 [src-tauri/AGENTS.md](src-tauri/AGENTS.md)（Rust / Tauri 规则）。
-- 目标架构见 [docs/architecture/overview.md](docs/architecture/overview.md)，结构重构的分步记录、验证结果与待人工验收项见 [docs/architecture/refactor-plan.md](docs/architecture/refactor-plan.md)。
+- 目标架构见 [docs/architecture/overview.md](docs/architecture/overview.md)，结构重构的分步记录、验证结果与待人工验收项见 [docs/architecture/history/refactor-plan.md](docs/architecture/history/refactor-plan.md)。
 
 子目录规则比本文件更具体，两者冲突时以子目录规则为准。
 
@@ -20,7 +20,7 @@ FocuSD Island（仓库名 fly-island）是 Windows 优先的桌面效率工具�
 | `translation` | `?window=translation` | 快捷翻译窗口，常驻、隐藏显示 |
 | `settings` | `?window=settings` | 设置窗口，`create: false`，按需创建 |
 
-**结构重构已完成（Phase 0–6，收尾与待人工验收项见 [refactor-plan.md](docs/architecture/refactor-plan.md)）。** 代码已按 [overview.md](docs/architecture/overview.md) 的目标结构组织：Rust 侧的 `unsafe` 只在 `src-tauri/src/win32/` 中，生产代码不用 `unwrap` / `expect`，clippy 与 ESLint 均为 0 告警。新代码沿用这套结构与子目录规则。
+**结构重构已完成（Phase 0–6，收尾与待人工验收项见 [refactor-plan.md](docs/architecture/history/refactor-plan.md)）。** 代码已按 [overview.md](docs/architecture/overview.md) 的目标结构组织：Rust 侧的 `unsafe` 只在 `src-tauri/src/win32/` 中，生产代码不用 `unwrap` / `expect`，clippy 与 ESLint 均为 0 告警。新代码沿用这套结构与子目录规则。
 
 ## 技术栈
 
@@ -70,7 +70,7 @@ FocuSD Island（仓库名 fly-island）是 Windows 优先的桌面效率工具�
 | Rust 单元测试 | `cargo test --manifest-path src-tauri/Cargo.toml` |
 | 仅生成 release 可执行文件 | `pnpm build:exe`（在主工作区或任意 lane 运行，写到主工作区的 `src-tauri/target/release`，岛屿在运行也不用关） |
 | 完整打包 | `pnpm tauri build` |
-| 发布 | `pnpm release`（流程见 `docs/updater.md`） |
+| 发布 | `pnpm release`（流程见 `docs/features/updater.md`） |
 | 合入 main（在 lane 里） | `pnpm mq:land`；主工作区快进 `pnpm mq:sync`；列出无人使用的 lane `pnpm mq:reconcile` |
 
 如果运行环境禁止派生子进程（例如受限沙箱），`node --test` 需要加 `--test-isolation=none`。此时 `tests/scripts/release-manifest.test.mjs` 仍会因 `spawnSync` 被拦截而失败，这是环境限制，报告时应如实说明。如果 `vite build` 报错无法删除系统临时目录中的 esbuild 文件（Access is denied），可以把 `TEMP` / `TMP` 指向 `node_modules/.cache/` 下的目录后重试。
@@ -106,7 +106,7 @@ FocuSD Island（仓库名 fly-island）是 Windows 优先的桌面效率工具�
 
 ## 重构约定
 
-适用于所有结构性重构（移动、拆分、改名模块）。Phase 0–6 这一轮已经完成，其记录见 [refactor-plan.md](docs/architecture/refactor-plan.md)。
+适用于所有结构性重构（移动、拆分、改名模块）。Phase 0–6 这一轮已经完成，其记录见 [refactor-plan.md](docs/architecture/history/refactor-plan.md)。
 
 - **搬迁和改写分开提交。** 一个提交要么只移动或拆分代码（零行为变化），要么只修改行为，不能混在一起。
 - 搬迁时不顺手改名、改格式、改逻辑；CSS class 名保持不变，避免视觉回归。

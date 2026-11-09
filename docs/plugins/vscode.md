@@ -1,6 +1,6 @@
 # 和 VS Code 插件系统的对比
 
-本文对比的是 **现在已经落地的** FocuSD Island 插件（见 [编写插件](README.md)），不是 [架构提案](../architecture/plugins.md) 里尚未实现的部分。VS Code 一侧依据其扩展 API：扩展跑在独立的 Extension Host 进程里，通过 `package.json` 的 `contributes` 声明能力，用 `vscode` 模块调用编辑器。
+本文对比的是 **现在已经落地的** FocuSD Island 插件（见 [编写插件](README.md)），不是 [架构提案](../architecture/plugins/v1-design.md) 里尚未实现的部分。VS Code 一侧依据其扩展 API：扩展跑在独立的 Extension Host 进程里，通过 `package.json` 的 `contributes` 声明能力，用 `vscode` 模块调用编辑器。
 
 两边相同的只有一件事：插件不跑在画界面的那个进程里，所以一个插件卡死或崩溃，不至于直接拖垮主界面。其余都不一样。VS Code 是一个可编程的编辑器平台；岛屿是一条很窄的协议。
 
@@ -61,4 +61,4 @@ VS Code 有官方市场：注册发布者、打包成 VSIX、上传、签名校�
 
 岛屿换来的是：任意语言都能写、坏一个不影响岛、界面风格不会被插件拆掉、第三方默认关闭。换出去的是 VS Code 那种“扩展可以长出一整块产品”的能力。第一版故意保持这条窄协议；真要自定义面板或沙箱，是另一项工作，不在现在的插件宿主里。
 
-向 VS Code 式扩展靠拢的分阶段计划见 [插件平台第 2 版](../architecture/plugin-platform.md)。
+向 VS Code 式扩展靠拢的分阶段计划见 [插件平台第 2 版](../architecture/plugins/v2-platform.md)。

@@ -1,6 +1,6 @@
 //! Clicking a session on the Agent page: find the window that shows it and bring it forward, and
 //! in Orca, Windows Terminal or VS Code switch to its tab or terminal. The order tried is in
-//! docs/agent-status-hooks.md, "Switching to a Session's Window". Every attempt is written to
+//! docs/features/agent-status-hooks.md, "Switching to a Session's Window". Every attempt is written to
 //! agent-focus.log (focus_log.rs).
 
 use std::path::Path;

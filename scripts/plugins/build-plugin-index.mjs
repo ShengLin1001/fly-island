@@ -4,13 +4,13 @@
 // this index is only read by islands released before the move, which trust only
 // the older key; the official plugins' submissions in focusd-plugins point their
 // "package" at the zips written here. Each zip also gets <zip>.sig, the official
-// author signature (docs/architecture/plugin-author-signing.md), made with the key
+// author signature (docs/architecture/plugins/author-signing.md), made with the key
 // whose public half is plugins/author-key.json. Market
 // details that are not in the manifest (publisher, repository, categories) come
 // from plugins/market/<id>.json, as they will in the index repository. It also
 // signs plugins/revoked.json, the list of versions taken off the market.
-// Usage: pnpm plugins:index. Design: docs/architecture/plugins.md (P4),
-// docs/architecture/plugin-platform.md (P11).
+// Usage: pnpm plugins:index. Design: docs/architecture/plugins/v1-design.md (P4),
+// docs/architecture/plugins/v2-platform.md (P11).
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";

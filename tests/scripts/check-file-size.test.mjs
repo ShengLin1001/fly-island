@@ -27,7 +27,7 @@ test("limits follow the file type and exempt dictionaries and extracted Rust tes
   assert.equal(lineLimitFor("src/i18n/sections/settings/plugins.ts"), null);
   assert.equal(lineLimitFor("src-tauri/src/mail/tests.rs"), null);
   assert.equal(lineLimitFor("src/i18n/index.ts"), 400);
-  assert.equal(lineLimitFor("docs/i18n.md"), null);
+  assert.equal(lineLimitFor("docs/features/i18n.md"), null);
 });
 
 test("inline test modules are measured from the attribute to the column-0 closing brace", () => {

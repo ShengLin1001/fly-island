@@ -1,7 +1,7 @@
 # 插件系统设计（草案）
 
 > 状态：**提案，未实施**。本文用于评审方向，评审通过后再拆成实施计划。
-> 前置条件：结构重构（[refactor-plan.md](refactor-plan.md)）Phase 6、Phase 7 完成之后再开工，避免把旧结构固化成对外契约。
+> 前置条件：结构重构（[refactor-plan.md](../history/refactor-plan.md)）Phase 6、Phase 7 完成之后再开工，避免把旧结构固化成对外契约。
 
 ## 1. 目标与非目标
 
@@ -164,7 +164,7 @@
 
 ## 8. AI Agent 适配：协议化
 
-现在的 hook 方案（`agent-*-running.flag` 加 `agent-status.json`，见 [agent-status-hooks.md](../agent-status-hooks.md)）只认 `codex`、`claudeCode` 两个 id。建议：
+现在的 hook 方案（`agent-*-running.flag` 加 `agent-status.json`，见 [agent-status-hooks.md](../../features/agent-status-hooks.md)）只认 `codex`、`claudeCode` 两个 id。建议：
 
 1. 把来源 id 改成开放集合：`agentStatus.report` 和本地 API 接受任意已声明的 `source`。
 2. Codex 和 Claude Code 的适配保留为**内置**，它们的 hook 安装逻辑不变（已有契约）。
@@ -174,7 +174,7 @@
 
 ## 9. 安装、存储与生命周期
 
-- 插件目录：`%APPDATA%\com.focusd.island\plugins\<id>\`；私有数据：`plugins-data\<id>\`；启用状态与授权记录：`plugins.json`。这些都是新增契约，落地时登记到 [contracts.md](contracts.md)。
+- 插件目录：`%APPDATA%\com.focusd.island\plugins\<id>\`；私有数据：`plugins-data\<id>\`；启用状态与授权记录：`plugins.json`。这些都是新增契约，落地时登记到 [contracts.md](../contracts.md)。
 - **受限模式**：第三方插件默认不运行，用户在设置中开启"允许第三方插件"后才运行。内置插件不受影响。
 - 安装时展示权限清单让用户确认；升级时如果权限变多，需要重新确认。
 - 进程管理：插件崩溃后按退避策略重启（例如 1s、5s、30s，连续失败三次后停用并提示）；每个请求设置超时；停用或卸载时结束进程（使用 Job Object，确保子进程一并退出）。
@@ -184,7 +184,7 @@
 
 > P4 的实际做法（2026-11-04）：没有单独建索引仓库，也没有使用 GitHub Releases。索引和插件包都放在当前 fork 仓库 `TixXin/fly-island` 的 `dev` 分支的 `plugins/` 目录下（不用 `main`，因为上游 PR #36 跟踪的是 `TixXin:main`），应用从 `raw.githubusercontent.com` 下载。打包脚本生成的 zip 内容是固定的（同样的文件每次得到同样的哈希），已发布的版本内容不得修改。以后迁到上游仓库或独立仓库时，需要同时修改 `scripts/plugins/build-plugin-index.mjs` 中的 `MARKET_BASE_URL` 和 `src-tauri/src/plugin_host/market.rs` 中的 `MARKET_REPO` / `MARKET_BRANCH` / `INDEX_URL`。索引用 Ed25519 签名（`index.json.sig`），岛屿只信任编译进去的 `plugins/signing-keys.json` 中的公钥，并按 `dev` 分支最新的提交号下载索引和签名，避免读到 CDN 的旧缓存。
 >
-> 2026-11-05 起 fork 独立维护，上游 PR #36 已关闭，市场改用 `main` 分支：`MARKET_BRANCH`、`INDEX_URL` 和 `MARKET_BASE_URL` 都指向 `main`，`index.json` 里的下载地址也随之改为 `main`。已安装的旧版本仍按 `dev` 读取索引，所以每次推送都把 `dev` 推到与 `main` 相同的提交（`git push origin main main:dev`）；旧版本读到的索引里指向 `main` 的下载地址同样有效。各插件清单里的 `homepage` 仍写 `tree/dev`：它们打在已发布的包里，不能修改，`dev` 与 `main` 同步时这些链接照常可用。细节见 [docs/plugins/README.md](../plugins/README.md#签名)。
+> 2026-11-05 起 fork 独立维护，上游 PR #36 已关闭，市场改用 `main` 分支：`MARKET_BRANCH`、`INDEX_URL` 和 `MARKET_BASE_URL` 都指向 `main`，`index.json` 里的下载地址也随之改为 `main`。已安装的旧版本仍按 `dev` 读取索引，所以每次推送都把 `dev` 推到与 `main` 相同的提交（`git push origin main main:dev`）；旧版本读到的索引里指向 `main` 的下载地址同样有效。各插件清单里的 `homepage` 仍写 `tree/dev`：它们打在已发布的包里，不能修改，`dev` 与 `main` 同步时这些链接照常可用。细节见 [docs/plugins/README.md](../../plugins/README.md#签名)。
 
 > 2026-11-06 起岛屿读独立的索引仓库 [`TixXin/focusd-plugins`](https://github.com/TixXin/focusd-plugins)（根目录的 `index.json` / `revoked.json`，由它的 CI 每小时重建并用密钥 `e862885af5bba3dc` 签名；第三方插件包放在作者自己仓库的 GitHub Release）。`market.rs` 的 `MARKET_REPO` / `INDEX_URL` 指向它。双写兼容：切换前发布的岛屿只信任旧密钥，继续读本仓库 `plugins/index.json`（`main` / `dev`），由 `pnpm plugins:index` 用旧密钥签名，只含官方插件；官方插件的包仍放在本仓库 `plugins/packages/`，`focusd-plugins` 里的提交用 `package` 指向它们。下架要两边的 `revoked.json` 都改。
 
@@ -207,11 +207,11 @@
 | 阶段 | 内容 | 交付给用户的价值 |
 |---|---|---|
 | P0 | 完成重构 Phase 6、7 | — |
-| P1 ✅ | Rust `local_api` + 前端 `features/local-api/`（即本文的 plugin-bridge），只开放待办和笔记，见 [local-api.md](../local-api.md)。2026-11-04 起改为内置插件 `focusd.local-api`（`plugin_host/builtin.rs`），在"插件扩展"中开启和设置 | **待办外部接口**（当前用户的需求）直接可用 |
+| P1 ✅ | Rust `local_api` + 前端 `features/local-api/`（即本文的 plugin-bridge），只开放待办和笔记，见 [local-api.md](../../features/local-api.md)。2026-11-04 起改为内置插件 `focusd.local-api`（`plugin_host/builtin.rs`），在"插件扩展"中开启和设置 | **待办外部接口**（当前用户的需求）直接可用 |
 | P2 ✅ | 插件（权限 `agent-status:write`）和本地接口（`/v1/agent-status/{source}`）都可以上报 AI Agent 状态，在快照里作为 `others` 列表返回；Codex / Claude Code 的 hook 保持不变。声明式插件加载随 P3 一起完成（`runtime.type: none`） | 新的 AI Agent 适配不必再等发版 |
-| P3 ✅ | 进程插件宿主（`src-tauri/src/plugin_host/`）、设置 → 插件页（`src/features/plugins/`）、Node SDK 和示例插件，开发文档见 [docs/plugins/README.md](../plugins/README.md) | 第三方开发者可以写插件 |
+| P3 ✅ | 进程插件宿主（`src-tauri/src/plugin_host/`）、设置 → 插件页（`src/features/plugins/`）、Node SDK 和示例插件，开发文档见 [docs/plugins/README.md](../../plugins/README.md) | 第三方开发者可以写插件 |
 | P4 ✅ | 暂用 fork 仓库 `TixXin/fly-island` 的 `dev` 分支上的 `plugins/index.json` 作为索引，插件包放在同一仓库的 `plugins/packages/`；设置里单独的「插件市场」页可以浏览、安装、更新插件，并校验 SHA-256 | 用户可以在应用内浏览和安装插件 |
-| P5 起 | 宿主 API 第 2 版、数据下沉、岛上页面模板、Webview 验证、按需启动、开发者工具、外部作者市场，计划见 [plugin-platform.md](plugin-platform.md)。索引签名已在 P4 完成；WASM 沙箱不在计划内 | 第三方插件能在岛上显示界面，外部作者能自己上架 |
+| P5 起 | 宿主 API 第 2 版、数据下沉、岛上页面模板、Webview 验证、按需启动、开发者工具、外部作者市场，计划见 [plugin-platform.md](v2-platform.md)。索引签名已在 P4 完成；WASM 沙箱不在计划内 | 第三方插件能在岛上显示界面，外部作者能自己上架 |
 
 每个阶段都可以单独发布、单独验证。如果 P3 之后没人写插件，P4 可以不做，P1、P2 的成果仍然有用。
 

@@ -1,7 +1,7 @@
 //! Todos, the daily note and archives, kept by Rust in `todos.json` under the
 //! app data folder. They used to live in the island window's localStorage; the
 //! window moves them over at start-up (migration.rs). Design and migration
-//! rules: docs/architecture/plugin-platform.md, P6.
+//! rules: docs/architecture/plugins/v2-platform.md, P6.
 //!
 //! - model.rs: the data and its checks
 //! - store.rs: atomic, read-back-checked writes of `todos.json`

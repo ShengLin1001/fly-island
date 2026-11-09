@@ -47,7 +47,7 @@ Collapsed and idle with no music playing (default settings, no plugins): about 1
 
 1. Download and install from [Releases](https://github.com/TixXin/fly-island/releases/latest). The installers are not code-signed; if SmartScreen warns, choose "More info → Run anyway".
 2. Move the pointer onto the island at the top of the screen to expand it; the gear button or the tray icon opens Settings.
-3. Mail, translation and AI agents need a one-time setup in Settings. See [mail](docs/mail.md), [AI agents](docs/agent-status-hooks.md), [QQ](docs/qq-notification-compatibility.md) and [WeChat](docs/wechat-reminder-compatibility.md) (in Chinese).
+3. Mail, translation and AI agents need a one-time setup in Settings. See [mail](docs/features/mail.md), [AI agents](docs/features/agent-status-hooks.md), [QQ](docs/features/qq-notifications.md) and [WeChat](docs/features/wechat-reminders.md) (in Chinese).
 
 To write your own plugin, see the [plugin docs](docs/plugins/README.md).
 
@@ -73,7 +73,7 @@ pnpm tauri dev      # development
 pnpm tauri build    # installers
 ```
 
-Built with Tauri 2, React 19 + TypeScript and Rust. Releases and in-app updates are described in [docs/updater.md](docs/updater.md) (in Chinese).
+Built with Tauri 2, React 19 + TypeScript and Rust. Releases and in-app updates are described in [docs/features/updater.md](docs/features/updater.md) (in Chinese).
 
 ## License
 
