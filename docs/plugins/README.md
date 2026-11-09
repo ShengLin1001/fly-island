@@ -141,7 +141,7 @@ plugins/<插件 id>/        # 文件夹名必须等于插件 id
 | `views[].template` | `list`、`detail`、`form`、`status` 或 `webview`，见下面的模板说明。 |
 | `views[].entry` / `views[].height` | 只用于 `webview`：页面文件和页面高度，见「自定义界面」。 |
 | `statusItems[].id` | 同上。 |
-| `statusItems[].priority` | -100 到 100，默认 0。所有插件有文字的状态项里，只显示优先级最高的一个。 |
+| `statusItems[].priority` | -100 到 100，默认 0。每个有文字的状态项都是收起条上的一个项目（id `plugin:<插件 id>/<状态项 id>`）；用户没排过时按优先级从高到低排在右侧，用户可以在 外观 → 收起条上的项目 里调顺序、换到左侧或隐藏。插件不需要也不能决定位置。（2026-11-09 之前只显示优先级最高的一个。） |
 
 - 页面在岛上的 id 是 `plugin:<插件 id>/<view id>`。插件页面排在内置页面之后，用页眉里的小图标打开，也参与 Alt+数字 和左右切换（数字键只到 9）。用户可以在 **设置 → 插件扩展 → 岛上页面** 里隐藏某个页面、调整顺序。
 - 插件用 `view.update { viewId, model }` 发整个模型（序列化后不超过 256 KB，超过返回状态 413），用 `view.patch` 只改列表里的几项（在 `view.update` 之前调用返回 409）：`items` 按 `id` 替换，`remove: [id]` 删除，`add: [{ item, before?, group? }]` 插入（`before` 那一项前面，否则第 `group` 组末尾，否则列表末尾）。每个页面每秒最多显示 10 次更新，更快的会合并成最后一次。
