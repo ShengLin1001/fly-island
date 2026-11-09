@@ -1,16 +1,17 @@
 /* The island gives every page its colors as --focusd-* variables; the chart colors are the
    monitor's own so CPU, GPU, memory and the two directions stay apart. The page asks for no
-   card (frame "none"), so it sits on the island itself: no boxes, just two columns. */
+   card (frame "none"), so it sits on the island itself: no boxes, just two columns. On a light
+   island the island gives a light color scheme and dark text; light-dark() picks the chart
+   colors that read on it. */
 :root {
-  --cpu: #4da3ff;
-  --gpu: #34c759;
-  --memory: #5ac8fa;
-  --down: #64d2ff;
-  --up: #ff9f0a;
-  --warm: #e5c890;
-  --hot: #e78284;
+  --cpu: light-dark(#1a73e8, #4da3ff);
+  --gpu: light-dark(#1e9e4a, #34c759);
+  --memory: light-dark(#0a84c6, #5ac8fa);
+  --down: light-dark(#0a84c6, #64d2ff);
+  --up: light-dark(#c76a00, #ff9f0a);
+  --warm: light-dark(#a8741a, #e5c890);
+  --hot: light-dark(#c4413f, #e78284);
   --muted: color-mix(in srgb, var(--focusd-text) 54%, transparent);
-  --line: color-mix(in srgb, var(--focusd-text) 9%, transparent);
   --track: color-mix(in srgb, var(--focusd-text) 10%, transparent);
   --hover: color-mix(in srgb, var(--focusd-text) 6%, transparent);
 }
@@ -24,6 +25,7 @@ body {
   font-family: var(--focusd-font);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
+  user-select: none;
 }
 
 *,
@@ -51,20 +53,39 @@ body {
   gap: 24px;
   padding: 2px 2px 0;
   overflow: hidden;
+  animation: monitorIn 200ms ease-out;
 }
 
-/* Left column: CPU and GPU, the cores, memory, network, and what else there is. */
+@keyframes monitorIn {
+  from { opacity: 0; }
+}
+
+/* Left column: CPU and GPU with their details, memory, network, and what else there is. */
 .stats {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  /* Rows spread over the height, so a computer with fewer rows (no battery, no VRAM) leaves no gap at the bottom. */
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 4px;
 }
 
 .pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+/* No GPU to read at all: the CPU takes the whole row. */
+.monitor--no-gpu .pair {
+  grid-template-columns: 1fr;
+}
+
+.unit {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
 }
 
 .gauge {
@@ -119,7 +140,12 @@ body {
   fill: none;
   stroke-width: 3;
   stroke-linecap: round;
-  transition: stroke-dashoffset 320ms ease-out;
+  transition: stroke-dashoffset 320ms ease-out, stroke 320ms ease-out;
+}
+
+/* A ring at 0 draws no dot. */
+.ring--empty .ring__arc {
+  visibility: hidden;
 }
 
 .ring__label {
@@ -130,8 +156,8 @@ body {
   dominant-baseline: central;
 }
 
-.gauge--cpu .ring__arc { stroke: var(--cpu); }
-.gauge--gpu .ring__arc { stroke: var(--gpu); }
+.unit--cpu .ring__arc { stroke: var(--cpu); }
+.unit--gpu .ring__arc { stroke: var(--gpu); }
 .line--memory .ring__arc { stroke: var(--memory); }
 .ring--warm .ring__arc { stroke: var(--warm) !important; }
 .ring--hot .ring__arc { stroke: var(--hot) !important; }
@@ -161,17 +187,17 @@ body {
 .spark--up .spark__line { stroke: var(--up); }
 .spark--up .spark__fill { fill: var(--up); }
 
-/* One thin bar per logical core, lit from the bottom. */
+/* Under the CPU: one thin bar per logical core, lit from the bottom (the gap narrows with many cores). */
 .cores {
   height: 30px;
   display: flex;
   align-items: stretch;
-  gap: 3px;
+  gap: var(--core-gap, 3px);
 }
 
 .cores__core {
   flex: 1 1 0;
-  min-width: 2px;
+  min-width: 1px;
   max-width: 14px;
   display: flex;
   align-items: flex-end;
@@ -185,6 +211,47 @@ body {
   background: var(--cpu);
   border-radius: 3px;
   transition: height 320ms ease-out;
+}
+
+/* Under the GPU: its engines (3D, copy, video decode and encode), each a bar with its name. */
+.engines {
+  height: 30px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.engine {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 2px;
+}
+
+.engine__bar {
+  display: flex;
+  align-items: flex-end;
+  background: var(--track);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.engine__bar > span {
+  width: 100%;
+  min-height: 2px;
+  background: var(--gpu);
+  border-radius: 3px;
+  transition: height 320ms ease-out;
+}
+
+.engine__name {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .line {
@@ -205,9 +272,16 @@ body {
   font-weight: 600;
 }
 
-.line__value small {
+.line__value small,
+.line__percent {
   color: var(--muted);
   font-size: 12px;
+  font-weight: 600;
+}
+
+.line__percent {
+  flex: 0 0 32px;
+  text-align: right;
 }
 
 .meter {
@@ -262,6 +336,7 @@ body {
 .line--extra {
   min-height: 18px;
   gap: 16px;
+  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
@@ -286,10 +361,42 @@ body {
   min-height: 26px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
+}
+
+.processes__head > span {
+  flex: 1 1 auto;
+}
+
+.processes__open {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.processes__open svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.processes__open:hover {
+  color: var(--focusd-text);
+  background: var(--hover);
 }
 
 .toggle {
@@ -317,7 +424,8 @@ body {
   background: color-mix(in srgb, var(--focusd-text) 16%, transparent);
 }
 
-.toggle button:focus-visible {
+.toggle button:focus-visible,
+.processes__open:focus-visible {
   outline: 2px solid var(--focusd-accent);
   outline-offset: 1px;
 }
@@ -346,10 +454,18 @@ body {
   background: var(--hover);
 }
 
+/* Until the first two scans are in: grey placeholder rows, so the column does not jump. */
+.processes__list li.processes__placeholder::after {
+  content: "";
+  grid-column: 1 / -1;
+  height: 10px;
+  background: var(--track);
+  border-radius: 999px;
+}
+
 .processes__icon {
   width: 20px;
   height: 20px;
-  border-radius: 5px;
   object-fit: contain;
 }
 
@@ -386,6 +502,10 @@ body {
   white-space: nowrap;
 }
 
+.processes__figure--hot {
+  color: var(--hot);
+}
+
 /* Narrower than asked (a large expanded scale caps the island, or an island before 0.3.4 shows
    the page in its 520px card): a narrower program column and no small charts beside the figures. */
 @media (max-width: 640px) {
@@ -399,7 +519,8 @@ body {
   }
 
   .gauge .spark,
-  .net__item .spark {
+  .net__item .spark,
+  .line__percent {
     display: none;
   }
 
@@ -408,14 +529,23 @@ body {
     gap: 12px;
   }
 
+  .net__item {
+    grid-template-columns: 12px minmax(0, 1fr);
+  }
+
   .processes__count {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .monitor {
+    animation: none;
+  }
+
   .ring__arc,
   .cores__core > span,
+  .engine__bar > span,
   .meter > span {
     transition: none;
   }

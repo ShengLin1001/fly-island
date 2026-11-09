@@ -61,7 +61,7 @@ export function PluginViewPage({
     body = <p className="plugin-view__state">{t.pluginViews.starting}</p>;
   } else if (webview) {
     // The plugin's own page: it talks to its plugin directly and needs no model.
-    body = <WebviewTemplate pluginId={entry.pluginId} viewId={entry.viewId} active={isOpen} />;
+    body = <WebviewTemplate pluginId={entry.pluginId} viewId={entry.viewId} active={isOpen} frameless={entry.frame === "none"} />;
   } else if (!loaded || model === null) {
     body = <p className="plugin-view__state">{t.pluginViews.waiting}</p>;
   } else if (entry.template === "list") {

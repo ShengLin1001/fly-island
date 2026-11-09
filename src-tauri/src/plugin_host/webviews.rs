@@ -151,16 +151,41 @@ pub(super) fn parse_page_message(json: &str) -> Result<PageMessage, String> {
     }
 }
 
+/// The page's colors. A page in the island's card is on a dark surface; a page without the card
+/// (frame "none", E15) is on the island itself, so its text takes the island's ink: dark on a
+/// light island. `ink` is "r, g, b" (--island-ink-rgb); anything else counts as no ink.
+fn theme_css(ink: Option<&str>) -> String {
+    const FONT: &str = r#"--focusd-radius:8px;--focusd-font:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI",sans-serif"#;
+    const ACCENTS: &str = "--focusd-accent:#74d6ff;--focusd-success:#2f8c61;--focusd-warning:#ffd166;--focusd-danger:#c75065";
+    let parsed = ink.and_then(|ink| {
+        let parts: Vec<u8> = ink.split(',').filter_map(|part| part.trim().parse().ok()).collect();
+        (parts.len() == 3 && ink.split(',').count() == 3).then(|| (parts[0], parts[1], parts[2]))
+    });
+    match parsed {
+        Some((r, g, b)) => {
+            let light_island = u32::from(r) + u32::from(g) + u32::from(b) < 384;
+            let (scheme, accent) = if light_island { ("light", "--focusd-accent:#0a84c6;--focusd-success:#2f8c61;--focusd-warning:#b7791f;--focusd-danger:#c75065") } else { ("dark", ACCENTS) };
+            format!(
+                ":root{{color-scheme:{scheme};--focusd-text:rgb({r},{g},{b});--focusd-text-muted:rgba({r},{g},{b},.68);--focusd-surface:rgba({r},{g},{b},.06);--focusd-border:rgba({r},{g},{b},.12);{accent};{FONT}}}"
+            )
+        }
+        None => format!(":root{{color-scheme:dark;--focusd-text:#f8f6f0;--focusd-text-muted:rgba(248,246,240,.72);--focusd-surface:rgba(255,255,255,.08);--focusd-border:rgba(255,255,255,.12);{ACCENTS};{FONT}}}"),
+    }
+}
+
 /// Runs first in every document and frame of the page: the island's colors,
 /// no WebRTC (it reaches the network around CSP), and `acquireFocusdApi()`.
-pub(super) fn init_script(state: &Value, locale: &str) -> String {
+pub(super) fn init_script(state: &Value, locale: &str, ink: Option<&str>) -> String {
     let locale = if locale == "zh-CN" { "zh-CN" } else { "en" };
-    INIT_SCRIPT.replace("__STATE__", &state.to_string()).replace("__LOCALE__", locale)
+    INIT_SCRIPT
+        .replace("__THEME__", &theme_css(ink))
+        .replace("__STATE__", &state.to_string())
+        .replace("__LOCALE__", locale)
 }
 
 const INIT_SCRIPT: &str = r#"(() => {
   const theme = new CSSStyleSheet();
-  theme.replaceSync(':root{color-scheme:dark;--focusd-text:#f8f6f0;--focusd-text-muted:rgba(248,246,240,.72);--focusd-accent:#74d6ff;--focusd-surface:rgba(255,255,255,.08);--focusd-border:rgba(255,255,255,.12);--focusd-success:#2f8c61;--focusd-warning:#ffd166;--focusd-danger:#c75065;--focusd-radius:8px;--focusd-font:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI",sans-serif}');
+  theme.replaceSync('__THEME__');
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, theme];
   for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCSessionDescription", "RTCIceCandidate"]) {
     try { Object.defineProperty(window, name, { value: undefined, configurable: false, writable: false }); } catch {}
@@ -219,6 +244,8 @@ struct PageSpec {
     dev: bool,
     /// The island's language, "zh-CN" or "en".
     locale: String,
+    /// The island's ink for a page drawn without the card; None in the card.
+    ink: Option<String>,
 }
 
 fn page_spec(plugin_id: &str, view_id: &str) -> Result<PageSpec, String> {
@@ -240,7 +267,7 @@ fn page_spec(plugin_id: &str, view_id: &str) -> Result<PageSpec, String> {
     let entry = view.entry.as_deref().ok_or("The page has no entry.")?;
     let (folder, file) = entry.rsplit_once('/').unwrap_or(("", entry));
     let root = if folder.is_empty() { plugin.dir.clone() } else { plugin.dir.join(folder) };
-    Ok(PageSpec { root, file: file.to_string(), dev: plugin.dev, locale: String::new() })
+    Ok(PageSpec { root, file: file.to_string(), dev: plugin.dev, locale: String::new(), ink: None })
 }
 
 /// The page's side of one view: what it may load and where its messages go.
@@ -344,10 +371,12 @@ fn to_rect(bounds: WebviewBounds, scale: f64) -> Result<Rect, String> {
 }
 
 /// The island shows a webview page at `bounds` (creating it the first time)
-/// or moves it there. `locale` is the island's language, given to the page.
+/// or moves it there. `locale` is the island's language, given to the page; `ink` (optional,
+/// "r, g, b") the island's text color for a page drawn without the card. Both apply when the
+/// page is created.
 #[tauri::command]
-pub fn show_plugin_webview(app: AppHandle, id: String, view_id: String, bounds: WebviewBounds, locale: String) -> Result<(), String> {
-    let spec = PageSpec { locale, ..page_spec(&id, &view_id)? };
+pub fn show_plugin_webview(app: AppHandle, id: String, view_id: String, bounds: WebviewBounds, locale: String, ink: Option<String>) -> Result<(), String> {
+    let spec = PageSpec { locale, ink, ..page_spec(&id, &view_id)? };
     let window = app.get_webview_window(island::WINDOW_LABEL).ok_or("The island window is not open.")?;
     let scale = window.scale_factor().map_err(|error| format!("Could not read the window scale: {error}"))?;
     let rect = to_rect(bounds, scale)?;
@@ -407,7 +436,7 @@ fn start_page(
     let state = lock(states()).get(&key).cloned().unwrap_or(Value::Null);
     let options = PageOptions {
         start_url: format!("{origin}/{}", spec.file),
-        init_script: init_script(&state, &spec.locale),
+        init_script: init_script(&state, &spec.locale, spec.ink.as_deref()),
         dev_tools: spec.dev,
     };
     let host = Rc::new(PluginPage { plugin_id: key.0.clone(), view_id: key.1.clone(), origin, root: spec.root });

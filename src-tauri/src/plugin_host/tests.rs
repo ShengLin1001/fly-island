@@ -1211,9 +1211,17 @@ mod webview_tests {
         assert!(parse_page_message("not json").is_err());
         let big = json!({ "type": "state", "state": "x".repeat(70 * 1024) }).to_string();
         assert!(parse_page_message(&big).is_err());
-        let script = init_script(&json!({ "done": 1 }), "fr");
+        let script = init_script(&json!({ "done": 1 }), "fr", None);
         assert!(script.contains(r#"let state = {"done":1};"#) && script.contains(r#"locale: "en""#));
-        assert!(script.contains("RTCPeerConnection") && !script.contains("__STATE__"));
+        assert!(script.contains("RTCPeerConnection") && !script.contains("__STATE__") && !script.contains("__THEME__"));
+        assert!(script.contains("--focusd-text:#f8f6f0") && script.contains("color-scheme:dark"));
+        // A page without the card on a light island gets the island's dark ink.
+        let light = init_script(&json!(null), "zh-CN", Some("24, 24, 30"));
+        assert!(light.contains("color-scheme:light") && light.contains("--focusd-text:rgb(24,24,30)"));
+        assert!(init_script(&json!(null), "en", Some("241, 240, 246")).contains("color-scheme:dark;--focusd-text:rgb(241,240,246)"));
+        for bad in ["24,24", "a,b,c", "300,0,0", "1,2,3,4", "');alert(1);('"] {
+            assert!(init_script(&json!(null), "en", Some(bad)).contains("--focusd-text:#f8f6f0"), "{bad}");
+        }
     }
 }
 

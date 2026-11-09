@@ -6,43 +6,49 @@
     <link rel="stylesheet" href="monitor.css" />
   </head>
   <body>
-    <!-- Two columns, no cards: the island draws the page straight on itself (frame "none"). -->
+    <!-- Two columns, no cards: the island draws the page straight on itself (frame "none").
+         Each of CPU and GPU has its detail under it: the cores, the GPU's engines. -->
     <main class="monitor" id="monitor" hidden>
       <div class="stats">
         <div class="pair">
-          <section class="gauge gauge--cpu">
-            <svg class="ring" id="cpu-ring" viewBox="0 0 28 28" aria-hidden="true"></svg>
-            <div class="gauge__text">
-              <strong class="gauge__value" id="cpu">-</strong>
-              <span class="gauge__extra" id="cpu-extra">CPU</span>
+          <section class="unit unit--cpu" id="cpu-unit">
+            <div class="gauge">
+              <svg class="ring" id="cpu-ring" viewBox="0 0 28 28" aria-hidden="true"></svg>
+              <div class="gauge__text">
+                <strong class="gauge__value" id="cpu">-</strong>
+                <span class="gauge__extra" id="cpu-extra">CPU</span>
+              </div>
+              <svg class="spark spark--cpu" id="cpu-spark" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"></svg>
             </div>
-            <svg class="spark spark--cpu" id="cpu-spark" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="cores" id="cores" aria-hidden="true"></div>
           </section>
-          <section class="gauge gauge--gpu">
-            <svg class="ring" id="gpu-ring" viewBox="0 0 28 28" aria-hidden="true"></svg>
-            <div class="gauge__text">
-              <strong class="gauge__value" id="gpu">-</strong>
-              <span class="gauge__extra" id="gpu-extra">GPU</span>
+          <section class="unit unit--gpu" id="gpu-unit">
+            <div class="gauge">
+              <svg class="ring" id="gpu-ring" viewBox="0 0 28 28" aria-hidden="true"></svg>
+              <div class="gauge__text">
+                <strong class="gauge__value" id="gpu">-</strong>
+                <span class="gauge__extra" id="gpu-extra">GPU</span>
+              </div>
+              <svg class="spark spark--gpu" id="gpu-spark" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"></svg>
             </div>
-            <svg class="spark spark--gpu" id="gpu-spark" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="engines" id="engines"></div>
           </section>
         </div>
 
-        <div class="cores" id="cores" aria-hidden="true"></div>
-
-        <section class="line line--memory">
+        <section class="line line--memory" id="memory-line">
           <svg class="ring" id="memory-ring" viewBox="0 0 28 28" aria-hidden="true"></svg>
           <span class="line__value" id="memory"></span>
           <span class="meter" id="memory-meter"><span></span></span>
+          <span class="line__percent" id="memory-percent"></span>
         </section>
 
         <section class="line line--net">
-          <span class="net__item net__item--down">
+          <span class="net__item net__item--down" id="down-item">
             <span class="net__arrow" id="down-label">&#8595;</span>
             <span class="net__rate" id="download">-</span>
             <svg class="spark spark--down" id="down-spark" viewBox="0 0 120 18" preserveAspectRatio="none" aria-hidden="true"></svg>
           </span>
-          <span class="net__item net__item--up">
+          <span class="net__item net__item--up" id="up-item">
             <span class="net__arrow" id="up-label">&#8593;</span>
             <span class="net__rate" id="upload">-</span>
             <svg class="spark spark--up" id="up-spark" viewBox="0 0 120 18" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -55,6 +61,9 @@
       <section class="processes">
         <div class="processes__head">
           <span id="processes-label"></span>
+          <button class="processes__open" type="button" id="task-manager">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>
+          </button>
           <div class="toggle" role="group" id="sort">
             <button type="button" data-sort="cpu" aria-pressed="true">CPU</button>
             <button type="button" data-sort="memory" aria-pressed="false" id="sort-memory"></button>

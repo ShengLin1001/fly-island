@@ -182,7 +182,7 @@ plugins/<插件 id>/        # 文件夹名必须等于插件 id
   - `getState()` / `setState(state)`：岛屿运行期间为这个页面保存的一小段数据（不超过 64 KB），页面关掉再打开时能马上拿到；
   - `locale`：岛屿当前语言，`"zh-CN"` 或 `"en"`。
 - 页面打开时才创建，离开屏幕就关闭。`webview.postMessage` 返回 `{ shown }`，页面不在屏幕上时为 `false`，消息被丢弃；页面脚本还没运行时发的消息也会丢失，所以让页面加载后先发一条"准备好了"，插件收到再发数据（示例 `dev.focusd.todo-ring` 就是这样）。
-- 主题：页面里有岛屿的颜色变量 `--focusd-text`、`--focusd-text-muted`、`--focusd-accent`、`--focusd-surface`、`--focusd-border`、`--focusd-success`、`--focusd-warning`、`--focusd-danger`、`--focusd-radius`、`--focusd-font`。页面背景默认透明，下面是岛屿的页面底色。
+- 主题：页面里有岛屿的颜色变量 `--focusd-text`、`--focusd-text-muted`、`--focusd-accent`、`--focusd-surface`、`--focusd-border`、`--focusd-success`、`--focusd-warning`、`--focusd-danger`、`--focusd-radius`、`--focusd-font`。页面背景默认透明，下面是岛屿的页面底色。套卡片的页面始终是深色主题；`frame: "none"` 的页面（0.3.4 起）的 `--focusd-text` 等跟着岛屿底色：浅色岛屿上是深色文字，`color-scheme` 也是 `light`，所以页面里可以用 `light-dark()` 给图表配两套颜色。主题在页面打开时定下，岛屿换了底色，下次打开页面才生效。
 - 开发模式加载的插件，页面可以右键打开开发者工具（F12）；其他插件没有右键菜单和浏览器快捷键。
 - 插件市场会给带自定义界面的插件加上"自定义界面"标签，安装前值得多看一眼。
 - `initialize.capabilities` 含 `webview` 时岛屿支持这个模板。不支持的旧版本岛屿无法安装带 `webview` 页面的插件（清单校验不通过），发布这样的插件时最好写上 `minAppVersion`。

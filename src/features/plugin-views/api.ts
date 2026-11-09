@@ -33,8 +33,9 @@ export type PluginViewEntry = {
 export type PluginWebviewBounds = { x: number; y: number; width: number; height: number };
 
 /** Shows a webview page over `bounds` of the island window (creating it the first time, in `locale`) or moves it there. */
-export function showPluginWebview(id: string, viewId: string, bounds: PluginWebviewBounds, locale: string) {
-  return invoke<void>("show_plugin_webview", { id, viewId, bounds, locale });
+/** `ink` ("r, g, b"): the island's text color, for a page drawn without the card (E15). */
+export function showPluginWebview(id: string, viewId: string, bounds: PluginWebviewBounds, locale: string, ink: string | null = null) {
+  return invoke<void>("show_plugin_webview", { id, viewId, bounds, locale, ink });
 }
 
 /** Closes a webview page; the state it saved is kept for the next time. */

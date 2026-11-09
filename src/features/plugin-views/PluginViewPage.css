@@ -134,3 +134,9 @@
 .plugin-view--frameless .plugin-view__title {
   display: none;
 }
+
+/* The box under the page shows through its transparent background; on the island it is not a box. */
+.plugin-view--frameless .plugin-webview {
+  background: none;
+  border-radius: 0;
+}

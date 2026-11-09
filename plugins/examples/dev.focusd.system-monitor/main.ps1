@@ -10,9 +10,11 @@
 #
 # Sources, all readable without administrator rights: .NET performance counters (CPU, cores,
 # memory), the network adapters' byte counts, Get-Process (programs), the ACPI thermal zones
-# through WMI (CPU temperature; many desktops have none), Win32_Battery, and nvidia-smi
-# (NVIDIA GPUs only). This file stays ASCII: Windows PowerShell reads it in the ANSI code page.
+# through WMI (CPU temperature; many desktops have none), Win32_Battery, Windows' GPU engine
+# counters (any vendor; gpu-engines.ps1) and nvidia-smi (NVIDIA: temperature, power, VRAM).
+# This file stays ASCII: Windows PowerShell reads it in the ANSI code page.
 . "$PSScriptRoot\lib\focusd.ps1"
+. "$PSScriptRoot\gpu-engines.ps1"
 
 $script:Settings = @{}
 $script:CanCells = $false
@@ -26,9 +28,12 @@ $script:Battery = $null
 $script:BatteryAt = [datetime]::MinValue
 $script:Thermal = $null
 $script:ProcsAt = [datetime]::MinValue
-# Program icons: the page keeps them, so each is read and sent once (the page lists what it has on "ready").
+# Program icons, read once each and kept here. The page keeps them only while it is open (its
+# saved state is capped at 64 KB), so each is sent once per opening; "ready" lists what it has.
+$script:IconCache = @{}
 $script:IconsSent = @{}
 $script:IconFailed = @{}
+$MaxIcons = 200
 $script:NextPage = [datetime]::MinValue
 $script:NextBar = [datetime]::MinValue
 $script:HasSmi = [bool](Get-Command nvidia-smi -ErrorAction SilentlyContinue)
@@ -182,11 +187,8 @@ function Read-Processes {
         $ms = 0.0
         try { $ms = $process.TotalProcessorTime.TotalMilliseconds } catch { }
         $times[$process.Id] = $ms
-        if (-not $programs.ContainsKey($name)) { $programs[$name] = @{ name = $name; count = 0; cpuMs = 0.0; memory = 0L; path = $null } }
+        if (-not $programs.ContainsKey($name)) { $programs[$name] = @{ name = $name; count = 0; cpuMs = 0.0; memory = 0L; process = $process } }
         $entry = $programs[$name]
-        if ($null -eq $entry.path -and -not $script:IconsSent.ContainsKey($name) -and -not $script:IconFailed.ContainsKey($name)) {
-            try { $entry.path = $process.Path } catch { }
-        }
         $entry.count++
         $entry.memory += $process.WorkingSet64
         if ($null -ne $script:LastProcs -and $script:LastProcs.Times.ContainsKey($process.Id)) {
@@ -196,19 +198,27 @@ function Read-Processes {
     $first = $null -eq $script:LastProcs
     $span = if ($first) { 1 } else { [math]::Max(1, ($now - $script:LastProcs.At).TotalMilliseconds) * [Environment]::ProcessorCount }
     $script:LastProcs = @{ At = $now; Times = $times }
-    if ($first) { return $null }
+    # CPU needs two scans; take the second one second later rather than three, so the list fills fast.
+    if ($first) { $script:ProcsAt = $now.AddMilliseconds(-1900); return $null }
     $list = @($programs.Values | ForEach-Object {
         @{ name = $_.name; count = $_.count; cpu = [math]::Round($_.cpuMs / $span * 100, 1); memory = $_.memory }
     })
     $byCpu = @($list | Sort-Object { $_.cpu } -Descending | Select-Object -First 6)
     $byMemory = @($list | Sort-Object { $_.memory } -Descending | Select-Object -First 6)
+    # Paths are read only for the programs shown: reading one costs a handle on the process.
     $icons = @{}
     foreach ($program in @($byCpu) + @($byMemory)) {
         $name = $program.name
         if ($script:IconsSent.ContainsKey($name) -or $script:IconFailed.ContainsKey($name) -or $icons.ContainsKey($name)) { continue }
-        $icon = Get-ProgramIcon $programs[$name].path
-        if ($null -eq $icon) { $script:IconFailed[$name] = $true; continue }
-        $icons[$name] = $icon
+        if (-not $script:IconCache.ContainsKey($name)) {
+            $path = $null
+            try { $path = $programs[$name].process.Path } catch { }
+            $icon = Get-ProgramIcon $path
+            if ($null -eq $icon) { $script:IconFailed[$name] = $true; continue }
+            if ($script:IconCache.Count -ge $MaxIcons) { $script:IconCache.Clear() }
+            $script:IconCache[$name] = $icon
+        }
+        $icons[$name] = $script:IconCache[$name]
         $script:IconsSent[$name] = $true
     }
     @{ byCpu = $byCpu; byMemory = $byMemory; icons = $icons }
@@ -257,7 +267,32 @@ function Add-History([double]$Cpu, $Gpu, $Network) {
 
 # Background recording with the page closed: only what the charts draw.
 function Save-Sample {
-    Add-History (Read-Cpu $false).cpu (Read-Gpu) (Read-Network)
+    Add-History (Read-Cpu $false).cpu (Read-HistoryGpu) (Read-Network)
+}
+
+# The GPU for the page: nvidia-smi where there is one (name, temperature, power, VRAM), Windows'
+# engine counters for the load of any GPU and its engines. $null when neither has anything.
+function Read-PageGpu {
+    $smi = Read-Gpu
+    $engines = Read-GpuEngines -Want
+    if ($null -eq $smi -and $null -eq $engines) { return $null }
+    $gpu = @{ name = $null; usage = $null; temperature = $null; memoryUsed = $null; memoryTotal = $null; power = $null; engines = @() }
+    if ($null -ne $engines) {
+        $gpu.name = $engines.name; $gpu.usage = $engines.usage; $gpu.memoryUsed = $engines.memoryUsed; $gpu.engines = $engines.engines
+    }
+    if ($null -ne $smi) {
+        foreach ($key in 'name', 'temperature', 'memoryUsed', 'memoryTotal', 'power') { if ($null -ne $smi[$key]) { $gpu[$key] = $smi[$key] } }
+        # Task Manager's figure (the busiest engine, video encoding too) where the counters have it.
+        if ($null -eq $gpu.usage) { $gpu.usage = $smi.usage }
+    }
+    $gpu
+}
+
+# Background recording: the GPU load without starting the engine reader just for the chart.
+function Read-HistoryGpu {
+    $engines = Read-GpuEngines
+    if ($null -ne $engines) { return @{ usage = $engines.usage } }
+    Read-Gpu
 }
 
 function Send-Page {
@@ -270,7 +305,7 @@ function Send-Page {
         memoryUsed = Read-MemoryUsed
         memoryTotal = $script:TotalMemory
         cpuTemperature = Read-CpuTemperature
-        gpu = Read-Gpu
+        gpu = Read-PageGpu
         battery = Read-Battery
     }
     $network = Read-Network
@@ -337,7 +372,12 @@ while ($true) {
                         # A page opened afresh may have lost its icons; send what it does not list.
                         $script:IconsSent = @{}
                         foreach ($name in @($message.params.message.icons)) { if ($name) { $script:IconsSent[[string]$name] = $true } }
+                        $script:ProcsAt = [datetime]::MinValue
                         if (Test-Setting 'backgroundHistory') { [void](Send-FocusdWebviewMessage 'monitor' (@{ type = 'history' } + $script:History)) }
+                    }
+                    # The page's button next to the program list.
+                    if ($message.params.message.type -eq 'taskManager') {
+                        try { Start-Process taskmgr.exe } catch { Write-FocusdLog "could not open Task Manager: $($_.Exception.Message)" }
                     }
                 }
                 'shutdown' { exit 0 }

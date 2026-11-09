@@ -15,7 +15,13 @@ const sameBounds = (a: PluginWebviewBounds | null, b: PluginWebviewBounds) =>
  * window) that the island places over the box, so here we only report where
  * the box is, and close the page when the box goes away.
  */
-export function WebviewTemplate({ pluginId, viewId, active }: { pluginId: string; viewId: string; active: boolean }) {
+export function WebviewTemplate({ pluginId, viewId, active, frameless = false }: {
+  pluginId: string;
+  viewId: string;
+  active: boolean;
+  /** Drawn without the card, on the island itself: the page takes the island's ink. */
+  frameless?: boolean;
+}) {
   const box = useRef<HTMLDivElement>(null);
   // Given to the page when it is created; another language applies the next time it opens.
   const { locale } = useLocale();
@@ -35,7 +41,8 @@ export function WebviewTemplate({ pluginId, viewId, active }: { pluginId: string
       const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
       if (sameBounds(sent, bounds)) return;
       sent = bounds;
-      showPluginWebview(pluginId, viewId, bounds, localeRef.current).catch((error: unknown) => console.error("Failed to show a plugin page", error));
+      const ink = frameless ? getComputedStyle(element).getPropertyValue("--island-ink-rgb").trim() || null : null;
+      showPluginWebview(pluginId, viewId, bounds, localeRef.current, ink).catch((error: unknown) => console.error("Failed to show a plugin page", error));
     };
     const follow = (now: number) => {
       report();
@@ -55,7 +62,7 @@ export function WebviewTemplate({ pluginId, viewId, active }: { pluginId: string
       window.removeEventListener("resize", startFollowing);
       hidePluginWebview(pluginId, viewId).catch((error: unknown) => console.error("Failed to close a plugin page", error));
     };
-  }, [active, pluginId, viewId]);
+  }, [active, frameless, pluginId, viewId]);
 
   return <div ref={box} className="plugin-webview" />;
 }
