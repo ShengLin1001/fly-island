@@ -117,7 +117,10 @@ try {
     check(!document.querySelector(".qq-mail-remote") && localStorage.getItem("focusd-island-qq-mail-remote-images") === "true", "放行后隐藏提示并记住开关选择");
     check(!body.querySelector('a[href^="javascript"]'), "邮件不能执行危险链接");
     check(!Reflect.get(window, "readerPwned"), "邮件脚本没有执行");
-    await act(async () => { body.querySelector<HTMLAnchorElement>('a[href="https://example.com/report"]')!.click(); });
+    const reportLink = body.querySelector<HTMLAnchorElement>('a[href="https://example.com/report"]')!;
+    await act(async () => { root.render(<StrictMode><Fixture /></StrictMode>); });
+    check(reportLink.isConnected, "重新渲染不重写正文，按住的链接不会被换掉（issue #18）");
+    await act(async () => { reportLink.click(); });
     check(calls.some(call => call.command === "plugin:opener|open_url" && call.args.url === "https://example.com/report"), "正文中的网页链接通过系统浏览器打开");
     check(mail!.snapshot.unreadCount === 3 && mail!.snapshot.items[0].unread, "阅读保持未读状态和角标数量");
     await click("返回列表");

@@ -88,6 +88,10 @@ export function MailPanel({ controller, navigation, onRead, onBack, onOpenSettin
   const readerStillUnread = Boolean(selectedMail && mailboxes.find((mailbox) => mailbox.email === readerAccount)?.items.find((item) => item.id === selectedMail.id)?.unread);
   const [remoteImages, setRemoteImages] = useState(loadRemoteImagePreference);
   const html = useMemo(() => content?.contentType === "text/html" ? sanitizeMailHtml(content.content, { allowRemoteImages: remoteImages }) : "", [content, remoteImages]);
+  // React 19 rewrites innerHTML whenever this object is new, even with the same text. A
+  // re-render while a link is held down (focus and hover change on the press) would swap
+  // the <a> for a copy, so the release lands elsewhere and no click fires (issue #18).
+  const bodyHtml = useMemo(() => ({ __html: html || DOMPurify.sanitize(`<p>${t.mail.emptyHtml}</p>`) }), [html, t.mail.emptyHtml]);
   const blockedImages = useMemo(() => content?.contentType === "text/html" && !remoteImages ? countRemoteImages(content.content) : 0, [content, remoteImages]);
   const toggleRemoteImages = () => setRemoteImages((previous) => { saveRemoteImagePreference(!previous); return !previous; });
   const readerRef = useRef<HTMLDivElement>(null);
@@ -137,7 +141,7 @@ export function MailPanel({ controller, navigation, onRead, onBack, onOpenSettin
               if (!link) return;
               event.preventDefault();
               if (link.getAttribute("href")) void openLink(link.getAttribute("href")!);
-            }} dangerouslySetInnerHTML={{ __html: html || DOMPurify.sanitize(`<p>${t.mail.emptyHtml}</p>`) }} />
+            }} dangerouslySetInnerHTML={bodyHtml} />
           : <div className="qq-mail-body qq-mail-body--text">{content?.content || t.mail.emptyText}</div>}
       </div>
       {content && readerAccount ? <MailAttachments key={content.id} account={readerAccount} messageId={content.id} attachments={content.attachments ?? []} /> : null}

@@ -25,6 +25,9 @@ export function DetailTemplate({ pluginId, viewId, model }: { pluginId: string; 
         : "",
     [detail.markdown],
   );
+  // Kept as one object: React 19 rewrites innerHTML for every new one, which would swap a
+  // link for a copy mid-click on a re-render and lose the click (see MailPanel).
+  const markdownHtml = useMemo(() => ({ __html: html }), [html]);
 
   // Links never navigate the island window; https ones open in the browser.
   const openLink = (event: MouseEvent<HTMLDivElement>) => {
@@ -43,7 +46,7 @@ export function DetailTemplate({ pluginId, viewId, model }: { pluginId: string; 
         {detail.loading && !html ? <p className="plugin-detail__muted">{t.pluginViews.loading}</p> : null}
         {html ? (
           // Built from escaped text with a fixed tag list, then sanitized again.
-          <div className="plugin-detail__markdown" onClick={openLink} dangerouslySetInnerHTML={{ __html: html }} />
+          <div className="plugin-detail__markdown" onClick={openLink} dangerouslySetInnerHTML={markdownHtml} />
         ) : null}
         {!html && !detail.loading && detail.meta.length === 0 ? <p className="plugin-detail__muted">{t.pluginViews.empty}</p> : null}
         {detail.meta.length > 0 ? (
