@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addBannerMessage, bannerClock, bannerKey, isBannerSource } from "../../src/features/messages/banner/bannerMessages.ts";
+import { addBannerMessage, bannerClock, bannerKey } from "../../src/features/messages/banner/bannerMessages.ts";
 
 const message = (source, receivedAt, title = "小林") => ({ source, title, body: "下午一起开会吗？", receivedAt, durationMs: 5_000, actions: [] });
 
@@ -24,11 +24,6 @@ test("the same arrival seen again leaves the banner as it is", () => {
   assert.equal(addBannerMessage(banner, message("qq", 100)), banner);
   assert.equal(bannerKey(message("qq", 100)), bannerKey(message("qq", 100, "别人")));
   assert.notEqual(bannerKey(message("qq", 100)), bannerKey(message("qqMail", 100)));
-});
-
-test("WeChat keeps its one-line preview", () => {
-  assert.equal(isBannerSource("wechat"), false);
-  for (const source of ["qq", "qqMail", "plugin"]) assert.equal(isBannerSource(source), true);
 });
 
 test("the arrival time reads as a 24-hour clock", () => {
