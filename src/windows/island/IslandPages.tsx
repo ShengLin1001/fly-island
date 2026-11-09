@@ -120,6 +120,7 @@ export function IslandPages({
           onPrevious={() => void runMediaCommand("media_previous")}
           lyricsSettings={settings}
           lyrics={lyrics}
+          onAlignLyrics={media.alignPosition}
         />
       )}
       {page === "clipboard" && (

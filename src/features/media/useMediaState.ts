@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMediaState, sendMediaCommand, type MediaCommand, type MediaPlaybackStatus, type MediaState } from "./api";
 import { AUDIO_ACTIVE_THRESHOLD, DEFAULT_MEDIA_STATE, isSameMediaState } from "./mediaState";
-import { advanceClock, clockPosition, hasTimeline, NO_CLOCK, type TrackClock } from "./trackClock";
+import { advanceClock, alignClock, clockPosition, hasTimeline, NO_CLOCK, type TrackClock } from "./trackClock";
 import { useAudioLevel } from "./useAudioLevel";
 import { useMusicSourcePriority } from "./useMusicSourcePriority";
 
@@ -55,7 +55,9 @@ export function useMediaState(enabled = true) {
         ? `${nextMediaState.sourceApp ?? ""}\u001f${nextMediaState.title}\u001f${nextMediaState.artist ?? ""}`
         : null;
       trackClock.current = untimed ? advanceClock(trackClock.current, untimed, playbackStatus === "playing", now) : NO_CLOCK;
-      const timeline = untimed ? { positionMs: clockPosition(trackClock.current, now), updatedAt: now } : {};
+      const timeline = untimed
+        ? { positionMs: clockPosition(trackClock.current, now), updatedAt: now, positionEstimate: trackClock.current.fromStart ? "timed" as const : "unsure" as const }
+        : {};
 
       setMediaState((currentState) => {
         const nextPeak = Math.max(
@@ -230,8 +232,17 @@ export function useMediaState(enabled = true) {
     void refreshMediaState();
   }, [effectiveMediaTarget, enabled, refreshMediaState]);
 
+  /** Sets the island's own timing of the track to `positionMs`, as when the user picks the line being sung. */
+  const alignPosition = useCallback((positionMs: number) => {
+    if (trackClock.current.key === null) return;
+    const now = Date.now();
+    trackClock.current = alignClock(trackClock.current, positionMs, now);
+    setMediaState((current) => ({ ...current, positionMs: Math.max(0, positionMs), updatedAt: now, positionEstimate: "timed" }));
+  }, []);
+
   return {
     mediaState,
+    alignPosition,
     isMediaTrackChanging,
     mediaCommandError,
     musicSourcePriority,

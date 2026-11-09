@@ -38,6 +38,7 @@ export function isSameMediaState(a: MediaState, b: MediaState): boolean {
     a.trackId !== b.trackId ||
     a.positionMs !== b.positionMs ||
     a.durationMs !== b.durationMs ||
+    a.positionEstimate !== b.positionEstimate ||
     a.canSeek !== b.canSeek ||
     a.canNext !== b.canNext ||
     a.canPrevious !== b.canPrevious ||

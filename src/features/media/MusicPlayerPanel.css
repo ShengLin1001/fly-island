@@ -165,23 +165,46 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 16px;
-  padding: 30px 0 8px;
+  gap: 12px;
+  padding: 0 0 6px;
 }
 
-.music-player__head-aside {
-  position: absolute;
-  top: 0;
-  right: 0;
+/* The player the island follows on the left; the lyrics offset, hints and settings on the right. */
+.music-player__head {
   display: flex;
   align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+}
+
+.music-player__source {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The lyrics offset is a fine adjustment: shown while the pointer is on the page or it has focus. */
+.music-player__tune {
+  display: inline-flex;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.music-player:hover .music-player__tune,
+.music-player__tune:focus-within {
+  opacity: 1;
 }
 
 /* No lyrics for a Chinese song with only LRCLIB asked: a quiet link to the setting. */
 .music-player__lyrics-hint {
   min-width: 0;
   height: 24px;
-  margin-right: 6px;
   padding: 0 10px;
   overflow: hidden;
   color: var(--text-3);
@@ -210,15 +233,48 @@
   flex-basis: 76px;
 }
 
-/* Lyrics above, the waveform as a thin strip under them, then the controls. */
+/* Lyrics in the waveform's place, the time or how it is estimated under them, then the controls. */
 .music-player__stack--lyrics {
   gap: 8px;
 }
 
-.music-player__stack--lyrics .media-waveform {
-  height: 34px;
-  flex-basis: 34px;
-  margin-bottom: 4px;
+/* The player reports no position: the lyrics follow the island's own timing, and the user can
+   align it by picking a line. */
+.music-player__estimate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 8px;
+  margin: 0;
+  color: var(--text-3);
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.music-player__estimate-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  color: var(--text-2);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.music-player__estimate-link:hover {
+  color: var(--text-1);
+  text-decoration: underline;
+}
+
+.music-player__estimate-link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .music-player__meta {

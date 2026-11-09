@@ -1,7 +1,9 @@
-# Example plugin (API version 2): shows the new song on the island when the
-# track changes. media:read is a sensitive permission, so the first call that
-# uses it (here the media.changed subscription) waits until the user answers
-# on the island; a refusal comes back as an error and is logged.
+# Example plugin (API version 2): shows the playing song on the island when its
+# command runs, and, when the "notifyOnChange" setting is on (off by default: the
+# island's music page and collapsed bar already show the song), when the track
+# changes. media:read is a sensitive permission, so the first call that uses it
+# waits until the user answers on the island; a refusal comes back as an error
+# and is logged.
 . "$PSScriptRoot\lib\focusd.ps1"
 
 # Windows PowerShell 5.1 reads a script without a BOM as ANSI, so this file stays
@@ -19,9 +21,14 @@ function Show-Playing($now) {
     if ($answer.muted) { Write-FocusdLog "now playing: $body (messages are muted)" }
 }
 
+$script:NotifyOnChange = $false
+$script:Watching = $false
+
 function Watch-Media {
+    if ($script:Watching) { return }
     try {
         [void](Invoke-FocusdMethod 'events.subscribe' @{ events = @('media.changed') })
+        $script:Watching = $true
         Write-FocusdLog 'watching the player'
     } catch {
         Write-FocusdLog "not allowed to see the player: $($_.Exception.Message)"
@@ -39,11 +46,17 @@ while ($true) {
                 if (@($message.params.capabilities) -notcontains 'events') {
                     Write-FocusdLog 'this FocuSD Island is too old for this plugin (needs plugin API version 2)'
                 } else {
-                    Watch-Media
+                    $script:NotifyOnChange = [bool]$message.params.settings.notifyOnChange
+                    # Without the setting there is nothing to watch, and no permission to ask for.
+                    if ($script:NotifyOnChange) { Watch-Media }
                 }
             }
+            'settings.changed' {
+                $script:NotifyOnChange = [bool]$message.params.settings.notifyOnChange
+                if ($script:NotifyOnChange) { Watch-Media }
+            }
             'event' {
-                if ($message.params.name -eq 'media.changed' -and $message.params.payload.status -eq 'playing') {
+                if ($script:NotifyOnChange -and $message.params.name -eq 'media.changed' -and $message.params.payload.status -eq 'playing') {
                     Show-Playing $message.params.payload
                 }
             }

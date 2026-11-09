@@ -1,7 +1,9 @@
-import { Music2, Pause, Play, RefreshCcw, Settings, SkipBack, SkipForward } from "lucide-react";
+import { ArrowUpRight, Music2, Pause, Play, RefreshCcw, Settings, SkipBack, SkipForward } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "../../i18n";
 import type { MediaState } from "./api";
 import { MediaWaveform } from "./MediaWaveform";
+import { MusicProgress } from "./MusicProgress";
 import { LyricsView } from "./lyrics/LyricsView";
 import type { LyricsSettings } from "./lyrics/useLyrics";
 import { LyricsOffsetControl } from "./lyrics/LyricsOffsetControl";
@@ -10,6 +12,9 @@ import { usePlayingLyrics, type PlayingLyrics } from "./lyrics/usePlayingLyrics"
 import "./MusicPlayerPanel.css";
 
 const NO_LYRICS = { lyricsFolder: "", lyricsOnline: false, lyricsOffsetMs: 0 };
+/** The NetEase Cloud Music plugin that reports the position and song id to Windows. */
+const INFLINK_URL = "https://github.com/apoint123/InfLink-rs";
+const isNetEase = (sourceApp: string | null) => /cloudmusic/i.test(sourceApp ?? "");
 
 export function MusicPlayerPanel({
   mediaState,
@@ -21,6 +26,7 @@ export function MusicPlayerPanel({
   onPrevious,
   lyricsSettings = NO_LYRICS,
   lyrics: shared,
+  onAlignLyrics,
 }: {
   mediaState: MediaState;
   isTrackChanging: boolean;
@@ -34,6 +40,8 @@ export function MusicPlayerPanel({
   lyricsSettings?: LyricsSettings & { lyricsOffsetMs: number };
   /** Lyrics the island already looked up (it shows them collapsed too); without them the page looks them up itself. */
   lyrics?: PlayingLyrics;
+  /** Sets the island's own timing of the track (players that report no position). */
+  onAlignLyrics?: (positionMs: number) => void;
 }) {
   const t = useTranslation();
   const isPlaying = mediaState.playbackStatus === "playing";
@@ -41,6 +49,9 @@ export function MusicPlayerPanel({
   const own = usePlayingLyrics(mediaState, lyricsSettings, !shared);
   const { lines: lyrics, notFound, songOffsetMs, setSongOffsetMs, offsetMs } = shared ?? own;
   const chineseHint = suggestsChineseSources(mediaState, lyricsSettings, notFound);
+
+  const estimate = mediaState.positionEstimate;
+  const source = mediaState.sessions.find((session) => session.id === mediaState.activeSessionId)?.label ?? null;
 
   const prevDisabled = mediaState.available && !mediaState.canPrevious;
   const nextDisabled = mediaState.available && !mediaState.canNext;
@@ -91,8 +102,13 @@ export function MusicPlayerPanel({
           </div>
         </div>
         <div className={lyrics ? "music-player__stack music-player__stack--lyrics" : "music-player__stack"}>
-          <div className="music-player__head-aside">
-            {lyrics && <LyricsOffsetControl offsetMs={songOffsetMs} onChange={setSongOffsetMs} />}
+          <div className="music-player__head">
+            <span className="music-player__source">{source}</span>
+            {lyrics && (
+              <span className="music-player__tune">
+                <LyricsOffsetControl offsetMs={songOffsetMs} onChange={setSongOffsetMs} />
+              </span>
+            )}
             {chineseHint && (
               <button className="music-player__lyrics-hint" type="button" aria-label={t.music.lyricsChineseHint.label} onClick={onOpenSettings}>
                 {t.music.lyricsChineseHint.text}
@@ -107,12 +123,24 @@ export function MusicPlayerPanel({
             </p>
           )}
 
-          {/* With lyrics, the waveform shrinks to a strip under them rather than going away. */}
-          {lyrics && <LyricsView lines={lyrics} mediaState={mediaState} offsetMs={offsetMs} />}
-          <MediaWaveform
-            playing={isPlaying || mediaState.audioActive}
-            audioPeak={mediaState.audioPeak}
-          />
+          {lyrics ? (
+            <LyricsView lines={lyrics} mediaState={mediaState} offsetMs={offsetMs} onPickLine={estimate ? onAlignLyrics : undefined} />
+          ) : (
+            <MediaWaveform playing={isPlaying || mediaState.audioActive} audioPeak={mediaState.audioPeak} />
+          )}
+          {mediaState.durationMs > 0 ? (
+            <MusicProgress mediaState={mediaState} />
+          ) : estimate && lyrics ? (
+            <p className="music-player__estimate">
+              <span>{estimate === "unsure" ? t.music.estimate.unsure : t.music.estimate.timed}</span>
+              {isNetEase(mediaState.sourceApp) && (
+                <button className="music-player__estimate-link" type="button" onClick={() => void openUrl(INFLINK_URL).catch(() => {})}>
+                  {t.music.estimate.inflink}
+                  <ArrowUpRight size={11} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+              )}
+            </p>
+          ) : null}
 
           <div className="music-player__controls">
             <button

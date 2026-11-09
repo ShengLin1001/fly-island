@@ -35,6 +35,7 @@ const messages: string[] = [];
 const root = createRoot(fixture);
 const ONLINE = { lyricsFolder: "", lyricsOnline: true, lyricsOffsetMs: 0 };
 let settingsOpened = 0;
+const aligned: number[] = [];
 
 function track(title: string, positionMs: number, playing = false): MediaState {
   return {
@@ -48,7 +49,7 @@ async function render(mediaState: MediaState, lyricsSettings: typeof ONLINE | un
     root.render(
       <StrictMode><I18nProvider>
         <MusicPlayerPanel mediaState={mediaState} isTrackChanging={false} commandError={null} onOpenSettings={() => { settingsOpened += 1; }}
-          onPlayPause={() => {}} onNext={() => {}} onPrevious={() => {}} lyricsSettings={lyricsSettings} />
+          onPlayPause={() => {}} onNext={() => {}} onPrevious={() => {}} lyricsSettings={lyricsSettings} onAlignLyrics={(ms) => aligned.push(ms)} />
       </I18nProvider></StrictMode>,
     );
     await new Promise((resolve) => setTimeout(resolve, 60));
@@ -66,7 +67,9 @@ const lines = () => [...document.querySelectorAll<HTMLElement>(".lyrics-view__li
 try {
   await render(track("晴天", 6000));
   const wave = () => document.querySelector<HTMLElement>(".media-waveform")!;
-  check(view() && wave() && view()!.getBoundingClientRect().bottom <= wave().getBoundingClientRect().top, "找到歌词时歌词在上、波形在下，两者都显示");
+  const progress = () => document.querySelector<HTMLElement>(".music-progress");
+  check(view() && !wave() && progress() && view()!.getBoundingClientRect().bottom <= progress()!.getBoundingClientRect().top
+    && progress()!.textContent === "0:064:29", "找到歌词时歌词在上、进度条在下（播放器报告了进度），不再显示波形");
   check(lines().join("|") === "故事的小黄花|从出生那年就飘着|童年的荡秋千 随记忆一直晃到现在 这一句特别特别长长到一行放不下需要省略号来收尾才行", "当前句在中间，上一句和下一句在两边");
   const query = queries[queries.length - 1];
   check(query.title === "晴天" && query.artist === "周杰伦" && query.album === "叶惠美" && query.durationMs === 269_000 && query.online === true, "按歌名、歌手、专辑和时长查找");
@@ -75,10 +78,12 @@ try {
 
   await render(track("晴天", 10_000));
   const long = document.querySelector<HTMLElement>(".lyrics-view__line--current")!;
-  check(long.scrollWidth > long.clientWidth && fixture.scrollWidth <= fixture.clientWidth, "长句单行省略，不撑宽面板");
+  const longBox = long.getBoundingClientRect();
+  check(longBox.height > 25 && longBox.height < 42 && long.scrollHeight <= long.clientHeight + 1 && fixture.scrollWidth <= fixture.clientWidth,
+    "长句换成两行完整显示，不再省略，也不撑宽面板");
   const controls = document.querySelector<HTMLElement>(".music-player__controls")!.getBoundingClientRect();
-  check(Math.abs(wave().getBoundingClientRect().height - 34) < 1 && controls.bottom <= document.querySelector(".music-player")!.getBoundingClientRect().bottom && wave().getBoundingClientRect().bottom <= controls.top,
-    "有歌词时波形缩成细条，播放按钮仍完整放在面板里");
+  check(controls.bottom <= document.querySelector(".music-player")!.getBoundingClientRect().bottom && progress()!.getBoundingClientRect().bottom <= controls.top,
+    "长句换行后进度条和播放按钮仍完整放在面板里");
 
   await render(track("晴天", 13_500));
   check(lines()[1] === "♪", "间奏的空行显示音符");
@@ -139,6 +144,23 @@ try {
   check(fillX(words()[2]) !== "100%", "到点后下一个字开始变亮");
   await render(track("Believe", 4500));
   check(words().length === 0 && lines()[1] === "in yesterday", "没有逐字时间的句子照常整句显示");
+
+  // A player that reports no position (NetEase without InfLink): the island times the song,
+  // says so under the lyrics, and each line aligns the timing to itself.
+  const untimed = (estimate: "timed" | "unsure", sourceApp: string): MediaState => ({ ...track("晴天", 6000), durationMs: 0, positionEstimate: estimate, sourceApp });
+  await render(untimed("unsure", "cloudmusic.exe"));
+  const estimate = () => document.querySelector<HTMLElement>(".music-player__estimate");
+  const picks = () => [...document.querySelectorAll<HTMLButtonElement>(".lyrics-view__pick")];
+  check(!progress() && estimate()?.textContent?.startsWith("岛屿没看到这首歌开头") && estimate()!.querySelector(".music-player__estimate-link")?.textContent === "装 InfLink-rs 精确同步",
+    "估算进度且可能没对齐时提示点一句对齐；网易云还提示装 InfLink-rs");
+  check(picks().length === 3 && picks()[0].getAttribute("aria-label") === "从这一句对齐歌词：故事的小黄花", "估算进度时三行歌词都能点");
+  aligned.length = 0;
+  await act(async () => picks()[0].click());
+  check(aligned.length === 1 && aligned[0] === 1000, "点上一句，按这一句的开始时间对齐");
+  await render(untimed("timed", "Spotify.exe"));
+  check(estimate()?.textContent?.startsWith("播放器不报告进度") && !estimate()!.querySelector(".music-player__estimate-link"), "不是网易云时不提 InfLink-rs");
+  await render(track("晴天", 6000));
+  check(picks().length === 0 && !estimate(), "播放器报告进度时歌词不能点，也没有估算提示");
 
   results.textContent = `${messages.join("\n")}\n\n全部 ${messages.length} 项检查通过。`;
   results.dataset.result = "passed";

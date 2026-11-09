@@ -24,6 +24,12 @@ export type MediaState = {
   trackId?: string | null;
   positionMs: number;
   durationMs: number;
+  /**
+   * Set when the player reports no position and the island times the track (trackClock.ts):
+   * "timed" when it saw the track start or the user aligned it, "unsure" when the track may
+   * have been playing before. Absent for players that report their position.
+   */
+  positionEstimate?: "timed" | "unsure";
   canSeek: boolean;
   canNext: boolean;
   canPrevious: boolean;

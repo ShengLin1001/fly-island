@@ -3,6 +3,12 @@ export type MusicText = {
   controlFailed: string;
   noMedia: string;
   lyricsLabel: string;
+  /** The time played and the length, for the progress bar. */
+  progress: (played: string, length: string) => string;
+  /** A lyric line that aligns the island's timing to itself. */
+  alignToLine: (line: string) => string;
+  /** The player reports no position; the island times the track itself. */
+  estimate: { timed: string; unsure: string; inflink: string };
   /** No lyrics for a Chinese song while only LRCLIB is asked; opens Settings → Music. */
   lyricsChineseHint: { text: string; label: string };
   lyricsOffset: { label: string; earlier: string; later: string; reset: (seconds: number) => string };
@@ -32,6 +38,13 @@ export const zhCN: MusicText = {
   controlFailed: "控制失败",
   noMedia: "暂无媒体",
   lyricsLabel: "歌词",
+  progress: (played, length) => `已播放 ${played}，共 ${length}`,
+  alignToLine: (line) => `从这一句对齐歌词：${line}`,
+  estimate: {
+    timed: "播放器不报告进度，歌词按切歌时间估算；拖了进度就点正在唱的那句对齐",
+    unsure: "岛屿没看到这首歌开头，歌词可能没对齐：点正在唱的那句",
+    inflink: "装 InfLink-rs 精确同步",
+  },
   lyricsChineseHint: { text: "没找到歌词 · 试试酷狗和网易云", label: "这首歌没找到歌词。打开设置，开启「也查酷狗和网易云」" },
   lyricsOffset: {
     label: "这首歌的歌词快慢",
@@ -65,6 +78,13 @@ export const en: MusicText = {
   controlFailed: "Control failed",
   noMedia: "No media",
   lyricsLabel: "Lyrics",
+  progress: (played, length) => `${played} of ${length}`,
+  alignToLine: (line) => `Align the lyrics to this line: ${line}`,
+  estimate: {
+    timed: "The player reports no position, so the lyrics are timed from the song change; after seeking, pick the line being sung",
+    unsure: "The island missed the start of this song, so the lyrics may be off: pick the line being sung",
+    inflink: "Install InfLink-rs for exact sync",
+  },
   lyricsChineseHint: { text: "No lyrics · try Kugou and NetEase", label: "No lyrics found for this song. Open settings to also ask Kugou and NetEase" },
   lyricsOffset: {
     label: "Lyrics timing for this song",
