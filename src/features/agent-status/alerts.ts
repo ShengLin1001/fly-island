@@ -1,7 +1,7 @@
 import type { AgentSessionSummary, ReplyMarker } from "./api";
 import type { AgentAlertStarted, IslandSettings } from "../appearance/types";
 import { sessionKey } from "./unseen.ts";
-import { replyEnding } from "./sessionLight.ts";
+import { rememberedPhase, replyEnding } from "./sessionLight.ts";
 
 /** What a session just did that the island pops up for. */
 export type AgentAlertKind = "started" | "completed" | "failed" | "waiting";
@@ -27,7 +27,7 @@ export function phasesOf(sessions: AgentSessionSummary[], previous: SessionPhase
   for (const session of sessions) {
     if (!previous || isWorking(session.phase)) worked.add(sessionKey(session));
   }
-  return { phases: new Map(sessions.map((session) => [sessionKey(session), session.phase])), worked };
+  return { phases: new Map(sessions.map((session) => [sessionKey(session), rememberedPhase(session)])), worked };
 }
 
 export function alertKindsOf(settings: Pick<IslandSettings, "agentAlertStarted" | "agentAlertCompleted" | "agentAlertFailed" | "agentAlertWaiting">): AgentAlertKinds {

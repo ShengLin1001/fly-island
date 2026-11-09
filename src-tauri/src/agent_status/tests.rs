@@ -1619,3 +1619,32 @@ fn each_saved_notification_is_a_file_and_the_newest_of_a_session_decides() {
     assert_eq!(saved_notifications(&dir, now + 25 * 60 * 60 * 1000, true), Default::default());
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
 }
+
+#[test]
+fn a_background_task_waking_the_session_is_not_a_prompt() {
+    use super::sessions::parse_claude_tail;
+    use super::title::user_prompt_in_record;
+
+    // As Claude Code writes it (issue #15): a plain user record, told apart by origin.kind.
+    let notification = "<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n</task-notification>";
+    let wake = line(json!({"type": "user", "timestamp": "2026-11-06T07:20:00Z", "origin": {"kind": "task-notification", "producer": "session-task"},
+        "message": {"role": "user", "content": notification}}));
+    assert_eq!(user_prompt_in_record(&wake), None);
+    // Without origin (older Claude Code), the opening tag alone is enough.
+    assert_eq!(user_prompt_in_record(&user_line(json!(notification))), None);
+
+    let transcript = [
+        line(json!({"type": "user", "timestamp": "2026-11-06T07:10:00Z", "message": {"role": "user", "content": "跑一遍测试"}})),
+        line(json!({"type": "user", "timestamp": "2026-11-06T07:10:05Z", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t",
+            "content": "Command running in background with ID: b1. Output is being written to: x"}]}})),
+        line(json!({"type": "assistant", "timestamp": "2026-11-06T07:10:06Z", "message": {"role": "assistant", "stop_reason": "end_turn",
+            "content": [{"type": "text", "text": "测试在后台跑。\n\n⋯"}]}})),
+        wake,
+        line(json!({"type": "assistant", "timestamp": "2026-11-06T07:20:02Z", "message": {"role": "assistant",
+            "content": [{"type": "tool_use", "id": "t2", "name": "Read", "input": {}}]}})),
+    ]
+    .concat();
+    let parsed = parse_claude_tail(&transcript);
+    assert_eq!(parsed.last_prompt.as_deref(), Some("跑一遍测试"));
+    assert_eq!(parsed.turn_started_at, Some(1_793_948_400_000 + 600_000));
+}

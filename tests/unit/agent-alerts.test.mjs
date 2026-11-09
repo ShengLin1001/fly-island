@@ -90,6 +90,32 @@ test("the reply status marker decides how a finished turn alerts", () => {
   assert.deepEqual(noWaiting.map(({ session }) => session.sessionId), ["c"]);
 });
 
+// Issue #15: a turn that ends on ⋯ is woken by Claude Code when its background task ends; that
+// carries on the same turn and must not alert as a start. Its real end alerts as usual.
+test("waking a turn that waited on its background task does not alert as a start", () => {
+  const looks = [
+    [session("a", "running")],
+    [{ ...session("a", "completed"), replyMarker: "background" }],
+    [session("a", "running")],
+    [{ ...session("a", "completed"), backgroundTasks: 1 }],
+    [session("a", "running")],
+    [{ ...session("a", "completed"), replyMarker: "done" }],
+  ];
+  let phases = phasesOf(looks[0]);
+  const alerts = [];
+  for (const look of looks.slice(1)) {
+    alerts.push(...detectAlerts(phases, look, ALL).map(({ kind }) => kind));
+    phases = phasesOf(look, phases);
+  }
+  assert.deepEqual(alerts, ["completed"]);
+
+  // A turn that ended done or asking, then gets a new prompt, still starts a new turn.
+  for (const ending of ["done", "yourTurn"]) {
+    const ended = phasesOf([{ ...session("b", "completed"), replyMarker: ending }]);
+    assert.deepEqual(detectAlerts(ended, [session("b", "running")], ALL).map(({ kind }) => kind), ["started"], ending);
+  }
+});
+
 test("without a marker, a finished reply that asks something alerts as waiting", () => {
   const before = [session("a", "running"), session("b", "running"), session("c", "running")];
   const after = [

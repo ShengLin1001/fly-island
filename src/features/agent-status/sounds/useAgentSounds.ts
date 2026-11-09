@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { agentSessionsInFront, type AgentSessionSummary } from "../api";
 import { sessionKey } from "../unseen";
+import { rememberedPhase } from "../sessionLight";
 import { soundFor, type AgentSoundEvent } from "./events";
 import { compactStarted, emptyIdleSessions, takeIdleSessions } from "./idle";
 import { playAgentSound } from "./player";
@@ -33,7 +34,9 @@ export function useAgentSounds(sessions: AgentSessionSummary[], canPlay: boolean
 
   useEffect(() => {
     const previous = seenRef.current;
-    seenRef.current = new Map(sessions.map((session) => [sessionKey(session), { phase: session.phase, compacting: session.compacting === true }]));
+    // A turn waiting on its own background task is remembered as running (rememberedPhase), so
+    // its wake-up plays no "ack".
+    seenRef.current = new Map(sessions.map((session) => [sessionKey(session), { phase: rememberedPhase(session), compacting: session.compacting === true }]));
     // The first look only takes note of where every session stands.
     if (!previous) return;
     const changes = sessions.flatMap((session): Change[] => {

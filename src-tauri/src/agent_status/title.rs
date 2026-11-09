@@ -17,6 +17,12 @@ pub(super) fn user_prompt_in_record(line: &str) -> Option<String> {
     if record["type"] != "user" || record["isMeta"] == Value::Bool(true) {
         return None;
     }
+    // Claude Code waking the session when a background task ends writes the task notification as a
+    // user record (`origin.kind`, and the text opens with the tag). It carries on the user's turn;
+    // taking it for a prompt replaced the question and restarted the turn's clock (issue #15).
+    if record["origin"]["kind"] == "task-notification" {
+        return None;
+    }
     user_message_text(&record["message"]["content"]).and_then(|text| prompt_title(&text))
 }
 
@@ -45,7 +51,7 @@ fn user_message_text(content: &Value) -> Option<String> {
             .filter(|args| !args.trim().is_empty())
             .map(str::to_string);
     }
-    let is_command_output = ["<local-command", "Caveat:"]
+    let is_command_output = ["<local-command", "Caveat:", "<task-notification>"]
         .iter()
         .any(|prefix| trimmed.starts_with(prefix));
     (!is_command_output).then_some(text)

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { soundFor } from "../../src/features/agent-status/sounds/events.ts";
+import { rememberedPhase } from "../../src/features/agent-status/sessionLight.ts";
 import { planSoundPack } from "../../src/features/agent-status/sounds/packManifest.ts";
 import { isQuietTime, parseClock } from "../../src/features/agent-status/sounds/quietHours.ts";
 import { DEFAULT_AGENT_SOUND_SETTINGS, normalizeAgentSoundSettings } from "../../src/features/agent-status/sounds/storage.ts";
@@ -17,6 +18,19 @@ test("session changes map to the sound for them", () => {
   assert.equal(soundFor("completed", "running", tool()), "ack");
   assert.equal(soundFor("running", "running", tool()), null);
   assert.equal(soundFor("waiting", "waiting", tool()), null);
+});
+
+test("waking a turn that waited on its background task plays no ack (issue #15)", () => {
+  const waiting = { ...tool(), phase: "completed", replyMarker: "background" };
+  assert.equal(rememberedPhase(waiting), "running");
+  assert.equal(rememberedPhase({ ...tool(), phase: "completed", replyMarker: null, backgroundTasks: 2 }), "running");
+  assert.equal(soundFor(rememberedPhase(waiting), "running", tool()), null);
+  // A turn that is really over still acks the next prompt.
+  for (const replyMarker of ["done", "yourTurn", null]) {
+    const ended = { ...tool(), phase: "completed", replyMarker };
+    assert.equal(soundFor(rememberedPhase(ended), "running", tool()), "ack", String(replyMarker));
+  }
+  assert.equal(rememberedPhase({ ...tool(), phase: "failed", replyMarker: "background" }), "failed");
 });
 
 test("quiet hours cover the range and may run past midnight", () => {
