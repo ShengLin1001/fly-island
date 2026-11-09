@@ -94,6 +94,9 @@ test("permissions are compared with the methods and events the code mentions", (
     assert.match(warnings, /seems to use todos:read/);
     assert.doesNotMatch(warnings, /media:control/);
   });
+  withPlugin({ ...base, optionalPermissions: ["todos:read"] }, { "main.mjs": "plugin.todos.list()" }, (dir) => {
+    assert.doesNotMatch(validatePlugin(dir).warnings.join("\n"), /seems to use todos:read/, "an optional permission counts as asked for");
+  });
 });
 
 test(".focusdignore leaves files out of the package", () => {

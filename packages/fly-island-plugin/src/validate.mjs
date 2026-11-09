@@ -167,8 +167,10 @@ export function validatePlugin(dir, { allowExperimental = false } = {}) {
   for (const permission of declared) {
     if (!used.has(permission)) warnings.push(`The permission ${permission} seems unused (no method or event that needs it was found in the code).`);
   }
+  // An optional permission is asked for while the plugin runs (permissions.request).
+  const optional = new Set(manifest.optionalPermissions ?? []);
   for (const permission of used) {
-    if (!declared.has(permission)) warnings.push(`The code seems to use ${permission}, which the manifest does not ask for (calls will fail with -32001).`);
+    if (!declared.has(permission) && !optional.has(permission)) warnings.push(`The code seems to use ${permission}, which the manifest does not ask for (calls will fail with -32001).`);
   }
   return { manifest, errors, warnings };
 }

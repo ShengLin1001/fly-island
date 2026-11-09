@@ -10,6 +10,7 @@
 
 - **修复（PowerShell）**：脚手架和 `plugins/sdk/powershell/focusd.ps1` 带的 PowerShell 辅助库里，`Receive-FocusdNotification` 的超时在 Windows PowerShell 5.1 上不生效：`[Console]::In.ReadLineAsync()` 在那里是同步的，会一直等到岛屿发来下一行。靠超时做定时任务的插件（每秒刷新、倒计时）因此停住。现在改用 `StreamReader` 读标准输入。用旧版脚手架建的 PowerShell 插件，把 `lib/focusd.ps1` 换成新版即可（只差 `Read-FocusdLine` 和顶部的读取器）。PowerShell 模块 `FlyIsland.Plugin` 的源码同样改了，PowerShell Gallery 上的版本另行发布。
 - 下面「折叠条上的列和小环」：Node SDK `plugin.status.update(id, text, { cells, ring })`、能力 `statusCells`，模拟宿主校验并记录 `cells` / `ring`。
+- `fly-island-plugin validate` 不再把清单 `optionalPermissions` 里的权限报成「代码用了但清单没申请」。
 - 清单校验认识 `contributes.sounds`（音效包）和 `contributes.agentEffortLabels`（Agent 页努力程度的显示名）。
 - `plugin.agentStatus.report` 的类型多了 `host`、`agent`、`cwd`（其他电脑上报的会话）。
 - 脚手架建的插件依赖 `fly-island-plugin` ^0.4.0。
