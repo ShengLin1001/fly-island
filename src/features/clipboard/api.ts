@@ -55,8 +55,14 @@ export function setClipboardHistorySettings(settings: ClipboardHistorySettings) 
   return invoke<ClipboardHistorySnapshot>("set_clipboard_history_settings", { settings });
 }
 
-export function copyClipboardItem(id: string) {
-  return invoke<ClipboardHistorySnapshot>("copy_clipboard_history_item", { id });
+/** How an image goes back (C22.1): as copied, as its saved file, or as its quoted path (for terminals). */
+export type ClipboardCopyAs = "original" | "file" | "path";
+
+// copy_clipboard_history_item_as in src-tauri/src/clipboard_history/mod.rs (CopyAs).
+export function copyClipboardItem(id: string, copyAs: ClipboardCopyAs = "original") {
+  return copyAs === "original"
+    ? invoke<ClipboardHistorySnapshot>("copy_clipboard_history_item", { id })
+    : invoke<ClipboardHistorySnapshot>("copy_clipboard_history_item_as", { id, copyAs });
 }
 
 export function toggleClipboardFavorite(id: string) {

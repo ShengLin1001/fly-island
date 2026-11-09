@@ -6,6 +6,7 @@ use image::RgbaImage;
 use std::{
     borrow::Cow,
     fs,
+    path::Path,
     sync::{
         mpsc::{self, SyncSender},
         Mutex, OnceLock,
@@ -29,7 +30,7 @@ use super::store::{
 };
 use super::{
     current_unix_millis, service, ClipboardHistoryImage, ClipboardHistoryItem,
-    ClipboardHistoryItemKind, ClipboardHistoryService, ClipboardHistorySettings,
+    ClipboardHistoryItemKind, ClipboardHistoryService, CopyAs, ClipboardHistorySettings,
     ClipboardHistorySnapshot, ClipboardHistoryState, HISTORY_CHANGED_EVENT, MAIN_WINDOW_LABEL,
     MAX_NOTE_CHARACTERS, SHORT_DUPLICATE_WINDOW_MS,
 };
@@ -39,6 +40,9 @@ use crate::win32::{
 };
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
+
+/// Long enough for the listener to see the path written by "copy path" and skip it.
+const PATH_CAPTURE_PAUSE: Duration = Duration::from_millis(800);
 
 const CLIPBOARD_WRITE_RETRY_ATTEMPTS: usize = 8;
 
@@ -83,6 +87,12 @@ impl ClipboardHistoryService {
     }
 
     pub(super) fn copy_item(&self, id: &str) -> Result<ClipboardHistorySnapshot, String> {
+        self.copy_item_as(id, CopyAs::Original)
+    }
+
+    /// Puts an item back on the clipboard; an image may go as the saved file or its path (C22.1),
+    /// which terminal CLIs such as Claude Code take as an image where a bitmap often fails.
+    pub(super) fn copy_item_as(&self, id: &str, copy_as: CopyAs) -> Result<ClipboardHistorySnapshot, String> {
         let item = {
             let state = self.state.lock().map_err(|error| error.to_string())?;
             state
@@ -93,23 +103,32 @@ impl ClipboardHistoryService {
                 .ok_or_else(|| "Clipboard history item was not found.".to_string())?
         };
 
-        match item.kind {
-            ClipboardHistoryItemKind::Text => {
+        match (item.kind, copy_as) {
+            (ClipboardHistoryItemKind::Text, _) => {
                 let text = item
                     .text
                     .clone()
                     .ok_or_else(|| "Clipboard text item has no text.".to_string())?;
                 write_clipboard_text(&text)?;
             }
-            ClipboardHistoryItemKind::Image => {
+            (ClipboardHistoryItemKind::Image, copy_as) => {
                 let image = item
                     .image
                     .as_ref()
                     .ok_or_else(|| "Clipboard image item has no image.".to_string())?;
-                let rgba = image::open(&image.original_path)
-                    .map_err(|error| format!("Failed to load clipboard image: {error}"))?
-                    .to_rgba8();
-                write_clipboard_image(rgba.width() as usize, rgba.height() as usize, &rgba)?;
+                if copy_as == CopyAs::Path {
+                    // The path is not something the user copied: keep it out of the history.
+                    super::suspend_clipboard_capture(PATH_CAPTURE_PAUSE);
+                    write_clipboard_text(&quoted_path(Path::new(&image.original_path)))?;
+                } else {
+                    let rgba = image::open(&image.original_path)
+                        .map_err(|error| format!("Failed to load clipboard image: {error}"))?
+                        .to_rgba8();
+                    write_clipboard_image(rgba.width() as usize, rgba.height() as usize, &rgba)?;
+                    if copy_as == CopyAs::File {
+                        write_clipboard_file(Path::new(&image.original_path))?;
+                    }
+                }
             }
         }
 
@@ -449,6 +468,31 @@ fn write_clipboard_text(text: &str) -> Result<(), String> {
             .set_text(text.to_owned())
             .map_err(|error| format!("Failed to set clipboard text: {error}"))
     })
+}
+
+/// Adds the file to what is on the clipboard (CF_HDROP next to the bitmap and PNG): chat apps and
+/// Explorer paste the file, image editors the bitmap.
+fn write_clipboard_file(path: &Path) -> Result<(), String> {
+    retry_clipboard_write("set clipboard file", || {
+        Clipboard::new()
+            .map_err(|error| format!("Failed to open clipboard: {error}"))?
+            .set()
+            .file_list(&[path])
+            .map_err(|error| format!("Failed to set clipboard file: {error}"))
+    })
+}
+
+/// The path in double quotes, as a terminal's drag and drop gives it; spaces stay one argument.
+pub(super) fn quoted_path(path: &Path) -> String {
+    format!("\"{}\"", path.display())
+}
+
+#[cfg(test)]
+#[test]
+fn image_paths_are_quoted_and_copy_forms_parse() {
+    assert_eq!(quoted_path(Path::new(r"C:\Users\a b\clip.png")), r#""C:\Users\a b\clip.png""#);
+    let forms: Vec<CopyAs> = serde_json::from_str(r#"["original","file","path"]"#).expect("parses");
+    assert_eq!(forms, [CopyAs::Original, CopyAs::File, CopyAs::Path]);
 }
 
 fn write_clipboard_image(width: usize, height: usize, image: &RgbaImage) -> Result<(), String> {

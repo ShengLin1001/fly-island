@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { clearClipboardHistory, copyClipboardItem, deleteClipboardItem, getClipboardHistory, listenClipboardHistoryChanged, listenClipboardHistoryShortcut, setClipboardItemNote, toggleClipboardFavorite, type ClipboardHistorySnapshot } from "./api";
+import { clearClipboardHistory, copyClipboardItem, deleteClipboardItem, getClipboardHistory, listenClipboardHistoryChanged, listenClipboardHistoryShortcut, setClipboardItemNote, toggleClipboardFavorite, type ClipboardCopyAs, type ClipboardHistorySnapshot } from "./api";
 import { DEFAULT_CLIPBOARD_HISTORY } from "./settings";
 
 /** Clipboard history snapshot, its item actions, and the native change and shortcut listeners. */
@@ -16,9 +16,9 @@ export function useClipboardHistory(onShortcut: () => void) {
     }
   }, []);
 
-  const copyClipboardHistoryItem = useCallback(async (id: string) => {
+  const copyClipboardHistoryItem = useCallback(async (id: string, copyAs?: ClipboardCopyAs) => {
     try {
-      const snapshot = await copyClipboardItem(id);
+      const snapshot = await copyClipboardItem(id, copyAs);
       setClipboardHistory(snapshot);
       return true;
     } catch (error) {

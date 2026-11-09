@@ -1,5 +1,5 @@
 import { useTranslation } from "../../i18n";
-import type { ClipboardHistorySnapshot } from "./api";
+import type { ClipboardCopyAs, ClipboardHistorySnapshot } from "./api";
 import { ClipboardFilters } from "./ClipboardFilters";
 import { ClipboardHistoryItemRow } from "./ClipboardHistoryItemRow";
 import { ClipboardPanelHeader } from "./ClipboardPanelHeader";
@@ -17,7 +17,7 @@ export function ClipboardHistoryPanel({
   onClear,
 }: {
   snapshot: ClipboardHistorySnapshot;
-  onCopyItem: (id: string) => Promise<boolean> | boolean;
+  onCopyItem: (id: string, copyAs?: ClipboardCopyAs) => Promise<boolean> | boolean;
   onToggleFavorite: (id: string) => Promise<void> | void;
   onUpdateNote: (id: string, note: string) => Promise<boolean> | boolean;
   onDeleteItem: (id: string) => Promise<void> | void;
@@ -102,7 +102,7 @@ export function ClipboardHistoryPanel({
               noteDraft={noteDraft}
               isSavingNote={isSavingNote}
               isConfirmingDelete={confirmDeleteId === item.id}
-              isCopied={copiedItemId === item.id}
+              copied={copiedItemId === item.id ? "original" : copiedItemId?.startsWith(`${item.id}:`) ? (copiedItemId.slice(item.id.length + 1) as ClipboardCopyAs) : null}
               onCopy={handleCopyItem}
               onToggleFavorite={handleToggleFavorite}
               onStartEditNote={startEditingNote}

@@ -107,6 +107,17 @@ impl ClipboardHistorySettings {
     }
 }
 
+/// How an item goes back on the clipboard (C22.1): as copied, or for an image the saved PNG as a
+/// file (bitmap, PNG and CF_HDROP) or its quoted path as text. Text items always go as text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum CopyAs {
+    #[default]
+    Original,
+    File,
+    Path,
+}
+
 #[derive(Clone)]
 pub(crate) struct ShortcutBinding {
     pub(crate) label: String,
@@ -198,6 +209,12 @@ pub fn copy_clipboard_history_item(id: String) -> Result<ClipboardHistorySnapsho
     service()?.copy_item(&id)
 }
 
+/// `copy_clipboard_history_item` with a choice of form for images (`file` or `path`).
+#[tauri::command]
+pub fn copy_clipboard_history_item_as(id: String, copy_as: CopyAs) -> Result<ClipboardHistorySnapshot, String> {
+    service()?.copy_item_as(&id, copy_as)
+}
+
 #[tauri::command]
 pub fn toggle_clipboard_history_favorite(id: String) -> Result<ClipboardHistorySnapshot, String> {
     service()?.toggle_favorite(&id)
@@ -278,6 +295,7 @@ macro_rules! tauri_commands {
             crate::clipboard_history::set_clipboard_history_settings,
             crate::clipboard_history::get_clipboard_shortcut_error,
             crate::clipboard_history::copy_clipboard_history_item,
+            crate::clipboard_history::copy_clipboard_history_item_as,
             crate::clipboard_history::toggle_clipboard_history_favorite,
             crate::clipboard_history::set_clipboard_history_item_note,
             crate::clipboard_history::delete_clipboard_history_item,
