@@ -1,6 +1,7 @@
 mod agent_approval;
 mod agent_status;
 mod calendar;
+mod cc_connect;
 mod claude_usage;
 mod clipboard_history;
 mod dev_lane;
@@ -100,6 +101,9 @@ pub fn run() {
             if let Err(error) = ssh_tunnel::init(app.handle()) {
                 eprintln!("failed to initialize the SSH proxy tunnel: {error}");
             }
+            if let Err(error) = cc_connect::init(app.handle()) {
+                eprintln!("failed to initialize cc-connect: {error}");
+            }
             if let Err(error) = plugin_host::init(app.handle()) {
                 eprintln!("failed to initialize plugins: {error}");
             }
@@ -161,6 +165,7 @@ pub fn run() {
             settings_window;
             ssh_tunnel;
             phone_push;
+            cc_connect;
             pets;
             tray
         ))

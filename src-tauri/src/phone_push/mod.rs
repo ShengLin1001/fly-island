@@ -110,6 +110,12 @@ pub fn get_user_idle_seconds() -> Option<u32> {
     session_notifications::idle_millis().map(|millis| millis / 1000)
 }
 
+/// Whether the screen is locked now; a locked screen pushes at once, however short the idle time.
+#[tauri::command]
+pub fn is_session_locked() -> bool {
+    session_notifications::is_locked()
+}
+
 /// This module's Tauri commands. `lib.rs` chains every module's list into one `generate_handler!`.
 macro_rules! tauri_commands {
     ($next:ident [$($done:tt)*] $($rest:tt)*) => {
@@ -118,6 +124,7 @@ macro_rules! tauri_commands {
             crate::phone_push::save_bark_key,
             crate::phone_push::delete_bark_key,
             crate::phone_push::send_bark_push,
+            crate::phone_push::is_session_locked,
             crate::phone_push::get_user_idle_seconds,
         ] $($rest)*)
     };

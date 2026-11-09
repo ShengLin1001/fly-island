@@ -39,6 +39,7 @@ mod title;
 mod todo_list;
 mod tool_call;
 mod usage;
+mod push_detail;
 mod wezterm;
 mod window_focus;
 
@@ -312,6 +313,39 @@ pub async fn list_agent_sessions(
     })
     .await
     .map_err(|error| format!("Failed to join the agent sessions task: {error}"))?
+}
+
+/// What a phone push needs from a Claude Code session (push_detail.rs): how it was started and what
+/// it waits on. `remote_host` reads the session's copy from that SSH computer. Empty for Codex, or
+/// when the transcript is not found.
+#[tauri::command]
+pub async fn get_agent_push_detail(
+    app: AppHandle,
+    provider: String,
+    session_id: String,
+    remote_host: Option<String>,
+) -> Result<push_detail::PushDetail, String> {
+    if provider != "claudeCode" {
+        return Ok(push_detail::PushDetail::default());
+    }
+    let home_dir = match remote_host {
+        Some(host) => {
+            let app_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|error| format!("Failed to resolve app data directory: {error}"))?;
+            remote_sessions::mirrored_home(&app_dir, &host).ok_or_else(|| format!("Unknown SSH computer {host}."))?
+        }
+        None => windows_home_dir()?,
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        push_detail::claude_transcript(&home_dir, &session_id)
+            .and_then(|path| session_scan::read_tail(&path))
+            .map(|tail| push_detail::claude_push_detail(&tail))
+            .unwrap_or_default()
+    })
+    .await
+    .map_err(|error| format!("Failed to join the push detail task: {error}"))
 }
 
 /// The Host aliases in ~/.ssh/config, offered as remote computers in Settings → AI Agent.
@@ -600,6 +634,7 @@ macro_rules! tauri_commands {
             crate::agent_status::agent_sessions_in_front,
             crate::agent_status::get_agent_host_icon,
             crate::agent_status::list_agent_sessions,
+            crate::agent_status::get_agent_push_detail,
             crate::agent_status::list_ssh_hosts,
             crate::agent_status::get_agent_remote_hosts,
             crate::agent_status::set_agent_remote_hosts,

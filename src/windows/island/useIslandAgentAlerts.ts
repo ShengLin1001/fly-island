@@ -80,7 +80,7 @@ export function useIslandAgentAlerts({ sessions, unseen, settings, enabled, mode
 
   useAgentSounds(sessions, enabled, unseen);
   // Not muted by game mode: the user is not looking at the agents then either.
-  useAgentPush(sessions, settings.agentStatusEnabled);
+  useAgentPush(sessions, settings.agentStatusEnabled, unseen);
   const [soundSettings] = useAgentSoundSettings();
   // A reminder sounds like the wait it is about, if that sound is on.
   const remind = (reminded: AgentSessionSummary[]) => {

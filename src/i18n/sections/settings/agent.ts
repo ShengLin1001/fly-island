@@ -101,6 +101,19 @@ export type SettingsAgentText = {
     title: string;
     enabled: string;
     enabledHint: string;
+    channel: string;
+    channels: Record<"bark" | "ccConnect", string>;
+    /** Picking the cc-connect chats a push goes to (src/features/agent-status/push/CcConnectPushTargets.tsx). */
+    ccConnect: {
+      project: string;
+      projectHint: string;
+      pickProject: string;
+      noChats: string;
+      off: string;
+      offHint: string;
+      refresh: string;
+      testBody: string;
+    };
     server: string;
     serverHint: string;
     key: string;
@@ -121,6 +134,7 @@ export type SettingsAgentText = {
     testBody: string;
     testSent: string;
     hint: string;
+    ccConnectHint: string;
   };
   /** Approving agents' permission requests on the island (roadmap B6 phase 2). */
   approval: {
@@ -250,8 +264,20 @@ export const zhCN: SettingsAgentText = {
   },
   push: {
     title: "手机推送",
-    enabled: "用 Bark 推送到手机",
-    enabledHint: "Agent 等你、完成或出错时推到 iPhone 上的 Bark",
+    enabled: "推送到手机",
+    enabledHint: "Agent 等你、完成或出错时推到手机：iPhone 上的 Bark，或 cc-connect 在 Telegram、Discord、飞书上的机器人",
+    channel: "推送通道",
+    channels: { bark: "Bark", ccConnect: "cc-connect 机器人" },
+    ccConnect: {
+      project: "cc-connect 项目",
+      projectHint: "经这个项目的机器人发出",
+      pickProject: "选择项目",
+      noChats: "这个项目还没有聊天：在手机上给它的机器人发一句话，再点刷新。",
+      off: "cc-connect 手机连接没打开",
+      offHint: "先在 设置 → 插件 里打开内置插件「cc-connect 手机连接」。",
+      refresh: "刷新",
+      testBody: "🔔 FocuSD Island：cc-connect 推送已接通",
+    },
     server: "服务器地址",
     serverHint: "留空用 Bark 官方服务器；自建 bark-server 时填它的地址",
     key: "设备 Key",
@@ -264,7 +290,7 @@ export const zhCN: SettingsAgentText = {
     keyCleared: "设备 Key 已清除。",
     events: { waiting: "等你确认或回答时", completed: "完成一轮时", failed: "出错时" },
     away: "什么时候推",
-    awayHint: "离开电脑一段时间（没有键盘鼠标操作，或已锁屏）才推，坐在电脑前时不打扰手机",
+    awayHint: "锁屏立即推；没锁屏时没有键盘鼠标操作满这么久才推。离开前在电脑上看过的不再推，坐在电脑前时不打扰手机",
     awayValue: (minutes) => (minutes === 0 ? "总是推送" : `离开 ${minutes} 分钟后`),
     test: "发送测试",
     testAction: "发送",
@@ -272,6 +298,7 @@ export const zhCN: SettingsAgentText = {
     testBody: "Bark 推送已接通",
     testSent: "已发送，看看手机。",
     hint: "推送只包含会话名称和发生了什么，不包含命令、回复或代码。官方服务器由 Bark 运营；在意的话可以自建 bark-server。",
+    ccConnectHint: "推送包含 Agent 在问什么（问题、计划或回复，太长会截断），本机终端里的 Claude Code 会话还附上在手机上接管的 /cd、/switch 命令。消息经你自己的机器人发出，也会经过 Telegram、Discord 或飞书的服务器。",
   },
   approval: {
     title: "在岛上审批",
@@ -398,8 +425,20 @@ export const en: SettingsAgentText = {
   },
   push: {
     title: "Phone push",
-    enabled: "Push to your phone with Bark",
-    enabledHint: "When an agent needs you, finishes or fails, push it to Bark on your iPhone",
+    enabled: "Push to your phone",
+    enabledHint: "When an agent needs you, finishes or fails, push it to your phone: Bark on an iPhone, or cc-connect's bot on Telegram, Discord or Feishu",
+    channel: "Channel",
+    channels: { bark: "Bark", ccConnect: "cc-connect bot" },
+    ccConnect: {
+      project: "cc-connect project",
+      projectHint: "Sent by this project's bots",
+      pickProject: "Pick a project",
+      noChats: "This project has no chats yet: send its bot a message from your phone, then refresh.",
+      off: "The cc-connect phone link is off",
+      offHint: "Turn on the built-in plugin \"cc-connect phone link\" under Settings → Plugins first.",
+      refresh: "Refresh",
+      testBody: "🔔 FocuSD Island: cc-connect push is set up",
+    },
     server: "Server",
     serverHint: "Leave empty for Bark's own server; for a self-hosted bark-server, enter its address",
     key: "Device key",
@@ -412,7 +451,7 @@ export const en: SettingsAgentText = {
     keyCleared: "Device key cleared.",
     events: { waiting: "When it waits for you", completed: "When a turn finishes", failed: "When it fails" },
     away: "When to push",
-    awayHint: "Only once you have been away (no keyboard or mouse, or locked) for a while, so the phone stays quiet while you sit at the computer",
+    awayHint: "At once when the screen is locked; otherwise after this long without keyboard or mouse. What you looked at on the computer before leaving is not pushed, so the phone stays quiet while you sit there",
     awayValue: (minutes) => (minutes === 0 ? "Always" : `After ${minutes} min away`),
     test: "Send a test",
     testAction: "Send",
@@ -420,6 +459,7 @@ export const en: SettingsAgentText = {
     testBody: "Bark push is set up",
     testSent: "Sent; check your phone.",
     hint: "A push only says which session and what happened, never commands, replies or code. Bark's own server is run by Bark; host bark-server yourself if that matters to you.",
+    ccConnectHint: "A push says what the agent asks (its question, plan or reply, cut when long); a Claude Code session in a terminal here also gets the /cd and /switch commands that take it over on the phone. It goes through your own bot, and through Telegram's, Discord's or Feishu's servers.",
   },
   approval: {
     title: "Approve on the island",

@@ -16,6 +16,7 @@
 │           pets（只读的 Codex Pets 宠物包）                                               │
 │           claude_usage（可选：只读 Claude Code 凭据，经代理问 oauth/usage，不直连）      │
 │           ssh_tunnel（内置插件：每台主机一条常驻 ssh -R，把本机代理借给服务器）          │
+│           cc_connect（内置插件：找 cc-connect、读它的会话列表，经它把推送发到手机）      │
 │           local_api（127.0.0.1 HTTP，内置插件 focusd.local-api，请求经事件转给 main 窗口） │
 │           plugin_host（插件子进程，stdio JSON-RPC，按权限经 local_api 调用 main 窗口）     │
 │           mail · qq_notifications · wechat_reminders · translation · settings_window │

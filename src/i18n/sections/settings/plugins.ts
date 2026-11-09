@@ -186,6 +186,62 @@ export type SettingsPluginsText = {
     preReleaseAvailable: (version: string) => string;
     preReleaseOffered: (version: string) => string;
   };
+  /** What the cc-connect phone link found, on its plugin page (src/features/cc-connect). */
+  ccConnect: {
+    title: string;
+    hint: string;
+    program: string;
+    notFound: string;
+    source: Record<"setting" | "running" | "path" | "downloaded" | "installed", string>;
+    state: string;
+    running: string;
+    notRunning: string;
+    noProjects: string;
+    noChats: string;
+    refresh: string;
+    download: string;
+    downloading: string;
+    downloadHint: string;
+    /** The island's own cc-connect (the "run" setting) and how it is doing. */
+    runnerLabel: string;
+    runner: Record<"off" | "starting" | "running" | "external" | "noConfig" | "failed", string>;
+    /** Platform names by cc-connect's platform type; an unknown type shows as it is. */
+    platforms: Record<string, string>;
+    /** Setting a bot up (src/features/cc-connect/CcConnectSetup.tsx). */
+    setup: {
+      title: string;
+      hint: string;
+      platform: string;
+      project: string;
+      projectHint: string;
+      workDir: string;
+      workDirHint: string;
+      /** What to do on each platform, in order. */
+      steps: Record<"telegram" | "discord" | "feishu", string[]>;
+      token: string;
+      check: string;
+      find: string;
+      checking: string;
+      bot: (name: string) => string;
+      invite: string;
+      senders: string;
+      noSenders: string;
+      allowFrom: string;
+      allowFromHint: string;
+      allowFromInvalid: string;
+      add: string;
+      adding: string;
+      added: string;
+      feishuStart: string;
+      feishuWaiting: string;
+      feishuQr: string;
+      feishuOpen: string;
+      feishuCancel: string;
+      feishuRetry: string;
+      feishuDone: (allowFrom: string | null) => string;
+      feishuNoOwner: string;
+    };
+  };
   /** The SSH proxy tunnel's hosts on its plugin page (src/features/ssh-tunnel). */
   sshTunnel: {
     title: string;
@@ -435,6 +491,82 @@ export const zhCN: SettingsPluginsText = {
     preReleaseHint: "预发布版本是作者还在测试的新版本，可能不稳定。关掉后不会退回旧版本，等正式版比当前版本新时再更新。",
     preReleaseAvailable: (version: string) => `插件市场里有预发布版本 v${version}。`,
     preReleaseOffered: (version: string) => `有预发布版本 v${version}，可在插件设置里选择接收。`,
+  },
+  ccConnect: {
+    title: "找到的 cc-connect",
+    hint: "推送经下面列出的聊天发到手机：在 设置 → AI Agent → 提醒 → 手机推送 里把通道选成 cc-connect，再勾选聊天。",
+    program: "程序",
+    notFound: "没找到 cc-connect。点下面的「下载 cc-connect」，或在上面填它的路径。",
+    source: { setting: "插件设置", running: "正在运行", path: "PATH", downloaded: "岛下载的", installed: "安装目录" },
+    state: "状态",
+    running: "正在运行",
+    notRunning: "没在运行：推送要 cc-connect 在运行。打开上面的「由岛启动 cc-connect」，或自己启动它。",
+    noProjects: "还没有聊天：先在下面建一个机器人，或给已有的机器人发一句话。",
+    noChats: "还没有聊天",
+    refresh: "刷新",
+    download: "下载 cc-connect",
+    downloading: "正在下载…",
+    downloadHint: "从 GitHub 下载最新正式版，按发布的校验值核对后放在岛的数据文件夹里。",
+    runnerLabel: "由岛启动",
+    runner: {
+      off: "未开启",
+      starting: "正在启动…",
+      running: "运行中",
+      external: "已有别处启动的 cc-connect，不接管",
+      noConfig: "等配置：先在下面建一个机器人",
+      failed: "启动失败",
+    },
+    platforms: { telegram: "Telegram", discord: "Discord", feishu: "飞书", lark: "Lark", weixin: "微信", qqbot: "QQ", qq: "QQ", slack: "Slack", dingtalk: "钉钉", wecom: "企业微信" },
+    setup: {
+      title: "新建机器人",
+      hint: "一个机器人对应 cc-connect 里的一个项目：在手机上和它聊，就是在这台电脑的工作文件夹里用 Claude Code，每次用工具都要你在手机上同意。",
+      platform: "平台",
+      project: "项目名",
+      projectHint: "只用字母、数字、- 和 _。",
+      workDir: "工作文件夹",
+      workDirHint: "在手机上开的会话从这个文件夹开始，之后可以用 /cd 换。",
+      steps: {
+        telegram: [
+          "在 Telegram 里找 @BotFather，发 /newbot，按提示给机器人起名，复制它最后给的 token。",
+          "把 token 粘到下面，用 Telegram 给你的新机器人随便发一句话，再点「识别」。",
+          "在列出的人里点选你自己，ID 就填进「谁能用」。",
+        ],
+        discord: [
+          "打开 Discord 开发者门户（discord.com/developers/applications），New Application → Bot → Reset Token，复制 token；同一页打开 Message Content Intent。",
+          "把 token 粘到下面点「检查」，再用出现的邀请链接把机器人拉进你的服务器。",
+          "Discord 设置 → 高级 → 打开开发者模式，右键自己的头像 →「复制用户 ID」，填进「谁能用」。",
+        ],
+        feishu: [
+          "点「扫码创建」，用飞书 App 扫出现的二维码，飞书会自动建好机器人并开通需要的权限。",
+          "扫码的人就是能用这个机器人的人；建好后在飞书里给机器人发一句话。",
+        ],
+      },
+      token: "机器人 token",
+      check: "检查",
+      find: "识别",
+      checking: "正在检查…",
+      bot: (name: string) => `机器人 ${name} 可用。`,
+      invite: "邀请进服务器",
+      senders: "给机器人发过消息的人，点选你自己：",
+      noSenders: "还没人给它发消息：用 Telegram 给机器人发一句话，再点「识别」。",
+      allowFrom: "谁能用（你的用户 ID）",
+      allowFromHint: "只有这些人能通过机器人使用这台电脑；多个 ID 用英文逗号隔开。",
+      allowFromInvalid: "ID 只能是字母、数字、- 和 _，多个用英文逗号隔开，不能是 *。",
+      add: "添加到 cc-connect",
+      adding: "正在添加…",
+      added:
+        "已加进 cc-connect 的配置。打开上面的「由岛启动 cc-connect」让它运行（已经开着的会自动重启；自己运行的 cc-connect 要重启一次），然后给机器人发一句话，聊天就会出现在上面。",
+      feishuStart: "扫码创建",
+      feishuWaiting: "正在准备二维码…",
+      feishuQr: "飞书扫码创建机器人的二维码",
+      feishuOpen: "在浏览器打开",
+      feishuCancel: "取消",
+      feishuRetry: "重新开始",
+      feishuDone: (allowFrom: string | null) =>
+        `飞书机器人建好了${allowFrom ? `，能用它的人：${allowFrom}` : ""}。打开「由岛启动 cc-connect」让它运行，再在飞书里给机器人发一句话。`,
+      feishuNoOwner:
+        "没拿到你的飞书用户 ID，现在组织里谁都能用这个机器人：给它发 /whoami，把得到的 User ID 填进 ~/.cc-connect/config.toml 里这个项目的 allow_from，再重启 cc-connect。",
+    },
   },
   sshTunnel: {
     title: "主机",
@@ -695,6 +827,82 @@ export const en: SettingsPluginsText = {
     preReleaseHint: "Pre-releases are new versions the author is still testing and may be unstable. Turning this off does not roll back; the plugin updates again once a release is newer than what is installed.",
     preReleaseAvailable: (version: string) => `Pre-release ${version} is in the plugin market. `,
     preReleaseOffered: (version: string) => `Pre-release ${version} is available; you can opt in from the plugin's settings.`,
+  },
+  ccConnect: {
+    title: "cc-connect found",
+    hint: "Pushes go to your phone through the chats below: under Settings → AI Agent → Alerts → Phone push, pick cc-connect as the channel and tick the chats.",
+    program: "Program",
+    notFound: "cc-connect was not found. Use Download cc-connect below, or enter its path above.",
+    source: { setting: "plugin setting", running: "running", path: "PATH", downloaded: "downloaded here", installed: "install folder" },
+    state: "State",
+    running: "Running",
+    notRunning: "Not running: pushes need cc-connect running. Turn on Keep cc-connect running above, or start it yourself.",
+    noProjects: "No chats yet: set a bot up below, or send an existing bot a message.",
+    noChats: "No chats yet",
+    refresh: "Refresh",
+    download: "Download cc-connect",
+    downloading: "Downloading…",
+    downloadHint: "Gets the latest release from GitHub, checks it against the published checksum, and keeps it in the island's data folder.",
+    runnerLabel: "Run by the island",
+    runner: {
+      off: "Off",
+      starting: "Starting…",
+      running: "Running",
+      external: "A cc-connect started elsewhere runs; left alone",
+      noConfig: "Waiting for a config: set a bot up below",
+      failed: "Failed to start",
+    },
+    platforms: { telegram: "Telegram", discord: "Discord", feishu: "Feishu", lark: "Lark", weixin: "WeChat", qqbot: "QQ", qq: "QQ", slack: "Slack", dingtalk: "DingTalk", wecom: "WeCom" },
+    setup: {
+      title: "Set up a bot",
+      hint: "One bot is one project in cc-connect: chatting with it on your phone is using Claude Code in the work folder on this computer, and every tool use asks you on the phone first.",
+      platform: "Platform",
+      project: "Project name",
+      projectHint: "Letters, digits, - and _ only.",
+      workDir: "Work folder",
+      workDirHint: "Sessions started from the phone begin in this folder; /cd changes it later.",
+      steps: {
+        telegram: [
+          "In Telegram, open @BotFather, send /newbot, name the bot as it asks, and copy the token it gives you last.",
+          "Paste the token below, send your new bot any message in Telegram, then press Find me.",
+          "Pick yourself among the people listed; your ID goes into Who may use it.",
+        ],
+        discord: [
+          "Open the Discord Developer Portal (discord.com/developers/applications): New Application → Bot → Reset Token, and copy the token; on the same page turn on Message Content Intent.",
+          "Paste the token below and press Check, then invite the bot to your server with the link that appears.",
+          "Discord settings → Advanced → turn on Developer Mode, right-click your own avatar → Copy User ID, and put it into Who may use it.",
+        ],
+        feishu: [
+          "Press Create by QR code and scan the code with the Feishu app: Feishu makes the bot and grants what it needs.",
+          "Whoever scans may use the bot; once it is made, send it a message in Feishu.",
+        ],
+      },
+      token: "Bot token",
+      check: "Check",
+      find: "Find me",
+      checking: "Checking…",
+      bot: (name: string) => `Bot ${name} works.`,
+      invite: "Invite to a server",
+      senders: "People who wrote to the bot; pick yourself:",
+      noSenders: "Nobody has written to it yet: send the bot a message in Telegram, then press Find me.",
+      allowFrom: "Who may use it (your user ID)",
+      allowFromHint: "Only these people can use this computer through the bot; separate several IDs with commas.",
+      allowFromInvalid: "IDs are letters, digits, - and _, separated by commas, and never *.",
+      add: "Add to cc-connect",
+      adding: "Adding…",
+      added:
+        "Added to cc-connect's config. Turn on Keep cc-connect running above (a running one restarts by itself; restart a cc-connect you run yourself), then send the bot a message and the chat shows up above.",
+      feishuStart: "Create by QR code",
+      feishuWaiting: "Preparing the QR code…",
+      feishuQr: "QR code to create the Feishu bot",
+      feishuOpen: "Open in the browser",
+      feishuCancel: "Cancel",
+      feishuRetry: "Start over",
+      feishuDone: (allowFrom: string | null) =>
+        `The Feishu bot is ready${allowFrom ? `; it may be used by ${allowFrom}` : ""}. Turn on Keep cc-connect running, then send the bot a message in Feishu.`,
+      feishuNoOwner:
+        "Your Feishu user ID did not come back, so anyone in the organization can use this bot: send it /whoami, put the User ID into this project's allow_from in ~/.cc-connect/config.toml, and restart cc-connect.",
+    },
   },
   sshTunnel: {
     title: "Hosts",

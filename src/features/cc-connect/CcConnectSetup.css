@@ -1,0 +1,52 @@
+.cc-connect-setup__steps {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(248, 246, 240, 0.72);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cc-connect-setup__inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cc-connect-setup__actions,
+.cc-connect-setup__senders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.cc-connect-setup__senders > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.cc-connect-setup__sender {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-connect-setup__sender[aria-pressed="true"] {
+  border-color: rgba(116, 214, 255, 0.58);
+  background: rgba(116, 214, 255, 0.16);
+}
+
+.cc-connect-setup__qr {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.cc-connect-setup__qr img {
+  border-radius: var(--radius-md);
+  background: #fff;
+}

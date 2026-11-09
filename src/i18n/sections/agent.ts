@@ -94,8 +94,8 @@ export type AgentText = {
     fiveHour: string;
     sevenDay: string;
   };
-  /** The body of a phone push (roadmap B6.5.5); the title is the session's name. */
-  push: Record<"waiting" | "completed" | "failed", (agent: string) => string>;
+  /** The body of a phone push (roadmap B6.5.5); the title is the session's name. `takeover` leads the commands of a cc-connect push. */
+  push: Record<"waiting" | "completed" | "failed", (agent: string) => string> & { takeover: string };
 };
 
 export const zhCN: AgentText = {
@@ -185,6 +185,7 @@ export const zhCN: AgentText = {
     waiting: (agent) => `${agent} 在等你确认或回答`,
     completed: (agent) => `${agent} 完成了这一轮`,
     failed: (agent) => `${agent} 出错了`,
+    takeover: "📱 手机接管（接管后别再在电脑上答），依次发：",
   },
 };
 
@@ -274,5 +275,6 @@ export const en: AgentText = {
     waiting: (agent) => `${agent} is waiting for your approval or answer`,
     completed: (agent) => `${agent} finished its turn`,
     failed: (agent) => `${agent} failed`,
+    takeover: "📱 To take over on the phone (then stop answering on the computer), send in turn:",
   },
 };
