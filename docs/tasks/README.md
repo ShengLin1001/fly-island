@@ -85,6 +85,18 @@
 
 land 时会自动检查（`scripts/land-check.mjs` 调 `pnpm tasks landing`）：这次标成已完成的任务，`## 提交` 里的标题要在这次 land 或 main 上一字不差，提交号要存在，否则 land 失败；这个 lane 认领的任务还是「进行中」时会提醒先 `done` 或留交接。
 
+## GitHub issue
+
+`TixXin/fly-island` 的 issue 一律按这个顺序处理（用户 2026-11-09 定）：
+
+1. **核实**：读 issue，在代码里或真机上确认（能复现就先复现）。
+2. **先回复，再动手**：说明已收到、初步判断和打算怎么做；要报告人补信息就在这里问。不做的（重复、不是问题、超出范围）回复原因后 `gh issue close <N> --reason "not planned"`，到此为止。
+3. **建任务**：`pnpm tasks add <编号> --title .. --issue <N> --claim --as <会话名> --scope ..`。回复里引用任务文档的链接（`https://github.com/TixXin/fly-island/blob/main/docs/tasks/<分组>/<编号>.md`）；任务建好之前写的回复，在建好后补一条带链接的。
+4. **做完回复**：合入 main 后回复原因、改了什么、怎么拿到（下个版本 / 插件市场 / npm），以及验证结果；引用任务文档（这时在 `docs/tasks/0-archive/<分组>/<编号>.md`），并列出这次的提交（短提交号加标题，GitHub 会自动链接）。
+5. **关闭**：回复之后 `gh issue close <N>`。合入 main 就关，不等发版：回复里写明随哪个版本发布，没修好时报告人可以重新打开。不用提交说明里的 `Closes #N`：它会在完成回复之前就把 issue 关掉。
+
+回复用中文，署名 tixxin Agent Team，可以介绍真实的自动化流程（lane、合并队列、合入前的检查），不写做不到的事；最后一行写「由 <模型名> 自动整理回复」，模型名用实际在用的（例如 Opus 5.5）。
+
 ## 校验
 
 `pnpm check:tasks`（在 `pnpm check` 里）检查：编号格式和分组、文件名、所在的分组文件夹、未知字段、状态和所在目录是否对应、待做没有负责人、依赖和父任务存在、已完成有日期和提交、不做有原因、正文标题和顺序、没有重复标题、没有相对链接。

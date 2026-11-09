@@ -180,5 +180,6 @@ FocuSD Island（仓库名 fly-island）是 Windows 优先的桌面效率工具�
 - 界面方向的决定记录在 `DESIGN.md`（全局方向）和 `docs/design/<区域>.md`（各区域，改哪块只改那一份）；功能专题文档放在 `docs/`；架构变化更新 `docs/architecture/overview.md`，数据存放位置写进 `data-storage.md`，对外契约（localStorage key、事件、命令、文件格式）写进 `contracts.md`。
 - **任务**的规则、分组、字段和流程都在 [docs/tasks/README.md](docs/tasks/README.md)，开工前读它。查任务用命令，不逐个打开文件：`pnpm tasks next`（能认领的，按优先级）、`pnpm tasks show <编号>`（一项的全文和关系）、`pnpm tasks`（看板）。没结束的任务在 `docs/tasks/<分组>/`，已完成和不做的在 `docs/tasks/0-archive/<分组>/`，分组是编号的首字母。
 - **认领以 `origin/main` 为准，不等其他会话回消息**：在 lane 里 `pnpm task:claim <编号> --as <会话名> --scope <要改的目录/,文件>`，会话名用 ListAgents 里自己的名字；做完 `pnpm tasks done <编号>`，和功能改动放在同一个提交里；land 时会核对已完成任务记下的提交。
+- **GitHub issue**：先核实、先回复，再建带 `--issue` 的任务；做完回复（引用任务文档、列出提交）后合入就关。顺序和回复格式见 [docs/tasks/README.md](docs/tasks/README.md)「GitHub issue」。
 - **交接写在任务文件里，不靠消息**：停下来、换会话或做到一半时，`pnpm tasks note <编号> "<进度和下一步>"` 并随下一次提交带上。接手的会话先读任务文件的「交接」。
 - **会话之间的消息**（ListAgents / SendMessage）只用于告知和协商接口，不用来确认归属。对方正在跑的工具结束前读不到消息，所以构建、`cargo test` 这类长命令放到后台运行，让消息能及时读到；需要等某个会话时用 SendMessage 的 `notify_when_idle` 订阅它空闲，不要反复发消息询问。
