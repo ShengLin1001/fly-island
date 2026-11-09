@@ -76,7 +76,7 @@ export function IslandHeader({
 }: IslandHeaderProps) {
   const t = useTranslation();
   const updateVersion = useUpdateReminder();
-  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onPageChange);
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, page, onPageChange);
   const settingsLabel = updateVersion ? t.settings.project.update.islandReminder(updateVersion) : t.settings.title;
   const messageBadgeLabel = t.messages.badge(qqNotificationCount, wechatPending);
   const withShortcut = (label: string, target: IslandPage) => {

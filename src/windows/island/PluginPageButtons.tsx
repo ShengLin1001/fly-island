@@ -28,7 +28,7 @@ export function PluginPageButtons({
 }) {
   const t = useTranslation();
   const { locale } = useLocale();
-  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onOpen);
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, page, onOpen);
   return (
     <>
       {views.map((view) => {
