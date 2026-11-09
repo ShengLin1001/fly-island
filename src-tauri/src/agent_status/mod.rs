@@ -476,20 +476,20 @@ pub async fn get_plan_usage(provider: String, refresh: bool) -> Result<usage::Ag
 /// Saves GLM's or Kimi's API key in the Windows Credential Manager (empty removes it); returns
 /// whether one is saved now.
 #[tauri::command]
-pub async fn set_plan_key(provider: String, key: String) -> Result<bool, String> {
+pub async fn set_plan_key(provider: String, key: String) -> Result<bool, crate::user_error::UserError> {
     let provider = plan_usage::PlanProvider::parse(&provider)?;
     tauri::async_runtime::spawn_blocking(move || plan_usage::save_key(provider, &key))
         .await
-        .map_err(|error| format!("Failed to join the key task: {error}"))?
+        .map_err(|error| crate::user_error::UserError::new("internal", "Something went wrong inside the island.").detail(error))?
 }
 
 /// Whether an API key is saved for GLM or Kimi; the key itself never leaves the native side.
 #[tauri::command]
-pub async fn has_plan_key(provider: String) -> Result<bool, String> {
+pub async fn has_plan_key(provider: String) -> Result<bool, crate::user_error::UserError> {
     let provider = plan_usage::PlanProvider::parse(&provider)?;
     tauri::async_runtime::spawn_blocking(move || plan_usage::has_key(provider))
         .await
-        .map_err(|error| format!("Failed to join the key task: {error}"))?
+        .map_err(|error| crate::user_error::UserError::new("internal", "Something went wrong inside the island.").detail(error))?
 }
 
 /// The icon of a session host (`host.exe` of a listed session) as a PNG data URL; null when the

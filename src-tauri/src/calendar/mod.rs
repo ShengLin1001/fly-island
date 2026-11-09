@@ -9,6 +9,7 @@ mod ics;
 mod meeting_link;
 mod sources;
 
+use crate::user_error::UserError;
 use std::{
     sync::{Mutex, PoisonError},
     time::{Duration, Instant},
@@ -30,7 +31,7 @@ const MAX_ICS_BYTES: usize = 16 * 1024 * 1024;
 #[serde(rename_all = "camelCase")]
 pub struct SourceProblem {
     source_id: String,
-    message: String,
+    message: UserError,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -69,37 +70,37 @@ fn window(now: DateTime<Local>) -> (DateTime<Utc>, DateTime<Utc>) {
     (midnight(start).with_timezone(&Utc), midnight(end).with_timezone(&Utc))
 }
 
-fn app_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    app.path().app_data_dir().map_err(|error| error.to_string())
+fn app_dir(app: &AppHandle) -> Result<std::path::PathBuf, UserError> {
+    app.path().app_data_dir().map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))
 }
 
-async fn fetch_ics(link: &str) -> Result<String, String> {
+async fn fetch_ics(link: &str) -> Result<String, UserError> {
     let url = sources::ics_url(link)?;
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")))
         .build()
-        .map_err(|error| error.to_string())?;
-    let response = client.get(url).send().await.map_err(|error| format!("连不上日历：{error}"))?;
+        .map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))?;
+    let response = client.get(url).send().await.map_err(|error| UserError::new("calendar.unreachable", "Could not reach the calendar.").detail(error))?;
     match response.status().as_u16() {
-        401 | 403 | 404 => return Err("订阅链接已失效，或没有权限。".into()),
-        status if !(200..300).contains(&status) => return Err(format!("日历返回 {status}。")),
+        401 | 403 | 404 => return Err(UserError::new("calendar.linkExpired", "The subscription link has expired, or does not allow access.")),
+        status if !(200..300).contains(&status) => return Err(UserError::new("calendar.status", format!("The calendar answered {status}.")).arg("status", status)),
         _ => {}
     }
-    let bytes = response.bytes().await.map_err(|error| format!("读取日历失败：{error}"))?;
+    let bytes = response.bytes().await.map_err(|error| UserError::new("calendar.read", "Could not read the calendar.").detail(error))?;
     if bytes.len() > MAX_ICS_BYTES {
-        return Err("日历文件太大。".into());
+        return Err(UserError::new("calendar.tooLarge", "The calendar is too large."));
     }
     let text = String::from_utf8_lossy(&ungzip(&bytes)?).to_string();
     if !text.contains("BEGIN:VCALENDAR") {
-        return Err("这个链接不是日历（iCalendar）。".into());
+        return Err(UserError::new("calendar.notIcs", "This link is not a calendar (iCalendar)."));
     }
     Ok(text)
 }
 
 /// The body as sent, unpacked when it is gzip: Apple's calendar servers send gzip even to clients
 /// that did not ask for it.
-fn ungzip(bytes: &[u8]) -> Result<Vec<u8>, String> {
+fn ungzip(bytes: &[u8]) -> Result<Vec<u8>, UserError> {
     use std::io::Read;
     if !bytes.starts_with(&[0x1f, 0x8b]) {
         return Ok(bytes.to_vec());
@@ -108,15 +109,15 @@ fn ungzip(bytes: &[u8]) -> Result<Vec<u8>, String> {
     flate2::read::GzDecoder::new(bytes)
         .take(MAX_ICS_BYTES as u64 + 1)
         .read_to_end(&mut unpacked)
-        .map_err(|_| "日历内容损坏。".to_string())?;
+        .map_err(|_| UserError::new("calendar.corrupt", "The calendar is damaged."))?;
     if unpacked.len() > MAX_ICS_BYTES {
-        return Err("日历文件太大。".into());
+        return Err(UserError::new("calendar.tooLarge", "The calendar is too large."));
     }
     Ok(unpacked)
 }
 
 /// The events of one calendar in the window.
-async fn read_source(source: &CalendarSource, secret: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<CalendarEvent>, String> {
+async fn read_source(source: &CalendarSource, secret: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<CalendarEvent>, UserError> {
     let texts = match source.kind {
         SourceKind::Ics => vec![fetch_ics(secret).await?],
         SourceKind::Caldav => {
@@ -143,7 +144,7 @@ async fn read_all(sources: &[CalendarSource]) -> CalendarSnapshot {
     for source in sources {
         let result = match sources::read_secret(&source.id) {
             Ok(Some(secret)) => read_source(source, &secret, from, to).await,
-            Ok(None) => Err("找不到保存的密码或订阅链接，请删掉这个日历再加一次。".into()),
+            Ok(None) => Err(UserError::new("calendar.secretMissing", "The saved password or link is missing; remove this calendar and add it again.")),
             Err(error) => Err(error),
         };
         match result {
@@ -160,7 +161,7 @@ async fn read_all(sources: &[CalendarSource]) -> CalendarSnapshot {
 /// The events of last month to next month. Read again when 15 minutes old, when the calendars changed, or
 /// with `refresh`; with no calendar added, nothing is read and the list is empty.
 #[tauri::command]
-pub async fn get_calendar_events(app: AppHandle, refresh: bool) -> Result<CalendarSnapshot, String> {
+pub async fn get_calendar_events(app: AppHandle, refresh: bool) -> Result<CalendarSnapshot, UserError> {
     let sources = sources::read(&app_dir(&app)?);
     if sources.is_empty() {
         return Ok(CalendarSnapshot::default());
@@ -177,7 +178,7 @@ pub async fn get_calendar_events(app: AppHandle, refresh: bool) -> Result<Calend
 }
 
 #[tauri::command]
-pub fn list_calendar_sources(app: AppHandle) -> Result<Vec<CalendarSource>, String> {
+pub fn list_calendar_sources(app: AppHandle) -> Result<Vec<CalendarSource>, UserError> {
     Ok(sources::read(&app_dir(&app)?))
 }
 
@@ -191,21 +192,25 @@ pub async fn add_calendar_source(
     url: String,
     username: String,
     secret: String,
-) -> Result<CalendarSource, String> {
+) -> Result<CalendarSource, UserError> {
     let dir = app_dir(&app)?;
     let mut saved = sources::read(&dir);
     if saved.len() >= MAX_SOURCES {
-        return Err(format!("最多添加 {MAX_SOURCES} 个日历。"));
+        return Err(UserError::new("calendar.tooMany", format!("At most {MAX_SOURCES} calendars.")).arg("max", MAX_SOURCES));
     }
     let secret = secret.trim().to_string();
     if secret.is_empty() {
-        return Err(if kind == SourceKind::Ics { "请填写订阅链接。" } else { "请填写密码。" }.into());
+        return Err(if kind == SourceKind::Ics {
+            UserError::new("calendar.needLink", "Fill in the subscription link.")
+        } else {
+            UserError::new("calendar.needPassword", "Fill in the password.")
+        });
     }
     let (url, host) = match kind {
         SourceKind::Ics => (String::new(), sources::ics_url(&secret)?.host_str().unwrap_or_default().to_string()),
         SourceKind::Caldav => {
             if username.trim().is_empty() {
-                return Err("请填写账号。".into());
+                return Err(UserError::new("calendar.needAccount", "Fill in the account."));
             }
             (url.trim().to_string(), sources::host_of(&url))
         }
@@ -228,7 +233,7 @@ pub async fn add_calendar_source(
 }
 
 #[tauri::command]
-pub fn remove_calendar_source(app: AppHandle, id: String) -> Result<(), String> {
+pub fn remove_calendar_source(app: AppHandle, id: String) -> Result<(), UserError> {
     let dir = app_dir(&app)?;
     let mut saved = sources::read(&dir);
     saved.retain(|source| source.id != id);

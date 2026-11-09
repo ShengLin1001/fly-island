@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CalendarPlus } from "lucide-react";
-import { useTranslation } from "../../i18n";
-import { getErrorMessage } from "../../utils/error";
+import { useErrorText, useTranslation } from "../../i18n";
 import { addChinaHolidays } from "./holidays";
 
 /**
@@ -10,6 +9,7 @@ import { addChinaHolidays } from "./holidays";
  */
 export function CalendarEmpty({ onAdded, onOpenSettings }: { onAdded: () => void; onOpenSettings: () => void }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const text = t.calendar;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -21,7 +21,7 @@ export function CalendarEmpty({ onAdded, onOpenSettings }: { onAdded: () => void
       await addChinaHolidays(t.settings.calendar.holidaysName);
       onAdded();
     } catch (failure) {
-      setError(getErrorMessage(failure));
+      setError(errorText(failure));
     } finally {
       setBusy(false);
     }

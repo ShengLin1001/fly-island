@@ -3,6 +3,7 @@
 //! anyone holding it can read, or a CalDAV password) goes to the Windows Credential Manager, like
 //! the mail authorization codes.
 
+use crate::user_error::{credential, UserError};
 use std::{fs, path::Path};
 
 use keyring::{Entry, Error as KeyringError};
@@ -44,46 +45,47 @@ pub(super) fn read(app_dir: &Path) -> Vec<CalendarSource> {
         .unwrap_or_default()
 }
 
-pub(super) fn write(app_dir: &Path, sources: &[CalendarSource]) -> Result<(), String> {
-    fs::create_dir_all(app_dir).map_err(|error| error.to_string())?;
-    let text = serde_json::to_string_pretty(sources).map_err(|error| error.to_string())?;
-    fs::write(app_dir.join(FILE_NAME), text).map_err(|error| format!("无法保存日历设置：{error}"))
+pub(super) fn write(app_dir: &Path, sources: &[CalendarSource]) -> Result<(), UserError> {
+    let save = |error: std::io::Error| UserError::new("calendar.save", "Could not save the calendar settings.").detail(error);
+    fs::create_dir_all(app_dir).map_err(save)?;
+    let text = serde_json::to_string_pretty(sources).map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))?;
+    fs::write(app_dir.join(FILE_NAME), text).map_err(save)
 }
 
-fn credential(id: &str) -> Result<Entry, String> {
-    Entry::new(CREDENTIAL_SERVICE, id).map_err(|_| "无法访问 Windows 凭据。".into())
+fn entry(id: &str) -> Result<Entry, UserError> {
+    Entry::new(CREDENTIAL_SERVICE, id).map_err(credential::open)
 }
 
-pub(super) fn read_secret(id: &str) -> Result<Option<String>, String> {
-    match credential(id)?.get_password() {
+pub(super) fn read_secret(id: &str) -> Result<Option<String>, UserError> {
+    match entry(id)?.get_password() {
         Ok(secret) => Ok(Some(secret)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(_) => Err("无法读取 Windows 凭据。".into()),
+        Err(error) => Err(credential::read(error)),
     }
 }
 
-pub(super) fn save_secret(id: &str, secret: &str) -> Result<(), String> {
-    credential(id)?.set_password(secret).map_err(|_| "无法保存到 Windows 凭据。".into())
+pub(super) fn save_secret(id: &str, secret: &str) -> Result<(), UserError> {
+    entry(id)?.set_password(secret).map_err(credential::save)
 }
 
-pub(super) fn delete_secret(id: &str) -> Result<(), String> {
-    match credential(id)?.delete_credential() {
+pub(super) fn delete_secret(id: &str) -> Result<(), UserError> {
+    match entry(id)?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(_) => Err("无法删除 Windows 凭据。".into()),
+        Err(error) => Err(credential::delete(error)),
     }
 }
 
 /// An ICS link as given: `webcal://` becomes `https://`; anything but https is refused, since the
 /// link itself grants access and must not travel in the clear.
-pub(super) fn ics_url(link: &str) -> Result<reqwest::Url, String> {
+pub(super) fn ics_url(link: &str) -> Result<reqwest::Url, UserError> {
     let link = link.trim();
     let link = match link.strip_prefix("webcal://") {
         Some(rest) => format!("https://{rest}"),
         None => link.to_string(),
     };
-    let url = reqwest::Url::parse(&link).map_err(|_| "订阅链接无效。".to_string())?;
+    let url = reqwest::Url::parse(&link).map_err(|_| UserError::new("calendar.link", "The subscription link is not valid."))?;
     if url.scheme() != "https" || url.host_str().is_none() {
-        return Err("订阅链接要以 https:// 或 webcal:// 开头。".into());
+        return Err(UserError::new("calendar.linkScheme", "The subscription link must start with https:// or webcal://."));
     }
     Ok(url)
 }
@@ -101,8 +103,8 @@ mod tests {
     fn ics_links_must_be_https_and_webcal_becomes_https() {
         assert_eq!(ics_url(" webcal://p01-caldav.icloud.com/published/2/abc ").unwrap().as_str(), "https://p01-caldav.icloud.com/published/2/abc");
         assert!(ics_url("https://calendar.google.com/calendar/ical/x/private-y/basic.ics").is_ok());
-        assert!(ics_url("http://example.com/a.ics").is_err());
-        assert!(ics_url("not a link").is_err());
+        assert_eq!(ics_url("http://example.com/a.ics").unwrap_err().code(), "calendar.linkScheme");
+        assert_eq!(ics_url("not a link").unwrap_err().code(), "calendar.link");
         assert_eq!(host_of("https://caldav.feishu.cn/abc"), "caldav.feishu.cn");
         assert_eq!(host_of("nonsense"), "");
     }

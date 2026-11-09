@@ -5,7 +5,7 @@ import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsSelect } from "../../components/settings/SettingsSelect";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { deleteTranslationSecret, hasTranslationSecret, saveTranslationSecret } from "./api";
 import { DEFAULT_PROVIDER_MODELS, TRANSLATION_PROVIDERS } from "./providers";
 import { useTranslationSettings } from "./useTranslationSettings";
@@ -14,6 +14,7 @@ import "./TranslationSettingsSection.css";
 /** Service, model, key and behavior of quick translation; its shortcuts are on the Shortcuts page. */
 export function TranslationSettingsSection() {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [settings, setSettings] = useTranslationSettings();
   const [hasSecret, setHasSecret] = useState(false);
   const [secretDraft, setSecretDraft] = useState("");
@@ -27,9 +28,9 @@ export function TranslationSettingsSection() {
     let didCancel = false;
     void hasTranslationSecret(provider)
       .then((saved) => { if (!didCancel) setHasSecret(saved); })
-      .catch((failure) => { if (!didCancel) setServiceError(String(failure)); });
+      .catch((failure) => { if (!didCancel) setServiceError(errorText(failure)); });
     return () => { didCancel = true; };
-  }, [provider]);
+  }, [provider, errorText]);
 
   const saveSecret = async () => {
     if (!secretDraft.trim()) return;
@@ -39,7 +40,7 @@ export function TranslationSettingsSection() {
       setSecretDraft("");
       setHasSecret(true);
       setServiceError("");
-    } catch (failure) { setServiceError(String(failure)); }
+    } catch (failure) { setServiceError(errorText(failure)); }
     finally { setSavingSecret(false); }
   };
 
@@ -48,7 +49,7 @@ export function TranslationSettingsSection() {
       await deleteTranslationSecret(provider);
       setHasSecret(false);
       setSecretDraft("");
-    } catch (failure) { setServiceError(String(failure)); }
+    } catch (failure) { setServiceError(errorText(failure)); }
   };
 
   const footer = serviceError ? <span className="translation-settings__error" role="alert">{serviceError}</span> : t.translator.credentialHint;

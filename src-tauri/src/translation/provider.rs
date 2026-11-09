@@ -1,6 +1,7 @@
 //! Translation services. Every provider speaks the OpenAI-compatible chat completions
 //! API, so they differ only in base URL, model and stored key.
 
+use crate::user_error::UserError;
 use reqwest::Url;
 
 pub(super) struct Provider {
@@ -66,19 +67,19 @@ pub(super) const DEFAULT_PROVIDER_ID: &str = "deepseek";
 const MAX_BASE_URL_LENGTH: usize = 500;
 const MAX_MODEL_LENGTH: usize = 200;
 
-pub(super) fn find_provider(id: Option<&str>) -> Result<&'static Provider, String> {
+pub(super) fn find_provider(id: Option<&str>) -> Result<&'static Provider, UserError> {
     let id = id.unwrap_or(DEFAULT_PROVIDER_ID);
     PROVIDERS
         .iter()
         .find(|provider| provider.id == id)
-        .ok_or_else(|| format!("不支持的翻译服务：{id}"))
+        .ok_or_else(|| UserError::new("translation.provider", format!("Unsupported translation service: {id}")).arg("service", id))
 }
 
 /// The chat completions URL: the preset base URL, or a checked custom one.
 pub(super) fn completions_url(
     provider: &Provider,
     custom_base_url: Option<&str>,
-) -> Result<Url, String> {
+) -> Result<Url, UserError> {
     let base = match provider.base_url {
         Some(base) => base.to_string(),
         None => validate_custom_base_url(custom_base_url.unwrap_or_default())?,
@@ -89,42 +90,42 @@ pub(super) fn completions_url(
     } else {
         format!("{base}/chat/completions")
     };
-    Url::parse(&endpoint).map_err(|error| format!("接口地址无效：{error}"))
+    Url::parse(&endpoint).map_err(|error| UserError::new("translation.url", "The service address is not valid.").detail(error))
 }
 
 /// Keys travel in the request, so only HTTPS is accepted, plus plain HTTP to this
 /// machine for locally hosted models.
-fn validate_custom_base_url(raw: &str) -> Result<String, String> {
+fn validate_custom_base_url(raw: &str) -> Result<String, UserError> {
     let raw = raw.trim();
     if raw.is_empty() {
-        return Err("请填写自定义接口地址。".to_string());
+        return Err(UserError::new("translation.urlEmpty", "Fill in the custom service address."));
     }
     if raw.len() > MAX_BASE_URL_LENGTH {
-        return Err("接口地址过长。".to_string());
+        return Err(UserError::new("translation.urlLong", "The service address is too long."));
     }
     let url =
-        Url::parse(raw).map_err(|_| "接口地址无效，请填写完整的 https:// 地址。".to_string())?;
+        Url::parse(raw).map_err(|_| UserError::new("translation.urlFull", "The service address is not valid; fill in the whole https:// address."))?;
     if !url.username().is_empty() || url.password().is_some() {
-        return Err("接口地址中不能包含用户名或密码，密钥请填在密钥栏。".to_string());
+        return Err(UserError::new("translation.urlCredentials", "The service address cannot hold a user name or password; put the key in the key field."));
     }
     let is_local = matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"));
     match url.scheme() {
         "https" => {}
         "http" if is_local => {}
-        _ => return Err("接口地址必须使用 https（本机地址可用 http）。".to_string()),
+        _ => return Err(UserError::new("translation.urlScheme", "The service address must use https (http only for this computer).")),
     }
     if url.query().is_some() || url.fragment().is_some() {
-        return Err("接口地址不能带查询参数。".to_string());
+        return Err(UserError::new("translation.urlQuery", "The service address cannot have query parameters."));
     }
     Ok(url.to_string())
 }
 
-pub(super) fn resolve_model(provider: &Provider, model: Option<&str>) -> Result<String, String> {
+pub(super) fn resolve_model(provider: &Provider, model: Option<&str>) -> Result<String, UserError> {
     let model = model.map(str::trim).filter(|model| !model.is_empty());
     match model.or(provider.default_model) {
         Some(model) if model.chars().count() <= MAX_MODEL_LENGTH => Ok(model.to_string()),
-        Some(_) => Err("模型名称过长。".to_string()),
-        None => Err(format!("请先在翻译设置中填写{}的模型名称。", provider.name)),
+        Some(_) => Err(UserError::new("translation.modelLong", "The model name is too long.")),
+        None => Err(UserError::new("translation.noModel", format!("Fill in the model name for {} in the translation settings first.", provider.name)).arg("service", provider.name)),
     }
 }
 
@@ -132,17 +133,17 @@ pub(super) fn resolve_model(provider: &Provider, model: Option<&str>) -> Result<
 pub(super) fn parse_completion(
     provider: &Provider,
     result: &serde_json::Value,
-) -> Result<String, String> {
+) -> Result<String, UserError> {
     let name = provider.name;
     let choice = result
         .get("choices")
         .and_then(|choices| choices.get(0))
-        .ok_or_else(|| format!("{name} 未返回译文。"))?;
+        .ok_or_else(|| UserError::new("translation.noResult", format!("{name} returned no translation.")).arg("service", name))?;
     // Some compatible services omit finish_reason; only a reported cut-off is an error.
     match choice.get("finish_reason").and_then(|value| value.as_str()) {
         None | Some("stop") => {}
-        Some("length") => return Err(format!("{name} 未完成翻译，请重试或缩短文本。")),
-        Some(reason) => return Err(format!("{name} 未完成翻译（{reason}）。")),
+        Some("length") => return Err(UserError::new("translation.cutOff", format!("{name} did not finish the translation; try again or shorten the text.")).arg("service", name)),
+        Some(reason) => return Err(UserError::new("translation.unfinished", format!("{name} did not finish the translation.")).arg("service", name).detail(reason)),
     }
     let output = choice
         .get("message")
@@ -151,7 +152,7 @@ pub(super) fn parse_completion(
         .unwrap_or_default()
         .trim();
     if output.is_empty() {
-        return Err(format!("{name} 未返回译文。"));
+        return Err(UserError::new("translation.noResult", format!("{name} returned no translation.")).arg("service", name));
     }
     Ok(output.to_string())
 }
@@ -231,7 +232,7 @@ mod tests {
             url("http://127.0.0.1:8080").unwrap(),
             "http://127.0.0.1:8080/chat/completions"
         );
-        assert!(url("http://api.example.com/v1").is_err());
+        assert_eq!(url("http://api.example.com/v1").unwrap_err().code(), "translation.urlScheme");
         assert!(url("https://user:pass@api.example.com/v1").is_err());
         assert!(url("https://api.example.com/v1?key=1").is_err());
         assert!(url("ftp://api.example.com").is_err());

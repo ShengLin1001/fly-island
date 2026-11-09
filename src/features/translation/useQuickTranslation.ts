@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { hasTranslationSecret, listenTranslationSelection, translateText } from "./api";
 import { loadSettings, saveTranslationHandoff } from "./storage";
 
@@ -15,6 +15,7 @@ function oneLine(text: string) {
  */
 export function useQuickTranslation(enabled: boolean) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [peek, setPeek] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export function useQuickTranslation(enabled: boolean) {
         })
         .catch((error) => {
           saveTranslationHandoff(text, "");
-          show(id, oneLine(String(error)));
+          show(id, oneLine(errorText(error)));
         });
     }).then((nextUnlisten) => {
       if (didCancel) nextUnlisten();
@@ -77,7 +78,7 @@ export function useQuickTranslation(enabled: boolean) {
       unlisten?.();
       window.clearTimeout(timer);
     };
-  }, [enabled, t]);
+  }, [enabled, t, errorText]);
 
   return peek;
 }

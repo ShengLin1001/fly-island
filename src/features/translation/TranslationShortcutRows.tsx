@@ -1,7 +1,7 @@
 import { useEffect, useState, type Dispatch, type KeyboardEvent, type SetStateAction } from "react";
 import { Keyboard } from "lucide-react";
 import { ShortcutResetButton } from "../../components/controls/ShortcutResetButton";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { buildShortcutFromEvent } from "../clipboard/shortcut";
 import { setTranslationSelectionShortcut, setTranslationShortcut } from "./api";
 import { DEFAULT_SETTINGS, type TranslationSettings } from "./storage";
@@ -20,6 +20,7 @@ export function TranslationShortcutRows({ settings, onSettingsChange, takenBy }:
   takenBy: (shortcut: string, target: TranslationShortcutTarget) => string | null;
 }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [recording, setRecording] = useState<TranslationShortcutTarget | null>(null);
   const [errors, setErrors] = useState<Record<TranslationShortcutTarget, string>>({ window: "", selection: "" });
   const setError = (target: TranslationShortcutTarget, error: string) => setErrors((current) => ({ ...current, [target]: error }));
@@ -29,7 +30,7 @@ export function TranslationShortcutRows({ settings, onSettingsChange, takenBy }:
     const check = (target: TranslationShortcutTarget, register: Promise<string>) => {
       void register
         .then(() => { if (!didCancel) setError(target, ""); })
-        .catch((failure) => { if (!didCancel) setError(target, String(failure)); });
+        .catch((failure) => { if (!didCancel) setError(target, errorText(failure)); });
     };
     check("window", setTranslationShortcut(settings.shortcut));
     check("selection", setTranslationSelectionShortcut(settings.selectionShortcut));
@@ -62,7 +63,7 @@ export function TranslationShortcutRows({ settings, onSettingsChange, takenBy }:
           : { ...current, selectionShortcut: registered });
         setError(target, "");
       })
-      .catch((failure) => setError(target, String(failure)));
+      .catch((failure) => setError(target, errorText(failure)));
   };
 
   const rows: [TranslationShortcutTarget, string, string, string][] = [

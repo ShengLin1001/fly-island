@@ -1,5 +1,5 @@
 import { useCallback, type KeyboardEvent } from "react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { copyTranslationResult, translateText } from "./api";
 import type { TranslationSettings } from "./storage";
 
@@ -30,6 +30,7 @@ export function useTranslationRequest({
   onStart?: () => void;
 }) {
   const t = useTranslation();
+  const errorText = useErrorText();
 
   const submit = useCallback(async () => {
     const text = input.trim();
@@ -49,11 +50,11 @@ export function useTranslationRequest({
       });
       if (currentId === requestId.current) setOutput(translated);
     } catch (failure) {
-      if (currentId === requestId.current) setError(String(failure));
+      if (currentId === requestId.current) setError(errorText(failure));
     } finally {
       if (currentId === requestId.current) setIsLoading(false);
     }
-  }, [input, onStart, requestId, setError, setIsLoading, setOutput, settings, t]);
+  }, [input, onStart, requestId, setError, setIsLoading, setOutput, settings, t, errorText]);
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -67,7 +68,7 @@ export function useTranslationRequest({
     try {
       await copyTranslationResult(output);
       setDidCopy(true);
-    } catch (failure) { setError(String(failure)); }
+    } catch (failure) { setError(errorText(failure)); }
   };
 
   const clearSource = () => {

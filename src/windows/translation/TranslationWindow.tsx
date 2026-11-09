@@ -1,4 +1,4 @@
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowRight, Check, Clipboard, Copy, Grip, Languages, LoaderCircle, Settings2, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -13,6 +13,7 @@ import "./TranslationWindow.css";
 
 export function TranslationWindow() {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [settings, setSettings] = useTranslationSettings();
   const [input, setInput] = useState("");
   const [clipboardPreview, setClipboardPreview] = useState("");
@@ -42,13 +43,13 @@ export function TranslationWindow() {
     let didCancel = false;
     void hasTranslationSecret(settings.provider)
       .then((saved) => { if (!didCancel) setHasSecret(saved); })
-      .catch((failure) => { if (!didCancel) setError(String(failure)); });
+      .catch((failure) => { if (!didCancel) setError(errorText(failure)); });
     return () => { didCancel = true; };
-  }, [settings.provider, secretCheck]);
+  }, [settings.provider, secretCheck, errorText]);
   useEffect(() => {
     void setTranslationShortcut(settings.shortcut)
       .then(() => setShortcutError(""))
-      .catch((failure) => setShortcutError(String(failure)));
+      .catch((failure) => setShortcutError(errorText(failure)));
     // Registers the saved shortcut once on mount; the settings window registers edits
     // as they are recorded.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,9 +72,9 @@ export function TranslationWindow() {
         inputRef.current?.focus();
       }
     } catch (failure) {
-      if (currentId === clipboardRequestId.current) setError(String(failure));
+      if (currentId === clipboardRequestId.current) setError(errorText(failure));
     }
-  }, [t]);
+  }, [t, errorText]);
 
   const pasteLatestClipboard = useCallback(() => readClipboard(true, true), [readClipboard]);
 

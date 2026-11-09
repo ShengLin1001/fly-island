@@ -12,6 +12,7 @@
 //!   (0–1, maybe a string) and an ISO `reset_time`; older answers carry `usage` (the
 //!   week) and `limits[]` (300 minutes is the 5-hour window) with used/limit strings.
 
+use crate::user_error::{credential, UserError};
 use std::{
     collections::HashMap,
     sync::{Mutex, OnceLock, PoisonError},
@@ -212,39 +213,39 @@ async fn fetch(provider: PlanProvider, key: &str) -> Result<PlanWindows, UsageEr
     }
 }
 
-fn credential(provider: PlanProvider) -> Result<Entry, String> {
-    Entry::new(CREDENTIAL_SERVICE, provider.id()).map_err(|_| "无法访问 Windows 凭据。".into())
+fn entry(provider: PlanProvider) -> Result<Entry, UserError> {
+    Entry::new(CREDENTIAL_SERVICE, provider.id()).map_err(credential::open)
 }
 
-fn read_key(provider: PlanProvider) -> Result<Option<String>, String> {
-    match credential(provider)?.get_password() {
+fn read_key(provider: PlanProvider) -> Result<Option<String>, UserError> {
+    match entry(provider)?.get_password() {
         Ok(key) => Ok(Some(key)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(_) => Err("无法读取 Windows 凭据。".into()),
+        Err(error) => Err(credential::read(error)),
     }
 }
 
 /// Saves the key (an empty one removes it); returns whether one is saved now.
-pub(super) fn save_key(provider: PlanProvider, key: &str) -> Result<bool, String> {
+pub(super) fn save_key(provider: PlanProvider, key: &str) -> Result<bool, UserError> {
     let key = key.trim();
-    let entry = credential(provider)?;
+    let entry = entry(provider)?;
     if key.is_empty() {
         match entry.delete_credential() {
             Ok(()) | Err(KeyringError::NoEntry) => {}
-            Err(_) => return Err("无法删除 Windows 凭据。".into()),
+            Err(error) => return Err(credential::delete(error)),
         }
     } else {
         // A pasted key never holds whitespace; one that does is not a key.
         if key.chars().any(char::is_whitespace) || key.len() > 512 {
-            return Err("API Key 格式不对。".into());
+            return Err(UserError::new("planUsage.key", "That does not look like an API key."));
         }
-        entry.set_password(key).map_err(|_| String::from("无法保存到 Windows 凭据。"))?;
+        entry.set_password(key).map_err(credential::save)?;
     }
     cache().lock().unwrap_or_else(PoisonError::into_inner).remove(&provider);
     Ok(!key.is_empty())
 }
 
-pub(super) fn has_key(provider: PlanProvider) -> Result<bool, String> {
+pub(super) fn has_key(provider: PlanProvider) -> Result<bool, UserError> {
     read_key(provider).map(|key| key.is_some())
 }
 
@@ -275,7 +276,7 @@ pub(super) async fn read(provider: PlanProvider, refresh: bool) -> AgentUsage {
     }
     let usage = match read_key(provider) {
         Ok(None) => AgentUsage { error: Some(error(UsageErrorKind::NoCredentials, "No API key saved.")), ..empty(provider) },
-        Err(message) => AgentUsage { error: Some(error(UsageErrorKind::NoCredentials, message)), ..empty(provider) },
+        Err(message) => AgentUsage { error: Some(error(UsageErrorKind::NoCredentials, message.to_string())), ..empty(provider) },
         Ok(Some(key)) => match fetch(provider, &key).await {
             Ok(windows) => AgentUsage {
                 updated_at: Some(now),

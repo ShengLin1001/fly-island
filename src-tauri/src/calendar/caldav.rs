@@ -5,6 +5,7 @@
 //! that are calendars), as clients do; Feishu's discovery is not complete, so the calendar's own
 //! address can always be given instead.
 
+use crate::user_error::UserError;
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
@@ -99,14 +100,14 @@ pub(super) fn parse_multistatus(xml: &str) -> Vec<DavResponse> {
     responses
 }
 
-fn client() -> Result<reqwest::Client, String> {
+fn client() -> Result<reqwest::Client, UserError> {
     let mut builder = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
         .user_agent(concat!("FocuSD-Island/", env!("CARGO_PKG_VERSION")));
     if let Some(proxy) = get_updater_proxy() {
-        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| format!("Invalid proxy {proxy}: {error}"))?);
+        builder = builder.proxy(reqwest::Proxy::all(&proxy).map_err(|error| UserError::new("net.proxy", format!("Invalid proxy {proxy}.")).arg("proxy", proxy.as_str()).detail(error))?);
     }
-    builder.build().map_err(|error| format!("Could not create the HTTP client: {error}"))
+    builder.build().map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))
 }
 
 pub(super) struct Account<'a> {
@@ -116,8 +117,8 @@ pub(super) struct Account<'a> {
 }
 
 /// One WebDAV request; the multistatus answer, or `Err` naming what went wrong.
-async fn dav(client: &reqwest::Client, account: &Account<'_>, method: &str, url: &Url, depth: &str, body: String) -> Result<String, String> {
-    let method = Method::from_bytes(method.as_bytes()).map_err(|error| error.to_string())?;
+async fn dav(client: &reqwest::Client, account: &Account<'_>, method: &str, url: &Url, depth: &str, body: String) -> Result<String, UserError> {
+    let method = Method::from_bytes(method.as_bytes()).map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))?;
     let response = client
         .request(method, url.clone())
         .basic_auth(account.username, Some(account.password))
@@ -126,15 +127,15 @@ async fn dav(client: &reqwest::Client, account: &Account<'_>, method: &str, url:
         .body(body)
         .send()
         .await
-        .map_err(|error| format!("连不上日历服务器：{error}"))?;
+        .map_err(|error| UserError::new("calendar.unreachable", "Could not reach the calendar.").detail(error))?;
     match response.status().as_u16() {
-        401 | 403 => return Err("日历账号或密码不对。".into()),
-        status if !(200..300).contains(&status) => return Err(format!("日历服务器返回 {status}。")),
+        401 | 403 => return Err(UserError::new("calendar.login", "The calendar account or password is wrong.")),
+        status if !(200..300).contains(&status) => return Err(UserError::new("calendar.status", format!("The calendar answered {status}.")).arg("status", status)),
         _ => {}
     }
-    let bytes = response.bytes().await.map_err(|error| format!("读取日历失败：{error}"))?;
+    let bytes = response.bytes().await.map_err(|error| UserError::new("calendar.read", "Could not read the calendar.").detail(error))?;
     if bytes.len() > MAX_RESPONSE_BYTES {
-        return Err("日历服务器返回的内容太大。".into());
+        return Err(UserError::new("calendar.tooLarge", "The calendar is too large."));
     }
     Ok(String::from_utf8_lossy(&super::ungzip(&bytes)?).to_string())
 }
@@ -163,19 +164,19 @@ const PROPFIND_DISCOVERY: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 </d:propfind>"#;
 
 /// The calendars an address leads to: itself when it is one, else those of its account.
-async fn calendars(client: &reqwest::Client, account: &Account<'_>, base: &Url) -> Result<Vec<Url>, String> {
+async fn calendars(client: &reqwest::Client, account: &Account<'_>, base: &Url) -> Result<Vec<Url>, UserError> {
     let answer = parse_multistatus(&dav(client, account, "PROPFIND", base, "0", PROPFIND_DISCOVERY.into()).await?);
     if answer.iter().any(|response| response.is_calendar) {
         return Ok(vec![base.clone()]);
     }
-    let join = |href: &str| base.join(href).map_err(|error| error.to_string());
+    let join = |href: &str| base.join(href).map_err(|error| UserError::new("calendar.address", "The calendar address is not valid.").detail(error));
     let home = match answer.iter().find_map(|response| response.home.clone()) {
         Some(home) => join(&home)?,
         None => {
-            let principal = answer.iter().find_map(|response| response.principal.clone()).ok_or("这个地址不是日历，也找不到账号下的日历。")?;
+            let principal = answer.iter().find_map(|response| response.principal.clone()).ok_or_else(|| UserError::new("calendar.notCalendar", "This address is not a calendar, and no calendars were found for the account."))?;
             let principal = join(&principal)?;
             let found = parse_multistatus(&dav(client, account, "PROPFIND", &principal, "0", PROPFIND_DISCOVERY.into()).await?);
-            join(&found.iter().find_map(|response| response.home.clone()).ok_or("找不到账号下的日历。")?)?
+            join(&found.iter().find_map(|response| response.home.clone()).ok_or_else(|| UserError::new("calendar.noCalendars", "No calendars were found for the account."))?)?
         }
     };
     let listed = parse_multistatus(&dav(client, account, "PROPFIND", &home, "1", PROPFIND_DISCOVERY.into()).await?);
@@ -183,10 +184,10 @@ async fn calendars(client: &reqwest::Client, account: &Account<'_>, base: &Url) 
 }
 
 /// The iCalendar texts of the events in `[from, to)` in every calendar the account leads to.
-pub(super) async fn fetch(account: &Account<'_>, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<String>, String> {
-    let base = Url::parse(account.url.trim()).map_err(|_| "日历地址无效。".to_string())?;
+pub(super) async fn fetch(account: &Account<'_>, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<String>, UserError> {
+    let base = Url::parse(account.url.trim()).map_err(|_| UserError::new("calendar.address", "The calendar address is not valid."))?;
     if base.scheme() != "https" {
-        return Err("日历地址要以 https:// 开头。".into());
+        return Err(UserError::new("calendar.https", "The calendar address must start with https://."));
     }
     let client = client()?;
     let mut texts = Vec::new();

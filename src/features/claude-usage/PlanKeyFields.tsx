@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, Trash2 } from "lucide-react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { hasPlanKey, setPlanKey, type PlanProvider } from "../agent-status/api";
 import { shownUsageProviders, type UsageProvider } from "./usageRing";
 import "./PlanKeyFields.css";
@@ -31,6 +31,7 @@ export function PlanKeyFields({ settings, disabled }: { settings: Record<string,
 
 function PlanKeyField({ provider, disabled }: { provider: PlanUsageProvider; disabled: boolean }) {
   const text = useTranslation().claudeUsage.keys;
+  const errorText = useErrorText();
   const [saved, setSaved] = useState<boolean | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -40,11 +41,11 @@ function PlanKeyField({ provider, disabled }: { provider: PlanUsageProvider; dis
     let cancelled = false;
     hasPlanKey(provider.id)
       .then((has) => !cancelled && setSaved(has))
-      .catch((failure: unknown) => !cancelled && setError(String(failure)));
+      .catch((failure: unknown) => !cancelled && setError(errorText(failure)));
     return () => {
       cancelled = true;
     };
-  }, [provider.id]);
+  }, [provider.id, errorText]);
 
   const save = (key: string) => {
     setSaving(true);
@@ -54,7 +55,7 @@ function PlanKeyField({ provider, disabled }: { provider: PlanUsageProvider; dis
         setSaved(has);
         setDraft("");
       })
-      .catch((failure: unknown) => setError(String(failure)))
+      .catch((failure: unknown) => setError(errorText(failure)))
       .finally(() => setSaving(false));
   };
   const busy = disabled || saving;

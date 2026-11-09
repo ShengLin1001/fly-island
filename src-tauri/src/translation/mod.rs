@@ -1,6 +1,7 @@
 mod provider;
 mod selection;
 
+use crate::user_error::{credential, UserError};
 use crate::clipboard_history::{parse_shortcut_binding, ShortcutBinding};
 use arboard::Clipboard;
 use keyring::{Entry, Error as KeyringError};
@@ -49,7 +50,7 @@ static ENABLED: AtomicBool = AtomicBool::new(true);
 static OPENS_IN_ISLAND: AtomicBool = AtomicBool::new(false);
 /// A requested shortcut (None to unregister) and where to report the result (the
 /// registered label, empty after unregistering, or an error).
-type PendingBinding = (Option<ShortcutBinding>, mpsc::Sender<Result<String, String>>);
+type PendingBinding = (Option<ShortcutBinding>, mpsc::Sender<Result<String, UserError>>);
 
 static PENDING_BINDING: Mutex<Option<PendingBinding>> = Mutex::new(None);
 static PENDING_SELECTION_BINDING: Mutex<Option<PendingBinding>> = Mutex::new(None);
@@ -150,8 +151,8 @@ pub fn hide_translation_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn read_translation_clipboard() -> Result<Option<String>, String> {
-    let mut clipboard = Clipboard::new().map_err(|error| format!("无法读取剪贴板：{error}"))?;
+pub fn read_translation_clipboard() -> Result<Option<String>, UserError> {
+    let mut clipboard = Clipboard::new().map_err(|error| UserError::new("clipboard.read", "Could not read the clipboard.").detail(error))?;
     match clipboard.get_text() {
         Ok(text) if !text.trim().is_empty() => Ok(Some(text)),
         _ => Ok(None),
@@ -159,48 +160,46 @@ pub fn read_translation_clipboard() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub fn copy_translation_result(text: String) -> Result<(), String> {
+pub fn copy_translation_result(text: String) -> Result<(), UserError> {
     Clipboard::new()
-        .map_err(|error| format!("无法打开剪贴板：{error}"))?
+        .map_err(|error| UserError::new("clipboard.open", "Could not open the clipboard.").detail(error))?
         .set_text(text)
-        .map_err(|error| format!("无法复制译文：{error}"))
+        .map_err(|error| UserError::new("translation.copy", "Could not copy the translation.").detail(error))
 }
 
 // One key per provider. DeepSeek keeps the "deepseek" entry older versions created.
-fn credential(provider: &Provider) -> Result<Entry, String> {
-    Entry::new("com.focusd.island.translation", provider.id).map_err(|error| error.to_string())
+fn entry(provider: &Provider) -> Result<Entry, UserError> {
+    Entry::new("com.focusd.island.translation", provider.id).map_err(credential::open)
 }
 
-fn read_secret(provider: &Provider) -> Result<Option<String>, String> {
-    match credential(provider)?.get_password() {
+fn read_secret(provider: &Provider) -> Result<Option<String>, UserError> {
+    match entry(provider)?.get_password() {
         Ok(secret) => Ok(Some(secret)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(error) => Err(format!("无法读取 Windows 凭据：{error}")),
+        Err(error) => Err(credential::read(error)),
     }
 }
 
 #[tauri::command]
-pub fn has_translation_secret(provider: Option<String>) -> Result<bool, String> {
+pub fn has_translation_secret(provider: Option<String>) -> Result<bool, UserError> {
     Ok(read_secret(find_provider(provider.as_deref())?)?.is_some())
 }
 
 #[tauri::command]
-pub fn save_translation_secret(secret: String, provider: Option<String>) -> Result<(), String> {
+pub fn save_translation_secret(secret: String, provider: Option<String>) -> Result<(), UserError> {
     let provider = find_provider(provider.as_deref())?;
     let secret = secret.trim();
     if secret.is_empty() || secret.len() > 2_000 {
-        return Err("请输入有效的 API 密钥。".to_string());
+        return Err(UserError::new("translation.key", "Enter a valid API key."));
     }
-    credential(provider)?
-        .set_password(secret)
-        .map_err(|error| format!("无法保存到 Windows 凭据：{error}"))
+    entry(provider)?.set_password(secret).map_err(credential::save)
 }
 
 #[tauri::command]
-pub fn delete_translation_secret(provider: Option<String>) -> Result<(), String> {
-    match credential(find_provider(provider.as_deref())?)?.delete_credential() {
+pub fn delete_translation_secret(provider: Option<String>) -> Result<(), UserError> {
+    match entry(find_provider(provider.as_deref())?)?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(error) => Err(format!("无法删除 Windows 凭据：{error}")),
+        Err(error) => Err(credential::delete(error)),
     }
 }
 
@@ -213,13 +212,13 @@ pub async fn translate_text(
     provider: Option<String>,
     base_url: Option<String>,
     model: Option<String>,
-) -> Result<String, String> {
+) -> Result<String, UserError> {
     let text = text.trim();
     if text.is_empty() {
-        return Err("请输入要翻译的内容。".to_string());
+        return Err(UserError::new("translation.empty", "Enter the text to translate."));
     }
     if text.chars().count() > MAX_CHARACTERS {
-        return Err("单次最多翻译 5000 个字符。".to_string());
+        return Err(UserError::new("translation.tooLong", format!("At most {MAX_CHARACTERS} characters at a time.")).arg("max", MAX_CHARACTERS));
     }
     let target = match direction.as_str() {
         "zh-en" => "en",
@@ -234,18 +233,18 @@ pub async fn translate_text(
                 "zh"
             }
         }
-        _ => return Err("不支持的翻译方向。".to_string()),
+        _ => return Err(UserError::new("translation.direction", "Unsupported translation direction.")),
     };
     let provider = find_provider(provider.as_deref())?;
     let endpoint = completions_url(provider, base_url.as_deref())?;
     let model = resolve_model(provider, model.as_deref())?;
     let name = provider.name;
-    let secret = read_secret(provider)?.ok_or_else(|| format!("请先配置{name}的 API 密钥。"))?;
+    let secret = read_secret(provider)?.ok_or_else(|| UserError::new("translation.noKey", format!("Set up the API key for {name} first.")).arg("service", name))?;
     let client = reqwest::Client::builder()
         // Self-hosted gateways and relays can be slow to answer a long text.
         .timeout(Duration::from_secs(30))
         .build()
-        .map_err(|error| format!("无法创建翻译请求：{error}"))?;
+        .map_err(|error| UserError::new("http.client", "Could not set up the connection.").detail(error))?;
 
     let language = if target == "en" {
         "English"
@@ -265,24 +264,24 @@ pub async fn translate_text(
         }))
         .send()
         .await
-        .map_err(|error| format!("{name} 请求失败：{error}"))?;
+        .map_err(|error| UserError::new("net.unreachable", format!("Could not reach {name}.")).arg("service", name).detail(error))?;
     if !response.status().is_success() {
-        return Err(format!(
-            "{name} 返回 HTTP {}，请检查密钥、模型名称或额度。",
-            response.status()
-        ));
+        let status = response.status().as_u16();
+        return Err(UserError::new("translation.status", format!("{name} answered HTTP {status}; check the key, the model name or the quota."))
+            .arg("service", name)
+            .arg("status", status));
     }
     let result: serde_json::Value = response
         .json()
         .await
-        .map_err(|error| format!("无法读取 {name} 结果：{error}"))?;
+        .map_err(|error| UserError::new("net.unreadable", format!("Could not read {name}'s answer.")).arg("service", name).detail(error))?;
     parse_completion(provider, &result)
 }
 
 #[tauri::command]
-pub fn set_translation_shortcut(shortcut: String) -> Result<String, String> {
+pub fn set_translation_shortcut(shortcut: String) -> Result<String, UserError> {
     let binding = parse_shortcut_binding(&shortcut)
-        .ok_or_else(|| "快捷键无效，请使用至少一个修饰键。".to_string())?;
+        .ok_or_else(|| UserError::new("shortcut.invalid", "That shortcut is not valid; use at least one modifier key."))?;
     if !ENABLED.load(Ordering::SeqCst) {
         // Remembered by the frontend and registered when translation is switched on.
         return Ok(binding.label);
@@ -293,7 +292,7 @@ pub fn set_translation_shortcut(shortcut: String) -> Result<String, String> {
 /// Switching off unregisters the shortcut; switching on registers nothing by itself,
 /// the frontend then calls set_translation_shortcut with the saved shortcut.
 #[tauri::command]
-pub fn set_translation_enabled(enabled: bool) -> Result<(), String> {
+pub fn set_translation_enabled(enabled: bool) -> Result<(), UserError> {
     ENABLED.store(enabled, Ordering::SeqCst);
     if !enabled {
         let window = change_hotkey(None);
@@ -310,9 +309,9 @@ pub fn set_translation_target(island: bool) {
 }
 
 #[tauri::command]
-pub fn set_translation_selection_shortcut(shortcut: String) -> Result<String, String> {
+pub fn set_translation_selection_shortcut(shortcut: String) -> Result<String, UserError> {
     let binding = parse_shortcut_binding(&shortcut)
-        .ok_or_else(|| "快捷键无效，请使用至少一个修饰键。".to_string())?;
+        .ok_or_else(|| UserError::new("shortcut.invalid", "That shortcut is not valid; use at least one modifier key."))?;
     if !ENABLED.load(Ordering::SeqCst) {
         return Ok(binding.label);
     }
@@ -320,11 +319,11 @@ pub fn set_translation_selection_shortcut(shortcut: String) -> Result<String, St
 }
 
 /// Hands `binding` to the hotkey thread, which owns the registration, and waits for it.
-fn change_hotkey(binding: Option<ShortcutBinding>) -> Result<String, String> {
+fn change_hotkey(binding: Option<ShortcutBinding>) -> Result<String, UserError> {
     post_binding(&PENDING_BINDING, CHANGE_HOTKEY_MESSAGE, binding)
 }
 
-fn change_selection_hotkey(binding: Option<ShortcutBinding>) -> Result<String, String> {
+fn change_selection_hotkey(binding: Option<ShortcutBinding>) -> Result<String, UserError> {
     post_binding(&PENDING_SELECTION_BINDING, CHANGE_SELECTION_HOTKEY_MESSAGE, binding)
 }
 
@@ -332,39 +331,39 @@ fn post_binding(
     slot: &Mutex<Option<PendingBinding>>,
     message: u32,
     binding: Option<ShortcutBinding>,
-) -> Result<String, String> {
+) -> Result<String, UserError> {
     let started = Instant::now();
     let hwnd = loop {
-        if let Some(hwnd) = *HOTKEY_WINDOW.lock().map_err(|error| error.to_string())? {
+        if let Some(hwnd) = *HOTKEY_WINDOW.lock().map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))? {
             break hwnd;
         }
         if started.elapsed() >= Duration::from_secs(2) {
-            return Err("快捷键服务尚未准备好。".to_string());
+            return Err(UserError::new("shortcut.notReady", "The shortcut service is not ready yet."));
         }
         thread::sleep(Duration::from_millis(25));
     };
     let (sender, receiver) = mpsc::channel();
     {
-        let mut pending = slot.lock().map_err(|error| error.to_string())?;
+        let mut pending = slot.lock().map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))?;
         if pending.is_some() {
-            return Err("快捷键正在更新。".to_string());
+            return Err(UserError::new("shortcut.busy", "The shortcut is being changed already."));
         }
         *pending = Some((binding, sender));
     }
     if let Err(error) = message_window::post_message(HWND(hwnd as *mut _), message) {
-        *slot.lock().map_err(|error| error.to_string())? = None;
-        return Err(format!("无法更新快捷键：{error}"));
+        *slot.lock().map_err(|error| UserError::new("internal", "Something went wrong inside the island.").detail(error))? = None;
+        return Err(UserError::new("shortcut.update", "Could not change the shortcut.").detail(error));
     }
     receiver
         .recv_timeout(Duration::from_secs(2))
-        .map_err(|error| format!("快捷键更新超时：{error}"))?
+        .map_err(|error| UserError::new("shortcut.timeout", "Changing the shortcut took too long.").detail(error))?
 }
 
 fn run_hotkey_loop() -> Result<(), String> {
     let class_name = "FocuSDTranslationHotkey";
     let instance = message_window::module_instance().map_err(|error| error.to_string())?;
     if message_window::register_class::<TranslationHotkeyWindow>(instance, class_name).is_err() {
-        return Err("无法注册翻译快捷键窗口。".to_string());
+        return Err("Could not register the translation shortcut window.".to_string());
     }
     let hwnd = message_window::create_message_only_window(
         instance,
@@ -395,9 +394,9 @@ fn register_default(
     Ok(())
 }
 
-fn register_binding(hwnd: HWND, id: i32, binding: &ShortcutBinding) -> Result<(), String> {
+fn register_binding(hwnd: HWND, id: i32, binding: &ShortcutBinding) -> Result<(), UserError> {
     win32::hotkey::register(hwnd, id, binding.modifiers, binding.key_code)
-        .map_err(|error| format!("快捷键 {} 已被占用或无法注册：{error}", binding.label))
+        .map_err(|error| UserError::new("shortcut.taken", format!("The shortcut {} is taken or cannot be registered.", binding.label)).arg("shortcut", binding.label.as_str()).detail(error))
 }
 
 fn apply_binding_change(

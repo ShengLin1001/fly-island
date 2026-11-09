@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { NativeError } from "../../i18n/nativeError";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 /** Opens a meeting's join link (only links of known meeting services ever reach here). */
@@ -26,7 +27,8 @@ export type CalendarSnapshot = {
   /** The events between `fromMs` and `toMs`, by start. */
   events: CalendarEvent[];
   /** Calendars that could not be read this time. */
-  problems: { sourceId: string; message: string }[];
+  /** Why a calendar could not be read (task D15: a native error, worded with useErrorText). */
+  problems: { sourceId: string; message: NativeError | string }[];
   fetchedAt: number;
   /** The time the events were read for: from the 1st of last month to that of the month after next; 0 before a read. */
   fromMs: number;

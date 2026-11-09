@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton";
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsSelect } from "../../components/settings/SettingsSelect";
-import { getErrorMessage } from "../../utils/error";
 import { addCalendarSource, listCalendarSources, removeCalendarSource, type CalendarSource } from "./api";
 import { CALENDAR_PRESETS, guessKind, needsServer, presetOf, type CalendarService } from "./presets";
 import { addChinaHolidays, hasChinaHolidays } from "./holidays";
@@ -21,6 +20,7 @@ const EMPTY_FORM = { name: "", address: "", username: "", password: "" };
  */
 export function CalendarSourcesSection() {
   const text = useTranslation().settings.calendar;
+  const errorText = useErrorText();
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [service, setService] = useState<CalendarService>("feishu");
   const [form, setForm] = useState(EMPTY_FORM);
@@ -51,7 +51,7 @@ export function CalendarSourcesSection() {
       setState({ busy: false, error: "" });
       await reload();
     } catch (error) {
-      setState({ busy: false, error: getErrorMessage(error) });
+      setState({ busy: false, error: errorText(error) });
     }
   };
   const add = () =>

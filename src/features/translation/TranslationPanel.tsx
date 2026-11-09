@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, Clipboard, Copy, LoaderCircle, X } from "lucide-react";
-import { useTranslation } from "../../i18n";
+import { useErrorText, useTranslation } from "../../i18n";
 import { hasTranslationSecret, readTranslationClipboard } from "./api";
 import { takeTranslationHandoff, type Direction } from "./storage";
 import { useAutoTranslate } from "./useAutoTranslate";
@@ -14,6 +14,7 @@ import "./TranslationPanel.css";
  */
 export function TranslationPanel({ isOpen, onOpenSettings }: { isOpen: boolean; onOpenSettings: () => void }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [settings, setSettings] = useTranslationSettings();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
@@ -36,9 +37,9 @@ export function TranslationPanel({ isOpen, onOpenSettings }: { isOpen: boolean; 
     let didCancel = false;
     void hasTranslationSecret(settings.provider)
       .then((saved) => { if (!didCancel) setHasSecret(saved); })
-      .catch((failure) => { if (!didCancel) setError(String(failure)); });
+      .catch((failure) => { if (!didCancel) setError(errorText(failure)); });
     return () => { didCancel = true; };
-  }, [isOpen, settings.provider]);
+  }, [isOpen, settings.provider, errorText]);
 
   const fillSource = useCallback((source: string, result: string) => {
     requestId.current += 1;
@@ -71,7 +72,7 @@ export function TranslationPanel({ isOpen, onOpenSettings }: { isOpen: boolean; 
       if (text) fillSource(text, "");
       else setError(t.translator.emptyClipboard);
       inputRef.current?.focus();
-    } catch (failure) { setError(String(failure)); }
+    } catch (failure) { setError(errorText(failure)); }
   };
 
   const noteAutoSource = useCallback(() => { skipAutoSource.current = input.trim(); }, [input]);
