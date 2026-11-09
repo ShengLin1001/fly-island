@@ -2,7 +2,8 @@
 //! listed, switched on, granted permissions and configured like any plugin
 //! (runtime type "builtin"). They need no download and no "allow third-party
 //! plugins", and cannot be uninstalled. Today: the local API and the collapsed
-//! island's center pattern, agent usage rings and agent session ring.
+//! island's center pattern, agent usage rings and agent session ring, the SSH
+//! proxy tunnel and the cc-connect phone link.
 //!
 //! A built-in plugin whose work happens in the island window (a collapsed-bar
 //! ring, say) needs only an entry in BUILTINS with `native` false: it starts and
@@ -280,6 +281,35 @@ const SSH_TUNNEL_MANIFEST: &str = r#"{
   }
 }"#;
 
+// Works in the windows (src/features/cc-connect): the plugin page shows what was found, and the
+// phone push (Settings → AI Agent → Alerts) sends through it. Nothing runs here yet.
+const CC_CONNECT_MANIFEST: &str = r#"{
+  "id": "focusd.cc-connect",
+  "name": { "zh-CN": "cc-connect 手机连接", "en": "cc-connect phone link" },
+  "description": {
+    "zh-CN": "让手机推送经 cc-connect 的机器人发到 Telegram、Discord 或飞书：Agent 等你时把问题、计划或回复连同接管命令发到手机，在手机上回 /cd、/switch 就能接着这个会话答。需要先装好并运行 cc-connect，再给机器人发一句话完成配对。",
+    "en": "Sends the phone push through cc-connect's bots on Telegram, Discord or Feishu: when an agent waits for you, its question, plan or reply goes to your phone with the commands to take the session over there (/cd, /switch). Needs cc-connect installed and running, and one message sent to the bot to pair the chat."
+  },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "path",
+        "type": "string",
+        "title": { "zh-CN": "cc-connect 程序路径", "en": "cc-connect program" },
+        "description": {
+          "zh-CN": "留空自动找：先找正在运行的 cc-connect，再找 PATH（npm i -g cc-connect 装在这里）。不搜全盘。",
+          "en": "Leave empty to find it: the running cc-connect first, then PATH (where npm i -g cc-connect puts it). The disks are not searched."
+        },
+        "default": ""
+      }
+    ]
+  }
+}"#;
+
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
 /// whether it has work in this process (`native`, see `start` and `stop`).
 pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
@@ -288,6 +318,7 @@ pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
     ("focusd.session-ring", SESSION_RING_MANIFEST, false),
     (SSH_TUNNEL_ID, SSH_TUNNEL_MANIFEST, true),
+    ("focusd.cc-connect", CC_CONNECT_MANIFEST, false),
 ];
 
 /// Every built-in plugin's id and manifest.

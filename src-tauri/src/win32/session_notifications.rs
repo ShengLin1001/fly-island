@@ -3,7 +3,10 @@
 //! message-only window registers for the session and power notifications
 //! (which are sent to it directly, so it needs no broadcasts).
 
-use std::sync::OnceLock;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    OnceLock,
+};
 
 use windows::Win32::{
     Foundation::{HANDLE, HWND, LPARAM, LRESULT, WPARAM},
@@ -44,12 +47,19 @@ pub(crate) fn classify(message: u32, wparam: usize) -> Option<SessionChange> {
 }
 
 static ON_CHANGE: OnceLock<fn(SessionChange)> = OnceLock::new();
+/// Locked since the last lock or unlock this process saw; starts unlocked (the island starts at sign-in).
+static LOCKED: AtomicBool = AtomicBool::new(false);
 
 struct SessionWindow;
 
 impl WindowMessages for SessionWindow {
     fn handle(_window: HWND, message: u32, wparam: WPARAM, _lparam: LPARAM) -> Option<LRESULT> {
         let change = classify(message, wparam.0)?;
+        match change {
+            SessionChange::Locked => LOCKED.store(true, Ordering::Relaxed),
+            SessionChange::Unlocked => LOCKED.store(false, Ordering::Relaxed),
+            SessionChange::Suspended | SessionChange::Resumed => {}
+        }
         if let Some(on_change) = ON_CHANGE.get() {
             on_change(change);
         }
@@ -94,6 +104,11 @@ pub(crate) fn watch(on_change: fn(SessionChange)) -> Result<(), String> {
     let _registrations = Registrations { window, power, session };
     message_window::run_message_loop();
     Ok(())
+}
+
+/// Whether this session's screen is locked, as far as the watcher (`watch`) has seen.
+pub(crate) fn is_locked() -> bool {
+    LOCKED.load(Ordering::Relaxed)
 }
 
 /// Milliseconds since the last keyboard or mouse input in this session; None if Windows cannot say.

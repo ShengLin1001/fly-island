@@ -157,6 +157,13 @@ fn mirror_root(app_dir: &Path, host: &str) -> PathBuf {
     app_dir.join(MIRROR_DIR).join(host)
 }
 
+/// The mirrored home of SSH computer `host`, if the island keeps one; None for a name that is not
+/// one folder (it comes from the window).
+pub(super) fn mirrored_home(app_dir: &Path, host: &str) -> Option<PathBuf> {
+    let plain = !host.is_empty() && host != "." && host != ".." && !host.contains(['/', '\\', ':']);
+    Some(mirror_root(app_dir, host)).filter(|root| plain && root.is_dir())
+}
+
 fn fetch(host: &str, target: &SshTarget, app_dir: &Path, window_ms: i64) {
     let known: HashMap<String, RemoteFile> = {
         let states = HOSTS.lock().unwrap_or_else(PoisonError::into_inner);

@@ -1469,13 +1469,24 @@
       "page": "agentAlerts",
       "zh-CN": {
         "group": "手机推送",
-        "title": "用 Bark 推送到手机",
-        "description": "Agent 等你、完成或出错时推到 iPhone 上的 Bark"
+        "title": "推送到手机",
+        "description": "Agent 等你、完成或出错时推到手机：iPhone 上的 Bark，或 cc-connect 在 Telegram、Discord、飞书上的机器人"
       },
       "en": {
         "group": "Phone push",
-        "title": "Push to your phone with Bark",
-        "description": "When an agent needs you, finishes or fails, push it to Bark on your iPhone"
+        "title": "Push to your phone",
+        "description": "When an agent needs you, finishes or fails, push it to your phone: Bark on an iPhone, or cc-connect's bot on Telegram, Discord or Feishu"
+      }
+    },
+    {
+      "page": "agentAlerts",
+      "zh-CN": {
+        "group": "手机推送",
+        "title": "推送通道"
+      },
+      "en": {
+        "group": "Phone push",
+        "title": "Channel"
       }
     },
     {
@@ -1542,12 +1553,12 @@
       "zh-CN": {
         "group": "手机推送",
         "title": "什么时候推",
-        "description": "离开电脑一段时间（没有键盘鼠标操作，或已锁屏）才推，坐在电脑前时不打扰手机"
+        "description": "锁屏立即推；没锁屏时没有键盘鼠标操作满这么久才推。离开前在电脑上看过的不再推，坐在电脑前时不打扰手机"
       },
       "en": {
         "group": "Phone push",
         "title": "When to push",
-        "description": "Only once you have been away (no keyboard or mouse, or locked) for a while, so the phone stays quiet while you sit at the computer"
+        "description": "At once when the screen is locked; otherwise after this long without keyboard or mouse. What you looked at on the computer before leaving is not pushed, so the phone stays quiet while you sit there"
       }
     },
     {

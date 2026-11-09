@@ -186,6 +186,22 @@ export type SettingsPluginsText = {
     preReleaseAvailable: (version: string) => string;
     preReleaseOffered: (version: string) => string;
   };
+  /** What the cc-connect phone link found, on its plugin page (src/features/cc-connect). */
+  ccConnect: {
+    title: string;
+    hint: string;
+    program: string;
+    notFound: string;
+    source: Record<"setting" | "running" | "path", string>;
+    state: string;
+    running: string;
+    notRunning: string;
+    noProjects: string;
+    noChats: string;
+    refresh: string;
+    /** Platform names by cc-connect's platform type; an unknown type shows as it is. */
+    platforms: Record<string, string>;
+  };
   /** The SSH proxy tunnel's hosts on its plugin page (src/features/ssh-tunnel). */
   sshTunnel: {
     title: string;
@@ -435,6 +451,20 @@ export const zhCN: SettingsPluginsText = {
     preReleaseHint: "预发布版本是作者还在测试的新版本，可能不稳定。关掉后不会退回旧版本，等正式版比当前版本新时再更新。",
     preReleaseAvailable: (version: string) => `插件市场里有预发布版本 v${version}。`,
     preReleaseOffered: (version: string) => `有预发布版本 v${version}，可在插件设置里选择接收。`,
+  },
+  ccConnect: {
+    title: "找到的 cc-connect",
+    hint: "推送经下面列出的聊天发到手机：在 设置 → AI Agent → 提醒 → 手机推送 里把通道选成 cc-connect，再勾选聊天。",
+    program: "程序",
+    notFound: "没找到。先装好 cc-connect（npm i -g cc-connect，或下载发布包），或在上面填它的路径。",
+    source: { setting: "插件设置", running: "正在运行", path: "PATH" },
+    state: "状态",
+    running: "正在运行",
+    notRunning: "没在运行：推送要 cc-connect 在运行，先启动它",
+    noProjects: "还没有聊天：给 cc-connect 的机器人发一句话，再点刷新。",
+    noChats: "还没有聊天",
+    refresh: "刷新",
+    platforms: { telegram: "Telegram", discord: "Discord", feishu: "飞书", lark: "Lark", weixin: "微信", qqbot: "QQ", qq: "QQ", slack: "Slack", dingtalk: "钉钉", wecom: "企业微信" },
   },
   sshTunnel: {
     title: "主机",
@@ -695,6 +725,20 @@ export const en: SettingsPluginsText = {
     preReleaseHint: "Pre-releases are new versions the author is still testing and may be unstable. Turning this off does not roll back; the plugin updates again once a release is newer than what is installed.",
     preReleaseAvailable: (version: string) => `Pre-release ${version} is in the plugin market. `,
     preReleaseOffered: (version: string) => `Pre-release ${version} is available; you can opt in from the plugin's settings.`,
+  },
+  ccConnect: {
+    title: "cc-connect found",
+    hint: "Pushes go to your phone through the chats below: under Settings → AI Agent → Alerts → Phone push, pick cc-connect as the channel and tick the chats.",
+    program: "Program",
+    notFound: "Not found. Install cc-connect first (npm i -g cc-connect, or a release download), or enter its path above.",
+    source: { setting: "plugin setting", running: "running", path: "PATH" },
+    state: "State",
+    running: "Running",
+    notRunning: "Not running: pushes need cc-connect running, so start it first",
+    noProjects: "No chats yet: send cc-connect's bot a message, then refresh.",
+    noChats: "No chats yet",
+    refresh: "Refresh",
+    platforms: { telegram: "Telegram", discord: "Discord", feishu: "Feishu", lark: "Lark", weixin: "WeChat", qqbot: "QQ", qq: "QQ", slack: "Slack", dingtalk: "DingTalk", wecom: "WeCom" },
   },
   sshTunnel: {
     title: "Hosts",

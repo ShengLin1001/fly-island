@@ -26,7 +26,8 @@ src/
 │   ├── plugin-dev/          # 设置 → 插件扩展 → 开发者：开发模式开关、从文件夹加载插件、JSON-RPC 收发记录、手动发送事件
 │   ├── plugin-views/        # 插件在岛上的页面与折叠条状态：模板（list / detail / form / status）、插件数据的规范化、页面顺序与隐藏
 │   ├── messages/            # 消息导航与预览；mail/、qq-notifications/、wechat/ 子目录；banner/ 为岛下方的新消息横幅（分组与计时，接线在 windows/island/useIslandBanner.ts）；arrivals/ 为新消息自动展开的面板（只列这次到达的消息，接线在 windows/island/useIslandMessagePanel.ts）
-│   ├── agent-status/        # AI 代理状态；sounds/ 为 Agent 音效：内置音效播放、设置 → 声音页、导入音效包
+│   ├── agent-status/        # AI 代理状态；sounds/ 为 Agent 音效：内置音效播放、设置 → 声音页、导入音效包；push/ 为手机推送（Bark 或 cc-connect，排队到离开电脑再发）
+│   ├── cc-connect/          # 内置插件 focusd.cc-connect 的插件页部分：找到的程序、是否在运行、各项目聊过的会话（手机推送的 cc-connect 通道从这里选目标）
 │   ├── claude-usage/        # 收起条上的 Claude 用量双环（内置插件 focusd.claude-usage）：读 agent-status 的用量（claude-hud 快照或直接查询的结果），阈值配色与悬停卡片文案（usageRing.ts），刷新命令封装（api.ts）
 │   ├── session-ring/        # 收起条上的 Agent 会话环（内置插件 focusd.session-ring）：按状态分段计数与悬停卡片文案（ringCounts.ts），数据来自 agent-status 的会话列表
 │   ├── ssh-tunnel/          # 内置插件 focusd.ssh-proxy-tunnel 的插件页部分：主机列表、服务器端口、占用确认、隧道状态与 export 行、运行信息里的本地代理（useSshTunnelProxy.ts）（tunnelPort.ts 为端口校验）
