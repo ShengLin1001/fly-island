@@ -179,6 +179,26 @@ pub async fn get_reply_marker_state() -> Result<ReplyMarkerState, String> {
     .map_err(|error| format!("Failed to join the CLAUDE.md task: {error}"))?
 }
 
+/// Whether the rules file holds an older wording of the island's block that this island replaces.
+/// Only the island's own file counts: a block an older island left in `CLAUDE.md` is moved only
+/// when the user switches the marker on again, as that edits the user's own file.
+pub(super) fn needs_upgrade(rules: &str) -> bool {
+    find_block(rules).is_some_and(|(start, end)| rules[start..end].replace("\r\n", "\n") != block())
+}
+
+/// At startup: a rules file an older island wrote gets this island's wording, so a changed wording
+/// reaches users without them switching the marker off and on. SSH remotes wait for the next time
+/// the user switches it, which is when the island connects to them.
+pub(super) fn upgrade_installed() {
+    let Ok(path) = claude_dir().map(|dir| dir.join(RULES_FILE)) else { return };
+    let Ok(rules) = read_text(&path) else { return };
+    if needs_upgrade(&rules) {
+        if let Err(error) = super::write_text_file(&path, &rules_file()) {
+            eprintln!("failed to update the reply marker rules: {error}");
+        }
+    }
+}
+
 /// Writes the rules file, or deletes it (only when it is the island's). Either way an older
 /// island's block comes out of `CLAUDE.md`, and nothing else there changes.
 #[tauri::command]
@@ -244,5 +264,14 @@ mod tests {
         assert_eq!(without_block(&legacy), format!("{user}\r\n## After\r\n"));
         assert_eq!(without_block(user), user);
         assert!(state_of("<!-- focusd-island: reply marker v1 -->\nx\n<!-- /focusd-island: reply marker -->\n", "", path).outdated);
+    }
+
+    #[test]
+    fn only_an_older_wording_in_the_rules_file_is_upgraded() {
+        assert!(!needs_upgrade(&rules_file()));
+        assert!(!needs_upgrade(&rules_file().replace('\n', "\r\n")));
+        assert!(!needs_upgrade(""));
+        assert!(!needs_upgrade("# my own rules\n"));
+        assert!(needs_upgrade("<!-- focusd-island: reply marker v2 -->\nold words\n<!-- /focusd-island: reply marker -->\n"));
     }
 }

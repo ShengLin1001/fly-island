@@ -208,6 +208,11 @@ pub fn clear_agent_status(app: AppHandle, provider: String) -> Result<AgentStatu
 
 /// `agentStatus.report` for plugins (`owner` = plugin id) and the local API
 /// (`owner` = `local-api`). Errors carry an HTTP-style status.
+/// Startup work: a reply marker rules file in an older wording is updated (reply_marker.rs).
+pub fn init() {
+    std::thread::spawn(reply_marker::upgrade_installed);
+}
+
 pub(crate) fn report_external_status(owner: &str, default_name: &str, params: &Value) -> Result<Value, (u16, String)> {
     let report = external::parse_report(params).map_err(|message| (400, message))?;
     let status = external::report(owner, default_name, report).map_err(|message| (429, message))?;

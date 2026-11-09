@@ -133,6 +133,7 @@ pub fn run() {
             system::fullscreen::start(app.handle());
             media_control::start_session_events(app.handle());
             system_levels::init(app.handle());
+            agent_status::init();
             device_events::init(app.handle());
             Ok(())
         })
