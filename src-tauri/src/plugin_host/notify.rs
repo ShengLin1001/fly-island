@@ -1,7 +1,8 @@
 //! `island.notify`: a plugin shows a short message in the collapsed island's
 //! message preview, optionally with buttons the plugin hears about as a
 //! `notification.action` notification. With the `notifyStyle` capability it may
-//! also ask for the playing app's icon and a layout without a card.
+//! also ask for the playing app's icon and a layout without a card; with `notifyControls`, for
+//! the island's own previous / play-pause / next buttons beside it.
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -49,6 +50,15 @@ pub(super) enum NotificationLayout {
     Inline,
 }
 
+/// `"media"`: the island draws previous, play / pause and next beside the message and runs them
+/// itself, so the plugin needs no `media:control` and hears nothing about the presses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) enum NotificationControls {
+    None,
+    Media,
+}
+
 /// Mirrored by `PluginNotification` in src/features/plugins/api.ts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -59,6 +69,7 @@ pub(super) struct Notification {
     pub actions: Vec<NotificationAction>,
     pub icon: NotificationIcon,
     pub layout: NotificationLayout,
+    pub controls: NotificationControls,
 }
 
 /// Same rule as command ids: letters, digits and '-', 1 to 32 long.
@@ -96,7 +107,7 @@ where
     }
 }
 
-/// Checks `{ title, body?, durationMs?, actions?, icon?, layout? }`.
+/// Checks `{ title, body?, durationMs?, actions?, icon?, layout?, controls? }`.
 pub(super) fn parse_notification(params: &Value) -> Result<Notification, String> {
     let title = text(params, "title", MAX_TITLE, true)?;
     let body = text(params, "body", MAX_BODY, false)?;
@@ -127,7 +138,8 @@ pub(super) fn parse_notification(params: &Value) -> Result<Notification, String>
     };
     let icon = choice(params, "icon", NotificationIcon::Plugin, &[("plugin", NotificationIcon::Plugin), ("media", NotificationIcon::Media)])?;
     let layout = choice(params, "layout", NotificationLayout::Card, &[("card", NotificationLayout::Card), ("inline", NotificationLayout::Inline)])?;
-    Ok(Notification { title, body, duration_ms, actions, icon, layout })
+    let controls = choice(params, "controls", NotificationControls::None, &[("none", NotificationControls::None), ("media", NotificationControls::Media)])?;
+    Ok(Notification { title, body, duration_ms, actions, icon, layout, controls })
 }
 
 /// Drops times older than RATE_WINDOW and records `now` unless RATE_LIMIT

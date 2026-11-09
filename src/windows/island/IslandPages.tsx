@@ -106,7 +106,12 @@ export function IslandPages({
       {page === "qq" && (
         <div className="message-panel">
           {messagePanel?.arrivals ? (
-            <MessageArrivalsPanel arrivals={messagePanel.arrivals} onOpen={messagePanel.open} onAction={messagePanel.runAction} onMeasure={messagePanel.measure} onShowAll={messagePanel.showAll} />
+            <MessageArrivalsPanel arrivals={messagePanel.arrivals} onOpen={messagePanel.open} onAction={messagePanel.runAction} onMeasure={messagePanel.measure} onShowAll={messagePanel.showAll} media={{
+              playing: mediaState.playbackStatus === "playing",
+              onPrevious: () => void runMediaCommand("media_previous"),
+              onPlayPause: () => void runMediaCommand("media_play_pause"),
+              onNext: () => void runMediaCommand("media_next"),
+            }} />
           ) : <MessagesPanel qqMail={qqMail} qqNotifications={qqNotifications} wechatReminders={wechatReminders} source={messageSource} enabledSources={features} onSourceChange={openMessages} onOpenMailSettings={() => openSettingsWindow("mail")} />}
         </div>
       )}

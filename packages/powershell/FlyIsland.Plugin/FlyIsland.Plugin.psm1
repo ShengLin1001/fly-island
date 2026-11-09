@@ -135,13 +135,15 @@ function Unregister-FocusdEvent([string[]]$Events) {
 # @(@{ id = 'again'; title = 'Again' }); a click sends notification.action { id }.
 # -Icon 'media' shows the icon of the app playing media, -Layout 'inline' shows
 # the message alone in the popup without a card; both need the notifyStyle
-# capability (older islands ignore them). Returns $true when the user muted the
-# plugin's messages.
-function Show-FocusdNotification([string]$Title, [string]$Body = $null, [object[]]$Actions = $null, [int]$DurationMs = 0, [string]$Icon = $null, [string]$Layout = $null) {
+# capability (older islands ignore them). -Controls 'media' puts previous,
+# play / pause and next beside it, run by the island (capability notifyControls).
+# Returns $true when the user muted the plugin's messages.
+function Show-FocusdNotification([string]$Title, [string]$Body = $null, [object[]]$Actions = $null, [int]$DurationMs = 0, [string]$Icon = $null, [string]$Layout = $null, [string]$Controls = $null) {
     $params = @{ title = $Title }
     if ($Body) { $params.body = $Body }
     if ($Icon) { $params.icon = $Icon }
     if ($Layout) { $params.layout = $Layout }
+    if ($Controls) { $params.controls = $Controls }
     if ($null -ne $Actions -and $Actions.Count -gt 0) { $params.actions = @($Actions) }
     if ($DurationMs -gt 0) { $params.durationMs = $DurationMs }
     return [bool](Invoke-FocusdMethod 'island.notify' $params).muted

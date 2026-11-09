@@ -223,7 +223,7 @@ function subscriptions(host, subscribe, params) {
 function notify(host, params) {
   text(params?.title, 80, "title");
   // Like the island: unknown values fall back to the default, other types are refused.
-  for (const key of ["icon", "layout"]) {
+  for (const key of ["icon", "layout", "controls"]) {
     if (params?.[key] != null && typeof params[key] !== "string") fail(400, `"${key}" must be a string.`);
   }
   const now = Date.now();

@@ -4,6 +4,10 @@
 
 下面几批改动都还没有随正式版岛屿发布（2026-11-05 时最新的正式版是 0.2.14），发布时补上版本号。
 
+## 提示上的播放按钮
+
+- `island.notify` 多了可选的 `controls`（`"media"`：提示右侧放上一首、播放/暂停、下一首，由岛屿执行，插件不需要 `media:control`），能力 `notifyControls`。旧版岛屿忽略这个字段。SDK：Node `NotifyOptions.controls`、PowerShell `Show-FocusdNotification -Controls`；模拟宿主检查它是字符串。见 [README](README.md)「岛上提示」。
+
 ## 提示的样式
 
 - `island.notify` 多了可选的 `icon`（`"media"`：正在播放的音乐软件的图标）和 `layout`（`"inline"`：新消息面板里只有这一条时不带标题和卡片），能力 `notifyStyle`。旧版岛屿忽略这两个字段。SDK：Node `NotifyOptions` 的类型、PowerShell `Show-FocusdNotification -Icon -Layout`；模拟宿主检查它们是字符串。见 [README](README.md)「岛上提示」。

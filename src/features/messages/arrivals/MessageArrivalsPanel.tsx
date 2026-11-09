@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "../../../i18n";
 import { MessageSourceIcon } from "../MessageSourceIcon";
+import { ArrivalMediaControls, type ArrivalMedia } from "./ArrivalMediaControls";
 import { messagePreviewText } from "../messagePreview";
 import { bannerClock } from "../banner/bannerMessages";
 import { arrivalKey, type ArrivalMessage } from "./messageArrivals";
@@ -13,7 +14,8 @@ import "./MessageArrivalsPanel.css";
  * their buttons. Reports its height so the island fits it. Shown as a popup without the island's
  * header (C11b), so its title row carries the way to the whole Messages page. A plugin message
  * that asked for the inline layout, alone in the popup, drops the title row and the card: the
- * island is the message (C11c); a press beside it still opens the whole page.
+ * island is the message (C11c); a press beside it still opens the whole page. One that asked for
+ * the player's buttons shows them where its time would be.
  */
 export function MessageArrivalsPanel({
   arrivals,
@@ -21,12 +23,15 @@ export function MessageArrivalsPanel({
   onAction,
   onMeasure,
   onShowAll,
+  media,
 }: {
   arrivals: readonly ArrivalMessage[];
   onOpen: (message: ArrivalMessage) => void;
   onAction: (message: ArrivalMessage, action: string) => void;
   onMeasure: (height: number) => void;
   onShowAll: () => void;
+  /** The player, for messages that asked for its buttons; without it they show none. */
+  media?: ArrivalMedia;
 }) {
   const t = useTranslation().messages;
   const ref = useRef<HTMLElement | null>(null);
@@ -59,8 +64,9 @@ export function MessageArrivalsPanel({
           const body = message.source === "wechat" ? t.wechatPreview
             : message.source === "qqMail" ? message.body.trim() || t.newMail
               : message.source === "plugin" ? message.body.trim() : message.body.trim() || t.newMessage;
+          const controls = message.mediaControls && media ? media : null;
           return (
-            <li className="message-arrivals__item" key={arrivalKey(message)}>
+            <li className={`message-arrivals__item${controls ? " message-arrivals__item--media" : ""}`} key={arrivalKey(message)}>
               <button
                 className="message-arrivals__row"
                 type="button"
@@ -71,11 +77,12 @@ export function MessageArrivalsPanel({
                 <span className="message-arrivals__text">
                   <span className="message-arrivals__head">
                     <strong className="message-arrivals__sender">{title}</strong>
-                    <time className="message-arrivals__time" dateTime={new Date(message.receivedAt).toISOString()}>{bannerClock(message.receivedAt)}</time>
+                    {!controls && <time className="message-arrivals__time" dateTime={new Date(message.receivedAt).toISOString()}>{bannerClock(message.receivedAt)}</time>}
                   </span>
                   {body && <span className="message-arrivals__body">{body}</span>}
                 </span>
               </button>
+              {controls && <ArrivalMediaControls media={controls} />}
               {message.actions.length > 0 && (
                 <div className="message-arrivals__actions" role="group" aria-label={t.banner.actions}>
                   {message.actions.map((action) => (

@@ -303,7 +303,7 @@ export type PluginNotification = {
   body: string;
   durationMs: number;
   actions: { id: string; title: string }[];
-  icon?: "plugin" | "media"; layout?: "card" | "inline"; /** The playing app's icon for icon "media" (notify.rs). */ iconUrl?: string | null;
+  icon?: "plugin" | "media"; layout?: "card" | "inline"; /** "media": the island's player buttons beside it. */ controls?: "none" | "media"; /** The playing app's icon for icon "media" (notify.rs). */ iconUrl?: string | null;
 };
 
 /** Calls `onNotification` for each plugin island.notify message; resolves to the unlisten function. */

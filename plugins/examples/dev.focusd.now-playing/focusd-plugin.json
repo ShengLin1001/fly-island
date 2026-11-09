@@ -8,7 +8,7 @@
     "zh-CN": "运行命令「显示正在播放」时在岛上提示当前歌曲的歌名和歌手；打开设置「换歌时提示」后，换歌时也提示（默认关闭：岛屿的音乐页和收起条已经显示正在播放）。第一次读取播放信息时，岛上会先问你是否允许。用 Windows 自带的 PowerShell 运行。",
     "en": "Shows the playing song's title and artist on the island when you run Show now playing, and on every track change once \"Notify on track change\" is on (off by default: the island's music page and collapsed bar already show the song). The first time it reads what is playing, the island asks you first. Runs on the PowerShell built into Windows."
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "apiVersion": 2,
   "author": "TixXin",
   "homepage": "https://github.com/TixXin/fly-island/tree/dev/plugins/examples/dev.focusd.now-playing",

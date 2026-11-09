@@ -463,13 +463,14 @@ QQ 邮箱授权码、翻译服务密钥这类凭据，任何权限都拿不到�
 
 ### 岛上提示（第 2 版）
 
-`island.notify { title, body?, durationMs?, actions?, icon?, layout? }` 在岛屿上显示一条消息，和 QQ、邮件消息一样出现在折叠条的消息预览里，来源显示为插件名。
+`island.notify { title, body?, durationMs?, actions?, icon?, layout?, controls? }` 在岛屿上显示一条消息，和 QQ、邮件消息一样出现在折叠条的消息预览里，来源显示为插件名。
 
 - `title` 1–80 个字符，`body` 最长 200 个字符。`durationMs` 默认 5000，限制在 2000–15000 之间。
 - `actions` 最多 2 个按钮：`{ id, title }`，`id` 为 1–32 个字母、数字或 `-`，`title` 最长 16 个字符。用户点了按钮，插件收到 `notification.action { id }`。
 - 每个插件每分钟最多 6 条，超过返回 `-32000`、状态 429。
 - 用户可以在插件设置页关掉这个插件的提示。关掉后调用仍然成功，但什么也不显示，结果是 `{ muted: true }`。
 - **提示的样式**（能力 `notifyStyle`）：`icon: "media"` 把插件图标换成正在播放的音乐软件的图标（读不到时仍用插件图标）；`layout: "inline"` 让这条提示在新消息「展开面板」里只有它一条时，不显示「新消息」标题和卡片，整个岛就是这条提示（有别的消息时照常是一张卡片）。旧版岛屿会忽略这两个字段，照常显示文字，所以不用先判断能力。不认识的值按默认处理（`"plugin"`、`"card"`）。SDK：Node `plugin.notify(title, { body, icon: "media", layout: "inline" })`，PowerShell `Show-FocusdNotification -Icon media -Layout inline`。
+- **播放按钮**（能力 `notifyControls`）：`controls: "media"` 在提示右侧放上一首、播放/暂停、下一首三个按钮，由岛屿自己控制正在播放的软件，插件不需要 `media:control` 权限，也收不到按钮的点击。按钮只在新消息「展开面板」里显示，横幅和收起条的预览不显示；点按钮不会关掉面板，面板照常按设置的时长收起。旧版岛屿忽略这个字段。SDK：Node `plugin.notify(title, { controls: "media" })`，PowerShell `Show-FocusdNotification -Controls media`。
 
 ### 存储与秘密（第 2 版）
 

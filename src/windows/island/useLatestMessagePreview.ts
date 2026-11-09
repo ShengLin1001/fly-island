@@ -23,7 +23,7 @@ export function useLatestMessagePreview(
     qqMail.preview ? { source: "qqMail", title: qqMail.preview.sender, body: qqMail.preview.subject, receivedAt: qqMail.previewReceivedAt ?? 0, account: qqMail.previewAccount } : null,
     pluginNotification ? {
       source: "plugin", title: pluginNotification.title, body: pluginNotification.body, receivedAt: pluginNotification.receivedAt,
-      iconUrl: pluginNotification.iconUrl ?? null, inline: pluginNotification.layout === "inline",
+      iconUrl: pluginNotification.iconUrl ?? null, inline: pluginNotification.layout === "inline", mediaControls: pluginNotification.controls === "media",
     } : null,
   ], latestPreviewAt);
   if (preview && preview.receivedAt > latestPreviewAt) setLatestPreviewAt(preview.receivedAt);

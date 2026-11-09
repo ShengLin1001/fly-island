@@ -606,6 +606,18 @@ fn notifications_take_an_icon_and_a_layout() {
 }
 
 #[test]
+fn notifications_can_ask_for_the_media_buttons() {
+    use super::notify::{parse_notification, NotificationControls};
+    assert_eq!(parse_notification(&json!({ "title": "x" })).expect("valid").controls, NotificationControls::None);
+    let media = parse_notification(&json!({ "title": "x", "controls": "media" })).expect("valid");
+    assert_eq!(media.controls, NotificationControls::Media);
+    assert_eq!(serde_json::to_value(&media).expect("serializes")["controls"].as_str(), Some("media"));
+    // A value from a newer SDK falls back to none, so the message still shows.
+    assert_eq!(parse_notification(&json!({ "title": "x", "controls": "video" })).expect("valid").controls, NotificationControls::None);
+    assert!(parse_notification(&json!({ "title": "x", "controls": true })).expect_err("invalid").contains("controls"));
+}
+
+#[test]
 fn notifications_are_limited_per_minute() {
     use super::notify::{take_slot, RATE_LIMIT};
     use std::{collections::VecDeque, time::{Duration, Instant}};

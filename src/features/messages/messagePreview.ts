@@ -16,6 +16,8 @@ export type MessagePreview = {
   iconUrl?: string | null;
   /** A plugin message that, alone in the new-messages popup, shows without a title row or card. */
   inline?: boolean;
+  /** A plugin message with the island's previous / play-pause / next beside it (island.notify `controls: "media"`). */
+  mediaControls?: boolean;
 };
 
 export const MESSAGE_SOURCE_LABELS: Record<MessageSource, string> = zhCN.messages.sourceLabels;

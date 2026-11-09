@@ -1,0 +1,53 @@
+/* A now-playing message's own buttons, where the time would be (ArrivalMediaControls.tsx). */
+.message-arrivals__item--media {
+  display: flex;
+  align-items: center;
+}
+
+.message-arrivals__item--media > .message-arrivals__row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.message-arrivals__media {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 4px;
+}
+
+.message-arrivals--inline .message-arrivals__media {
+  padding: 8px 0 0 4px;
+}
+
+.message-arrivals__media-button {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.message-arrivals__media-button--main {
+  background: var(--color-white-a08);
+  color: var(--text-1);
+}
+
+.message-arrivals__media-button:hover {
+  background: var(--color-white-a16);
+  color: var(--text-1);
+}
+
+.message-arrivals__media-button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}

@@ -106,7 +106,7 @@ test("the mock host runs a plugin like the island does", async () => {
     const ready = await logged(host, "ready");
     assert.equal(ready.pluginId, "me.mock");
     assert.equal(ready.activationEvent, "onCommand:todos");
-    assert.deepEqual(ready.capabilities, ["events", "notifications", "storage", "secrets", "views", "status", "webview", "permissions", "openView", "statusCells", "notifyStyle"]);
+    assert.deepEqual(ready.capabilities, ["events", "notifications", "storage", "secrets", "views", "status", "webview", "permissions", "openView", "statusCells", "notifyStyle", "notifyControls"]);
     assert.deepEqual(ready.settings, { repo: "a/b", extra: true });
     await host.waitFor((state) => state.subscriptions.has("todos.changed"));
 

@@ -62,6 +62,14 @@ mockIPC((command, payload) => {
 }, { shouldMockEvents: true });
 
 const DURATION_MS = automated ? 700 : 8000;
+// Presses on a now-playing message's player buttons (controls "media").
+const mediaPresses: string[] = [];
+const PLAYER = {
+  playing: true,
+  onPrevious: () => mediaPresses.push("previous"),
+  onPlayPause: () => mediaPresses.push("playPause"),
+  onNext: () => mediaPresses.push("next"),
+};
 let state = { mode: "collapsed" as IslandMode, page: "todo" as IslandPage };
 let openedSource: MessageSource | null = null;
 let setUserMode: (mode: IslandMode) => void;
@@ -107,7 +115,7 @@ function Fixture() {
       {page === "qq" && (
         <div className="message-panel">
           {panel.arrivals
-            ? <MessageArrivalsPanel arrivals={panel.arrivals} onOpen={panel.open} onAction={panel.runAction} onMeasure={panel.measure} onShowAll={panel.showAll} />
+            ? <MessageArrivalsPanel arrivals={panel.arrivals} onOpen={panel.open} onAction={panel.runAction} onMeasure={panel.measure} onShowAll={panel.showAll} media={PLAYER} />
             : <span className="message-panel-full">完整消息页</span>}
         </div>
       )}
@@ -242,6 +250,28 @@ async function runChecks() {
     const rowWidth = rows()[0].getBoundingClientRect().width;
     const listWidth = document.querySelector(".message-arrivals__list")!.getBoundingClientRect().width;
     check(Math.abs(rowWidth - listWidth) < 1 && listWidth > 300, `卡片撑满岛的宽度（${Math.round(rowWidth)}px）`);
+
+    // island.notify with controls "media": the player's buttons where the time would be.
+    await act(async () => setUserMode("collapsed"));
+    await wait(30);
+    const nowPlaying = (title: string) => update(() => emit("plugin-notification", {
+      pluginId: "dev.focusd.now-playing", pluginName: "正在播放", title, body: "宋冬野", durationMs: 6000, actions: [],
+      icon: "media", layout: "inline", controls: "media", iconUrl: playerIcon,
+    }));
+    await nowPlaying("安和桥");
+    await waitFor(() => rows().length === 1, "带播放按钮的提示弹出");
+    const mediaButtons = () => [...document.querySelectorAll<HTMLButtonElement>(".message-arrivals__media-button")];
+    check(mediaButtons().length === 3 && !rows()[0].querySelector(".message-arrivals__time"), "三个播放按钮代替了时间");
+    check(mediaButtons()[1].getAttribute("aria-label") === "暂停", "正在播放时中间是暂停");
+    const pointer = (target: Element) => target.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    pointer(mediaButtons()[2]);
+    await act(async () => mediaButtons()[2].click());
+    check(mediaPresses.join() === "next" && rows().length === 1, "点下一首交给岛屿执行，面板还在");
+    await nowPlaying("董小姐");
+    await waitFor(() => senders()[0] === "董小姐", "下一首的提示换上来");
+    check(rows().length === 1 && document.querySelector(".message-arrivals--inline"), "同一插件带按钮的提示替换旧的，不叠两行");
+    await wait(DURATION_MS + 400);
+    check(rows().length === 0, "按过播放按钮后仍按时长自己收起");
 
     results.textContent = messages.join("\n");
     results.dataset.result = "passed";

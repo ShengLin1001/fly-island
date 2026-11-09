@@ -70,7 +70,9 @@ export function useIslandMessagePanel({ enabled, durationMs, notices, mode, page
     handledKeyRef.current = incomingKey;
     const current = latest.current;
     if (current.mode !== "collapsed" && !autoOpenedRef.current) return;
-    setArrivals((list) => addArrival(list ?? [], message));
+    // A now-playing message with the player's buttons replaces the plugin's last one: pressing
+    // next brings the next song's message, which should not stack up below the old one.
+    setArrivals((list) => addArrival((list ?? []).filter((item) => !(message.mediaControls && item.mediaControls && item.pluginId === message.pluginId)), message));
     setMessagePanelOpen(true);
     autoOpenedRef.current = true;
     if (current.mode === "collapsed") current.openIslandPage("qq");
@@ -97,6 +99,8 @@ export function useIslandMessagePanel({ enabled, durationMs, notices, mode, page
   useEffect(() => {
     if (!showing) return;
     const takeOver = (event: PointerEvent) => {
+      // The player's buttons leave the popup to close on its own time.
+      if (event.target instanceof Element && event.target.closest(".message-arrivals__media")) return;
       autoOpenedRef.current = false;
       window.clearTimeout(closeTimerRef.current);
       // The title row too: without the island's header (C11b) it is the way to the whole page.

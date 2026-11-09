@@ -4,7 +4,9 @@
 # changes. media:read is a sensitive permission, so the first call that uses it
 # waits until the user answers on the island; a refusal comes back as an error
 # and is logged. The message names the song and artist beside the player's icon,
-# inline (notifyStyle); older islands show the same text with the plugin icon.
+# inline (notifyStyle), with the island's previous / play-pause / next beside it
+# (notifyControls: the island runs them, so no media:control is needed); older
+# islands show the same text with the plugin icon and no buttons.
 . "$PSScriptRoot\lib\focusd.ps1"
 
 function Show-Playing($now) {
@@ -14,7 +16,7 @@ function Show-Playing($now) {
     }
     $title = [string]$now.title
     $body = if ($now.artist) { [string]$now.artist } else { '' }
-    $answer = Invoke-FocusdMethod 'island.notify' @{ title = $title; body = $body; durationMs = 6000; icon = 'media'; layout = 'inline' }
+    $answer = Invoke-FocusdMethod 'island.notify' @{ title = $title; body = $body; durationMs = 6000; icon = 'media'; layout = 'inline'; controls = 'media' }
     if ($answer.muted) { Write-FocusdLog "now playing: $title (messages are muted)" }
 }
 

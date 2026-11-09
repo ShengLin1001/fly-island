@@ -158,6 +158,8 @@ export interface NotifyOptions {
   icon?: "plugin" | "media";
   /** "inline": alone in the new-messages popup, the island is the message, with no title row or card (capability `notifyStyle`). */
   layout?: "card" | "inline";
+  /** "media": previous, play / pause and next beside the message, run by the island (capability `notifyControls`). */
+  controls?: "none" | "media";
 }
 
 export interface CreatePluginOptions {
