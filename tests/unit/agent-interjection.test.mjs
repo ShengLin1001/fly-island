@@ -32,8 +32,14 @@ test("several changes at once show the latest", () => {
   assert.equal(interjectingSession(before, [session("a", "completed", 7), session("b", "failed", 3)])?.sessionId, "a");
 });
 
-test("a session waiting on the user keeps the bar, the latest when several wait", () => {
+test("a session stopped on an approval or question keeps the bar, the latest when several are", () => {
   assert.equal(waitingSession([session("a", "running"), session("b", "completed")]), null);
   assert.equal(waitingSession([session("a", "waiting", 3), session("b", "waiting", 8), session("c", "running", 9)])?.sessionId, "b");
-  assert.equal(waitingSession([session("a", "completed", 3, { replyMarker: "yourTurn" })])?.sessionId, "a");
+});
+
+test("a finished turn whose reply asks something shows for a moment, not until answered", () => {
+  const asked = session("a", "completed", 5, { replyMarker: "yourTurn" });
+  // Left asking for hours, it would cover the lyrics all that time.
+  assert.equal(waitingSession([asked]), null);
+  assert.equal(interjectingSession(phasesOf([session("a", "running")]), [asked])?.sessionId, "a");
 });

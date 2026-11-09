@@ -1,4 +1,4 @@
-import { detectAlerts, isWaitingOnUser, type AgentAlertKinds, type SessionPhases } from "./alerts.ts";
+import { detectAlerts, type AgentAlertKinds, type SessionPhases } from "./alerts.ts";
 import type { AgentSessionSummary } from "./api";
 import { sessionName } from "./session.ts";
 
@@ -9,11 +9,11 @@ import { sessionName } from "./session.ts";
 export const AGENT_INTERJECTION_MS = 4000;
 
 /**
- * The changes worth interrupting the lyrics for: a new session starting, a turn finishing, a
- * failure. A later turn starting is left out (the user just typed it), and waiting on the user is
- * not a moment but a state, held by `waitingSession` until answered.
+ * The changes worth interrupting the lyrics for: a new session starting, a turn finishing
+ * (including one whose reply ends on "your turn"), a failure, a question or approval. A later turn
+ * starting is left out (the user just typed it).
  */
-const INTERJECTING: AgentAlertKinds = { started: "newSession", completed: true, failed: true, waiting: false };
+const INTERJECTING: AgentAlertKinds = { started: "newSession", completed: true, failed: true, waiting: true };
 
 const named = (session: AgentSessionSummary) => sessionName(session).title !== "";
 const latest = (sessions: AgentSessionSummary[]) =>
@@ -24,7 +24,11 @@ export function interjectingSession(previous: SessionPhases | null, sessions: Ag
   return latest(detectAlerts(previous, sessions, INTERJECTING).map((alert) => alert.session).filter(named));
 }
 
-/** The session waiting on the user, which keeps the bar until answered; the latest when several do. */
+/**
+ * The session stopped mid-turn on an approval or a question, which keeps the bar until answered;
+ * the latest when several are. A finished turn whose reply asks something is not held: it may
+ * wait for hours, and the session light already shows it.
+ */
 export function waitingSession(sessions: AgentSessionSummary[]): AgentSessionSummary | null {
-  return latest(sessions.filter((session) => isWaitingOnUser(session) && named(session)));
+  return latest(sessions.filter((session) => session.phase === "waiting" && named(session)));
 }
