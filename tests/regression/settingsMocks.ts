@@ -18,7 +18,7 @@ const mailbox = (email: string, extra: Partial<MailSnapshot> = {}): MailSnapshot
 });
 let mailboxes: MailSnapshot[] = [mailbox("demo@qq.com"), mailbox("louis@163.com", { status: "authRequired", enabled: false, unreadCount: null })];
 let replyMarkerOn = false;
-export const REPLY_MARKER = { path: "C:\\Users\\demo\\.claude\\rules\\focusd-island-reply-marker.md", content: "<!-- focusd-island: reply marker v2 -->\n## Reply status marker" };
+export const REPLY_MARKER = { path: "C:\\Users\\demo\\.claude\\rules\\focusd-island-reply-marker.md", content: "<!-- focusd-island: reply marker v3 -->\n## Reply status marker" };
 const replyMarker = () => ({ installed: replyMarkerOn, outdated: false, ...REPLY_MARKER, remotes: [] });
 export const replyMarkerCalls: boolean[] = [];
 export const openedUrls: string[] = [];
