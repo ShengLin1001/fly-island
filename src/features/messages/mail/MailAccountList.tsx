@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { KeyRound, Pause, Play, Unplug } from "lucide-react";
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import type { MailSnapshot } from "./api";
 import "./MailSettings.css";
 
@@ -15,6 +15,7 @@ export function MailAccountList({ mailboxes, hosts, busy, onSetEnabled, onReauth
   onDisconnect: (email: string) => void;
 }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   // Disconnecting deletes the saved code, which has to be generated again on the webmail
   // site, so it takes a second click on the same row.
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export function MailAccountList({ mailboxes, hosts, busy, onSetEnabled, onReauth
             <span className="mail-settings__address">
               <strong>{email}</strong>
               <small>{t.mail.status[mailbox.status]}{unread} · {host}</small>
-              {mailbox.error && <small className="mail-settings__account-error">{mailbox.error}</small>}
+              {mailbox.error && <small className="mail-settings__account-error">{errorText(mailbox.error)}</small>}
             </span>
             <span className="mail-settings__actions">
               {needsCode ? (

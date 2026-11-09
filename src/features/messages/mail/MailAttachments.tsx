@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { Check, Download, LoaderCircle, Paperclip } from "lucide-react";
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import { formatBytes } from "../../../utils/bytes";
 import { saveMailAttachment, type MailAttachment } from "./api";
 
@@ -10,6 +10,7 @@ type SaveState = { status: "saving" } | { status: "saved"; path: string } | { st
 /** The open mail's attachments; 保存 writes one into Downloads and shows it in Explorer. */
 export function MailAttachments({ account, messageId, attachments }: { account: string; messageId: string; attachments: MailAttachment[] }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [states, setStates] = useState<Record<string, SaveState>>({});
   if (attachments.length === 0) return null;
 
@@ -20,7 +21,7 @@ export function MailAttachments({ account, messageId, attachments }: { account: 
       const path = await saveMailAttachment(account, messageId, part);
       setStates((current) => ({ ...current, [part]: { status: "saved", path } }));
     } catch (error) {
-      setStates((current) => ({ ...current, [part]: { status: "error", message: String(error) } }));
+      setStates((current) => ({ ...current, [part]: { status: "error", message: errorText(error) } }));
     }
   };
 

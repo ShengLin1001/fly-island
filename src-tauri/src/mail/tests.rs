@@ -270,7 +270,8 @@ fn server_authentication_rejection_is_actionable_and_redacted() {
     let (error, _) = client.login("user@qq.com", "test-secret").err().unwrap();
     let failure = login_failure(error);
     assert!(failure.authentication);
-    assert!(!failure.message.contains("test-secret"));
+    assert_eq!(failure.error.code(), "mail.imapRefused");
+    assert!(!failure.error.to_string().contains("test-secret"));
 }
 
 #[test]
@@ -839,7 +840,8 @@ fn a_changed_uid_validity_never_reads_a_different_message() {
     let mut session = client.login("user@qq.com", "test-secret").unwrap();
     assert!(fetch_content(&mut session, "7:9")
         .unwrap_err()
-        .contains("刷新"));
+        .code()
+        .starts_with("mail.inboxChanged"));
     assert!(!String::from_utf8(output.lock().unwrap().clone())
         .unwrap()
         .contains("UID FETCH"));

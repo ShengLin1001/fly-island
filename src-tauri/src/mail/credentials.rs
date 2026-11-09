@@ -1,25 +1,26 @@
 //! Authorization code storage in the Windows Credential Manager, and address validation.
 
+use crate::user_error::UserError;
 use keyring::{Entry, Error as KeyringError};
 
 const CREDENTIAL_SERVICE: &str = "com.focusd.island.qq-mail";
 
-pub(super) fn credential(email: &str) -> Result<Entry, String> {
-    Entry::new(CREDENTIAL_SERVICE, email).map_err(|_| "无法访问 Windows 邮箱凭据。".into())
+pub(super) fn credential(email: &str) -> Result<Entry, UserError> {
+    Entry::new(CREDENTIAL_SERVICE, email).map_err(|_| UserError::new("credential.open", "Could not open Windows Credential Manager."))
 }
 
-pub(super) fn read_secret(email: &str) -> Result<Option<String>, String> {
+pub(super) fn read_secret(email: &str) -> Result<Option<String>, UserError> {
     match credential(email)?.get_password() {
         Ok(secret) => Ok(Some(secret)),
         Err(KeyringError::NoEntry) => Ok(None),
-        Err(_) => Err("无法读取 Windows 邮箱凭据。".into()),
+        Err(_) => Err(UserError::new("credential.read", "Could not read from Windows Credential Manager.")),
     }
 }
 
-pub(super) fn delete_secret(email: &str) -> Result<(), String> {
+pub(super) fn delete_secret(email: &str) -> Result<(), UserError> {
     match credential(email)?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(_) => Err("无法删除 Windows 邮箱凭据。".into()),
+        Err(_) => Err(UserError::new("credential.delete", "Could not delete from Windows Credential Manager.")),
     }
 }
 
@@ -38,7 +39,7 @@ fn is_domain(value: &str) -> bool {
 }
 
 // The address is also the IMAP login and the credential key, so only plain ASCII is accepted.
-pub(super) fn normalize_email(email: &str) -> Result<String, String> {
+pub(super) fn normalize_email(email: &str) -> Result<String, UserError> {
     let email = email.trim().to_ascii_lowercase();
     let valid = email.split_once('@').is_some_and(|(local, domain)| {
         !local.is_empty()
@@ -49,7 +50,7 @@ pub(super) fn normalize_email(email: &str) -> Result<String, String> {
             && is_domain(domain)
     });
     if !valid {
-        return Err("请输入有效的邮箱地址。".into());
+        return Err(UserError::new("mail.address", "Enter a valid email address."));
     }
     Ok(email)
 }
@@ -66,12 +67,12 @@ pub(super) const DEFAULT_IMAP_PORT: u16 = 993;
 /// The IMAP server the user typed, or `imap.<domain>` when left empty: a domain,
 /// optionally with `:port`; no path or scheme. The connection is always TLS, so a
 /// port is for servers that offer IMAPS somewhere other than 993. `:993` is dropped.
-pub(super) fn resolve_host(email: &str, host: Option<&str>) -> Result<String, String> {
+pub(super) fn resolve_host(email: &str, host: Option<&str>) -> Result<String, UserError> {
     let host = match host.map(str::trim).filter(|host| !host.is_empty()) {
         Some(host) => host.to_ascii_lowercase(),
         None => imap_host(email),
     };
-    let invalid = || "IMAP 服务器地址无效：填写域名，需要时加端口，例如 imap.example.com 或 imap.example.com:9993。".to_string();
+    let invalid = || UserError::new("mail.imapServer", "The IMAP server address is not valid: fill in a domain, with a port if needed, such as imap.example.com or imap.example.com:9993.");
     let (name, port) = match host.split_once(':') {
         Some((name, port)) => {
             let port = port.parse::<u16>().ok().filter(|port| *port > 0).ok_or_else(invalid)?;

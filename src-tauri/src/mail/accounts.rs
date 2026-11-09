@@ -2,6 +2,7 @@
 //! keyed by the normalized address. Multi-account design ported from
 //! flyl1u/fly-island#39 by ShengLin1001.
 
+use crate::user_error::UserError;
 use std::{
     collections::BTreeMap,
     sync::{
@@ -39,15 +40,15 @@ pub(super) fn all() -> Vec<Arc<MailService>> {
     services().values().cloned().collect()
 }
 
-pub(super) fn find(email: &str) -> Result<Arc<MailService>, String> {
+pub(super) fn find(email: &str) -> Result<Arc<MailService>, UserError> {
     services()
         .get(email)
         .cloned()
-        .ok_or_else(|| "请先连接这个邮箱。".into())
+        .ok_or_else(|| UserError::new("mail.connectThis", "Connect this mailbox first."))
 }
 
 /// The mailbox's service, starting one (and its worker thread) when it has none yet.
-pub(super) fn find_or_start(email: &str, host: &str) -> Result<Arc<MailService>, String> {
+pub(super) fn find_or_start(email: &str, host: &str) -> Result<Arc<MailService>, UserError> {
     let mut services = services();
     if let Some(service) = services.get(email) {
         // A worker that crashed too often has ended; connecting or switching
@@ -59,9 +60,9 @@ pub(super) fn find_or_start(email: &str, host: &str) -> Result<Arc<MailService>,
         services.remove(email);
     }
     if services.len() >= MAX_ACCOUNTS {
-        return Err(format!("最多同时连接 {MAX_ACCOUNTS} 个邮箱，请先断开一个。"));
+        return Err(UserError::new("mail.tooMany", format!("At most {MAX_ACCOUNTS} mailboxes at once; disconnect one first.")).arg("max", MAX_ACCOUNTS));
     }
-    let app = APP.get().ok_or("邮箱服务尚未就绪。")?.clone();
+    let app = APP.get().ok_or_else(|| UserError::new("mail.notReady", "The mail service is not ready yet."))?.clone();
     let (sender, receiver) = mpsc::channel();
     let mut state = MailState::default();
     state.snapshot.email = Some(email.to_string());
@@ -77,7 +78,7 @@ pub(super) fn find_or_start(email: &str, host: &str) -> Result<Arc<MailService>,
     thread::Builder::new()
         .name("qq-mail".into())
         .spawn(move || supervise(worker_service, receiver, is_registered))
-        .map_err(|_| "无法启动邮箱服务。".to_string())?;
+        .map_err(|_| UserError::new("mail.start", "Could not start the mail service."))?;
     services.insert(email.to_string(), service.clone());
     Ok(service)
 }

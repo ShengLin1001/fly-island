@@ -1,5 +1,6 @@
 //! Background mail worker: owns the IMAP connection, schedules syncs and answers commands.
 
+use crate::user_error::UserError;
 use serde::Serialize;
 use std::{
     net::TcpStream,
@@ -103,7 +104,7 @@ impl MailState {
         } else {
             MailStatus::Error
         };
-        self.snapshot.error = Some(failure.message.into());
+        self.snapshot.error = Some(failure.error.clone());
         self.failures = self.failures.saturating_add(1);
         self.next_check =
             if failure.authentication || !self.snapshot.configured || !self.snapshot.enabled {
@@ -115,7 +116,7 @@ impl MailState {
     }
 }
 
-type Reply = mpsc::Sender<Result<MailSnapshot, String>>;
+type Reply = mpsc::Sender<Result<MailSnapshot, UserError>>;
 
 pub(super) enum Work {
     Connect {
@@ -151,10 +152,10 @@ impl MailService {
         *self.host.lock().unwrap_or_else(PoisonError::into_inner) = host.to_string();
     }
 
-    pub(super) fn send(&self, work: Work) -> Result<(), String> {
+    pub(super) fn send(&self, work: Work) -> Result<(), UserError> {
         self.sender
             .send(work)
-            .map_err(|_| "邮箱服务不可用。".to_string())?;
+            .map_err(|_| UserError::new("mail.serviceDown", "The mail service is not available."))?;
         interrupt_idle(&self.idle_socket);
         Ok(())
     }
@@ -174,9 +175,9 @@ impl MailService {
         state.failures = state.failures.saturating_add(1);
         state.snapshot.status = MailStatus::Error;
         state.snapshot.error = Some(if restarting {
-            "邮箱后台连接意外中断，正在重新连接。".into()
+            UserError::new("mail.crashedRetrying", "The mail connection broke off; connecting again.")
         } else {
-            "邮箱后台连接多次意外中断，已停止重试。请在设置里重新授权或暂停后再接收，也可以重启岛屿。".into()
+            UserError::new("mail.crashedStopped", "The mail connection broke off several times and stopped retrying. Authorize again in Settings, pause and resume receiving, or restart the island.")
         });
         state.next_check = (restarting && state.snapshot.enabled && state.snapshot.configured)
             .then(|| Instant::now() + retry_delay(state.failures));
@@ -185,8 +186,8 @@ impl MailService {
         self.publish(snapshot, None);
     }
 
-    pub(super) fn lock(&self) -> Result<MutexGuard<'_, MailState>, String> {
-        self.state.lock().map_err(|_| "邮箱状态不可用。".into())
+    pub(super) fn lock(&self) -> Result<MutexGuard<'_, MailState>, UserError> {
+        self.state.lock().map_err(|_| UserError::new("internal", "Something went wrong inside the island."))
     }
 
     pub(super) fn publish(&self, snapshot: MailSnapshot, newest_id: Option<String>) {
@@ -233,18 +234,18 @@ impl MailService {
         email: &str,
         secret: Option<&str>,
         connection: &mut SyncConnection,
-    ) -> Result<MailSnapshot, String> {
+    ) -> Result<MailSnapshot, UserError> {
         {
             let state = self.lock()?;
             if generation != state.generation || !state.snapshot.enabled {
-                return Err("邮箱连接已取消。".into());
+                return Err(UserError::new("mail.cancelled", "The mail connection was cancelled."));
             }
         }
         connection.reset(generation);
         let result = connection.fetch(&self.host(), email, secret);
         let mut state = self.lock()?;
         if generation != state.generation || !state.snapshot.enabled {
-            return Err("邮箱连接已取消。".into());
+            return Err(UserError::new("mail.cancelled", "The mail connection was cancelled."));
         }
         let result = result.and_then(|inbox| {
             if let Some(secret) = secret {
@@ -252,11 +253,11 @@ impl MailService {
                     .and_then(|entry| {
                         entry
                             .set_password(secret)
-                            .map_err(|_| "无法保存邮箱凭据。".into())
+                            .map_err(|_| UserError::new("credential.save", "Could not save to Windows Credential Manager."))
                     })
                     .map_err(|_| MailFailure {
                         authentication: false,
-                        message: "无法保存到 Windows 凭据管理器，请重试连接。",
+                        error: UserError::new("mail.saveCode", "Could not save to Windows Credential Manager; connect again."),
                     })?;
             }
             Ok(inbox)
@@ -266,7 +267,7 @@ impl MailService {
                 let needs_refresh = inbox.needs_refresh;
                 let (snapshot, newest_id) = state
                     .accept(generation, inbox)
-                    .ok_or_else(|| "邮箱连接已取消。".to_string())?;
+                    .ok_or_else(|| UserError::new("mail.cancelled", "The mail connection was cancelled."))?;
                 if needs_refresh {
                     state.next_check = Some(Instant::now());
                 } else if connection.idle_supported {
@@ -282,7 +283,7 @@ impl MailService {
                 if let Some(snapshot) = snapshot {
                     self.publish(snapshot, None);
                 }
-                Err(failure.message.into())
+                Err(failure.error)
             }
         }
     }
@@ -292,21 +293,21 @@ impl MailService {
         generation: u64,
         email: &str,
         message_id: &str,
-    ) -> Result<MailContent, String> {
-        let current = || -> Result<(), String> {
+    ) -> Result<MailContent, UserError> {
+        let current = || -> Result<(), UserError> {
             let state = self.lock()?;
             if state.generation != generation
                 || !state.snapshot.configured
                 || state.snapshot.email.as_deref() != Some(email)
             {
-                return Err("邮箱连接已改变，请重新打开邮件。".into());
+                return Err(UserError::new("mail.changedOpen", "The mail connection changed; open the mail again."));
             }
             Ok(())
         };
         current()?;
-        let secret = read_secret(email)?.ok_or("未找到邮箱授权码，请重新连接。")?;
+        let secret = read_secret(email)?.ok_or_else(|| UserError::new("mail.codeMissing", "The saved authorization code was not found; connect again."))?;
         let mut session =
-            open_session(&self.host(), email, &secret).map_err(|failure| failure.message.to_string())?;
+            open_session(&self.host(), email, &secret).map_err(|failure| failure.error)?;
         let result = fetch_content(&mut session, message_id);
         let _ = session.logout();
         current()?;
@@ -314,22 +315,22 @@ impl MailService {
     }
 
     /// Who and what a reply to `message_id` starts with.
-    pub(super) fn reply_draft(&self, email: &str, message_id: &str) -> Result<super::send::ReplyDraft, String> {
-        let secret = read_secret(email)?.ok_or("未找到邮箱授权码，请重新连接。")?;
+    pub(super) fn reply_draft(&self, email: &str, message_id: &str) -> Result<super::send::ReplyDraft, UserError> {
+        let secret = read_secret(email)?.ok_or_else(|| UserError::new("mail.codeMissing", "The saved authorization code was not found; connect again."))?;
         let mut session =
-            open_session(&self.host(), email, &secret).map_err(|failure| failure.message.to_string())?;
+            open_session(&self.host(), email, &secret).map_err(|failure| failure.error)?;
         let source = super::send::reply_source(&mut session, message_id);
         let _ = session.logout();
         source.map(|(draft, _)| draft)
     }
 
     /// Sends a message; as a reply to `reply_to` (a listed message) when given.
-    pub(super) fn send_mail(&self, email: &str, mail: &super::send::OutgoingMail, reply_to: Option<&str>) -> Result<(), String> {
-        let secret = read_secret(email)?.ok_or("未找到邮箱授权码，请重新连接。")?;
+    pub(super) fn send_mail(&self, email: &str, mail: &super::send::OutgoingMail, reply_to: Option<&str>) -> Result<(), UserError> {
+        let secret = read_secret(email)?.ok_or_else(|| UserError::new("mail.codeMissing", "The saved authorization code was not found; connect again."))?;
         let thread = match reply_to {
             Some(message_id) => {
                 let mut session =
-                    open_session(&self.host(), email, &secret).map_err(|failure| failure.message.to_string())?;
+                    open_session(&self.host(), email, &secret).map_err(|failure| failure.error)?;
                 let source = super::send::reply_source(&mut session, message_id);
                 let _ = session.logout();
                 source?.1
@@ -341,11 +342,11 @@ impl MailService {
     }
 
     /// Downloads one attachment and writes it to the Downloads folder.
-    pub(super) fn save_attachment(&self, email: &str, message_id: &str, part: &str) -> Result<std::path::PathBuf, String> {
-        let dir = crate::win32::known_folder::downloads().ok_or("找不到下载文件夹。")?;
-        let secret = read_secret(email)?.ok_or("未找到邮箱授权码，请重新连接。")?;
+    pub(super) fn save_attachment(&self, email: &str, message_id: &str, part: &str) -> Result<std::path::PathBuf, UserError> {
+        let dir = crate::win32::known_folder::downloads().ok_or_else(|| UserError::new("mail.noDownloads", "The Downloads folder was not found."))?;
+        let secret = read_secret(email)?.ok_or_else(|| UserError::new("mail.codeMissing", "The saved authorization code was not found; connect again."))?;
         let mut session =
-            open_session(&self.host(), email, &secret).map_err(|failure| failure.message.to_string())?;
+            open_session(&self.host(), email, &secret).map_err(|failure| failure.error)?;
         let fetched = super::attachments::fetch_attachment(&mut session, message_id, part);
         let _ = session.logout();
         let (info, bytes) = fetched?;
@@ -354,16 +355,16 @@ impl MailService {
 
     /// Marks a message read on the server, then shows it read at once instead of
     /// waiting for the next sync.
-    pub(super) fn mark_read(&self, generation: u64, email: &str, message_id: &str) -> Result<MailSnapshot, String> {
-        let secret = read_secret(email)?.ok_or("未找到邮箱授权码，请重新连接。")?;
+    pub(super) fn mark_read(&self, generation: u64, email: &str, message_id: &str) -> Result<MailSnapshot, UserError> {
+        let secret = read_secret(email)?.ok_or_else(|| UserError::new("mail.codeMissing", "The saved authorization code was not found; connect again."))?;
         let mut session =
-            open_session(&self.host(), email, &secret).map_err(|failure| failure.message.to_string())?;
+            open_session(&self.host(), email, &secret).map_err(|failure| failure.error)?;
         let result = mark_seen(&mut session, message_id);
         let _ = session.logout();
         result?;
         let mut state = self.lock()?;
         if state.generation != generation {
-            return Err("邮箱连接已改变，请刷新收件箱。".into());
+            return Err(UserError::new("mail.changedRefresh", "The mail connection changed; refresh the inbox."));
         }
         let Some(item) = state.snapshot.items.iter_mut().find(|item| item.id == message_id) else {
             return Ok(state.snapshot.clone());
@@ -435,7 +436,7 @@ pub(super) fn worker(service: Arc<MailService>, receiver: &mpsc::Receiver<Work>)
                     .ok()
                     .and_then(|state| state.snapshot.email.clone());
                 let result = email
-                    .ok_or_else(|| "请先连接邮箱。".to_string())
+                    .ok_or_else(|| UserError::new("mail.connect", "Connect a mailbox first."))
                     .and_then(|email| service.sync(generation, &email, None, &mut connection));
                 let _ = reply.send(result);
             }

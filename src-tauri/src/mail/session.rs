@@ -1,5 +1,6 @@
 //! IMAP connection, IDLE waiting, inbox sync and header parsing.
 
+use crate::user_error::UserError;
 use imap::{
     extensions::idle::{SetReadTimeout, WaitOutcome},
     types::{Fetch, Flag, UnsolicitedResponse},
@@ -44,21 +45,21 @@ pub(super) struct Inbox {
 #[derive(Debug)]
 pub(super) struct MailFailure {
     pub(super) authentication: bool,
-    pub(super) message: &'static str,
+    pub(super) error: UserError,
 }
 
 impl MailFailure {
     pub(super) fn network() -> Self {
         Self {
             authentication: false,
-            message: "无法同步邮箱，请检查网络或稍后重试。",
+            error: UserError::new("mail.sync", "Could not sync the mailbox; check the network or try again later."),
         }
     }
 
     pub(super) fn authentication() -> Self {
         Self {
             authentication: true,
-            message: "邮箱拒绝了连接，请确认已开启 IMAP，并重新输入邮箱授权码。",
+            error: UserError::new("mail.imapRefused", "The mailbox refused the connection; check that IMAP is on and enter the authorization code again."),
         }
     }
 }
@@ -200,7 +201,7 @@ impl SyncConnection {
             None => {
                 stored_secret = read_secret(email).map_err(|_| MailFailure {
                     authentication: true,
-                    message: "无法读取 Windows 邮箱凭据，请重新连接。",
+                    error: UserError::new("mail.readCode", "Could not read the saved code from Windows Credential Manager; connect again."),
                 })?;
                 stored_secret
                     .as_deref()
@@ -464,15 +465,15 @@ pub(super) fn parse_header(raw: &[u8]) -> (String, String) {
 /// Marks one message read on the server (`\Seen`). Opens the inbox writable with
 /// SELECT, unlike reading, and checks UIDVALIDITY so an id from an older listing
 /// can never flag a different message.
-pub(super) fn mark_seen<T: Read + Write>(session: &mut Session<T>, message_id: &str) -> Result<(), String> {
+pub(super) fn mark_seen<T: Read + Write>(session: &mut Session<T>, message_id: &str) -> Result<(), UserError> {
     let (validity, uid) = super::content::parse_message_id(message_id)?;
-    let mailbox = session.select("INBOX").map_err(|_| "无法打开收件箱，请稍后重试。")?;
+    let mailbox = session.select("INBOX").map_err(|_| UserError::new("mail.inbox", "Could not open the inbox; try again later."))?;
     if mailbox.uid_validity != Some(validity) {
-        return Err("收件箱已更新，请刷新列表后重试。".into());
+        return Err(UserError::new("mail.inboxChanged", "The inbox changed; refresh the list and try again."));
     }
     session
         .uid_store(uid.to_string(), "+FLAGS.SILENT (\\Seen)")
-        .map_err(|_| "无法把邮件标为已读，请稍后重试。")?;
+        .map_err(|_| UserError::new("mail.markReadLater", "Could not mark the mail as read; try again later."))?;
     Ok(())
 }
 

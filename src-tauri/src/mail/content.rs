@@ -1,5 +1,6 @@
 //! Message body fetching: text part selection and inline cid images.
 
+use crate::user_error::UserError;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use imap::{
     types::{Fetch, Fetches},
@@ -22,7 +23,7 @@ const MAX_INLINE_IMAGE_BYTES: u32 = 512 * 1024;
 
 const MAX_INLINE_TOTAL_BYTES: u32 = 1_536 * 1024;
 
-pub(super) fn parse_message_id(message_id: &str) -> Result<(u32, u32), String> {
+pub(super) fn parse_message_id(message_id: &str) -> Result<(u32, u32), UserError> {
     let parsed = message_id.split_once(':').and_then(|(validity, uid)| {
         if !validity.bytes().all(|byte| byte.is_ascii_digit())
             || !uid.bytes().all(|byte| byte.is_ascii_digit())
@@ -33,7 +34,7 @@ pub(super) fn parse_message_id(message_id: &str) -> Result<(u32, u32), String> {
     });
     parsed
         .filter(|(validity, uid)| *validity > 0 && *uid > 0)
-        .ok_or_else(|| "邮件标识无效，请刷新收件箱。".into())
+        .ok_or_else(|| UserError::new("mail.badId", "The mail id is not valid; refresh the inbox."))
 }
 
 struct TextPart {
@@ -320,33 +321,33 @@ fn inline_cid_images<T: Read + Write>(
 pub(super) fn fetch_content<T: Read + Write>(
     session: &mut Session<T>,
     message_id: &str,
-) -> Result<MailContent, String> {
+) -> Result<MailContent, UserError> {
     let (validity, uid) = parse_message_id(message_id)?;
     let mailbox = session
         .examine("INBOX")
-        .map_err(|_| "无法打开收件箱，请稍后重试。")?;
+        .map_err(|_| UserError::new("mail.inbox", "Could not open the inbox; try again later."))?;
     if mailbox.uid_validity != Some(validity) {
-        return Err("收件箱已更新，请刷新列表后重新打开邮件。".into());
+        return Err(UserError::new("mail.inboxChangedOpen", "The inbox changed; refresh the list and open the mail again."));
     }
     let structures = session
         .uid_fetch(uid.to_string(), "(UID BODYSTRUCTURE)")
-        .map_err(|_| "无法读取邮件结构，请稍后重试。")?;
+        .map_err(|_| UserError::new("mail.structure", "Could not read the mail's structure; try again later."))?;
     let structure = structures
         .iter()
         .filter(|item| item.uid == Some(uid))
         .find_map(|item| item.bodystructure())
-        .ok_or("邮件已移除或暂不可用，请刷新收件箱。")?;
+        .ok_or_else(|| UserError::new("mail.unavailable", "The mail was removed or is not available; refresh the inbox."))?;
     let mut attachments = Vec::new();
     super::attachments::collect(structure, Vec::new(), &mut attachments);
     // A message that is only attachments still opens, with its list and no text.
     let Some(part) = text_part(structure, Vec::new()) else {
         if attachments.is_empty() {
-            return Err("这封邮件没有可读取的文字正文，请在网页中查看。".into());
+            return Err(UserError::new("mail.noText", "This mail has no text to read; open it in the web mail."));
         }
         return Ok(MailContent { id: message_id.into(), content: String::new(), content_type: "text/plain".into(), attachments });
     };
     if part.octets > MAX_BODY_BYTES {
-        return Err("邮件正文超过 512 KB，请在网页中查看。".into());
+        return Err(UserError::new("mail.bodyOver", "The mail body is over 512 KB; open it in the web mail."));
     }
     let section = part
         .path
@@ -368,7 +369,7 @@ pub(super) fn fetch_content<T: Read + Write>(
     let query = format!("(UID {header_query} BODY.PEEK[{section}])");
     let messages = session
         .uid_fetch(uid.to_string(), query)
-        .map_err(|_| "无法加载邮件正文，请检查网络并重试。")?;
+        .map_err(|_| UserError::new("mail.bodyLoad", "Could not load the mail body; check the network and try again."))?;
     // 服务器可能把两个分段拆到不同的 FETCH 响应里（续包甚至不重复 UID），合并全部响应，
     // 别要求同一条响应都带齐，也别要求每条响应都带 UID。
     let mut header = None;
@@ -385,28 +386,28 @@ pub(super) fn fetch_content<T: Read + Write>(
             body = item.section(&body_path);
         }
     }
-    let header = header.ok_or("邮件已移除，请刷新收件箱。")?;
-    let body = body.ok_or("邮件已移除，请刷新收件箱。")?;
+    let header = header.ok_or_else(|| UserError::new("mail.removed", "The mail was removed; refresh the inbox."))?;
+    let body = body.ok_or_else(|| UserError::new("mail.removed", "The mail was removed; refresh the inbox."))?;
     if header.len() > MAX_MIME_BYTES || body.len() > MAX_BODY_BYTES as usize {
-        return Err("邮件正文过大，请在网页中查看。".into());
+        return Err(UserError::new("mail.bodyLarge", "The mail body is too large; open it in the web mail."));
     }
     if body.len() < part.octets as usize {
-        return Err("邮件正文未完整加载，请重试。".into());
+        return Err(UserError::new("mail.bodyPartial", "The mail body did not load completely; try again."));
     }
     let mut raw = header.to_vec();
     if !raw.ends_with(b"\r\n\r\n") && !raw.ends_with(b"\n\n") {
         raw.extend_from_slice(b"\r\n\r\n");
     }
     raw.extend_from_slice(body);
-    let parsed = mailparse::parse_mail(&raw).map_err(|_| "无法解析邮件正文，请在网页中查看。")?;
+    let parsed = mailparse::parse_mail(&raw).map_err(|_| UserError::new("mail.bodyParse", "Could not read the mail body; open it in the web mail."))?;
     if !parsed.ctype.mimetype.eq_ignore_ascii_case(part.mime)
         || parsed.get_content_disposition().disposition == mailparse::DispositionType::Attachment
     {
-        return Err("邮件正文格式不匹配，请在网页中查看。".into());
+        return Err(UserError::new("mail.bodyFormat", "The mail body is not in the expected format; open it in the web mail."));
     }
     let content = parsed
         .get_body()
-        .map_err(|_| "无法解码邮件正文，请在网页中查看。")?;
+        .map_err(|_| UserError::new("mail.bodyDecode", "Could not decode the mail body; open it in the web mail."))?;
     let content = if part.mime == "text/html" {
         inline_cid_images(session, uid, structure, content)
     } else {

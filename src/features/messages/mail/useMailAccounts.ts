@@ -1,4 +1,5 @@
 import { useTranslation } from "../../../i18n";
+import { errorText } from "../../../i18n/nativeError";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -68,10 +69,10 @@ export function useMailAccounts({ restore, onSnapshot, onEvent }: {
           const restored = await invokeMailCommand("set_qq_mail_enabled", { email: account.email, enabled: account.enabled, host: account.host || null });
           if (cancelled) return;
           acceptSnapshot(restored);
-        } catch (error) { if (!cancelled) setActionError(String(error)); }
+        } catch (error) { if (!cancelled) setActionError(errorText(error, translationsRef.current)); }
       }
     })().catch((error: unknown) => {
-      if (!cancelled) setActionError(String(error));
+      if (!cancelled) setActionError(errorText(error, translationsRef.current));
     }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; unlisten?.(); };
   }, [acceptSnapshot, restore]);
@@ -85,7 +86,7 @@ export function useMailAccounts({ restore, onSnapshot, onEvent }: {
       const next = await invokeMailCommand(command, args);
       return id === actionIdRef.current && acceptSnapshot(next);
     } catch (error) {
-      if (id === actionIdRef.current) setActionError(String(error));
+      if (id === actionIdRef.current) setActionError(errorText(error, t));
       return false;
     } finally { if (id === actionIdRef.current) setBusy(false); }
   }, [acceptSnapshot, t]);

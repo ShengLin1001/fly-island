@@ -1,4 +1,4 @@
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { nextQQPreview, type QQPreviewTiming } from "../qqNotificationTiming";
@@ -18,6 +18,7 @@ type PreviewWindow = { email: string; id: string; receivedAt: number; expiresAt:
 /** The island's mail: which mailbox tab is shown, new-mail previews and the reader. */
 export function useMail(canPreview: boolean) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [previewWindow, setPreviewWindow] = useState<PreviewWindow | null>(null);
   /** The compose view: which mailbox it sends from and what it starts with. */
@@ -106,9 +107,9 @@ export function useMail(canPreview: boolean) {
       const draft = await getMailReply(account, message.id);
       setCompose({ account, draft: { ...draft, replyTo: message.id } });
     } catch (error) {
-      setActionError(String(error));
+      setActionError(errorText(error));
     }
-  }, [reader.selectedMail, readerAccount, setActionError]);
+  }, [reader.selectedMail, readerAccount, setActionError, errorText]);
   const closeCompose = useCallback(() => setCompose(null), []);
 
   const previewBox = previewWindow ? mailboxes.find((mailbox) => mailbox.email === previewWindow.email) : undefined;

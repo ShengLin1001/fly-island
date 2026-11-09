@@ -1,4 +1,4 @@
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, Image, ImageOff, KeyRound, LoaderCircle, MailCheck, PenSquare, Power, RefreshCw, Reply, Settings2 } from "lucide-react";
 import DOMPurify from "dompurify";
@@ -79,7 +79,8 @@ export function MailPanel({ controller, navigation, onRead, onBack, onOpenSettin
 }) {
   const { snapshot, mailboxes, busy, actionError, setEnabled, refresh, openMail, selectMailbox } = controller;
   const t = useTranslation();
-  const error = actionError || snapshot.error;
+  const errorText = useErrorText();
+  const error = actionError || (snapshot.error ? errorText(snapshot.error) : null);
   const listRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
   const returnFocus = useRef<string | null>(null);

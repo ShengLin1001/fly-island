@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { ArrowLeft, LoaderCircle, Send } from "lucide-react";
-import { useTranslation } from "../../../i18n";
+import { useErrorText, useTranslation } from "../../../i18n";
 import { sendMail } from "./api";
 import { splitRecipients, type ComposeDraft } from "./compose";
 
 /** Writes plain-text mail from `account`; a draft with `replyTo` answers that message. */
 export function MailCompose({ account, draft, onClose }: { account: string; draft: ComposeDraft; onClose: () => void }) {
   const t = useTranslation();
+  const errorText = useErrorText();
   const [to, setTo] = useState(draft.to);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(draft.subject);
@@ -23,7 +24,7 @@ export function MailCompose({ account, draft, onClose }: { account: string; draf
       await sendMail(account, { to: splitRecipients(to), cc: splitRecipients(cc), subject, body }, draft.replyTo);
       onClose();
     } catch (failure) {
-      setError(String(failure));
+      setError(errorText(failure));
       setSending(false);
     }
   };

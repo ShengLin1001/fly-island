@@ -1,6 +1,7 @@
 //! A mail's attachments: listed with the body, and saved one at a time into the
 //! user's Downloads folder under a safe, unused file name.
 
+use crate::user_error::UserError;
 use imap::{
     types::{Fetch, Fetches},
     Session,
@@ -130,7 +131,7 @@ pub(super) fn safe_file_name(name: &str) -> String {
 }
 
 /// Writes `bytes` to `dir/name`, or "name (2).ext" and so on if taken; never overwrites.
-pub(super) fn write_unused(dir: &Path, name: &str, bytes: &[u8]) -> Result<PathBuf, String> {
+pub(super) fn write_unused(dir: &Path, name: &str, bytes: &[u8]) -> Result<PathBuf, UserError> {
     let (stem, extension) = match name.rsplit_once('.') {
         Some((stem, extension)) if !stem.is_empty() => (stem, format!(".{extension}")),
         _ => (name, String::new()),
@@ -140,14 +141,14 @@ pub(super) fn write_unused(dir: &Path, name: &str, bytes: &[u8]) -> Result<PathB
         let path = dir.join(candidate);
         match OpenOptions::new().write(true).create_new(true).open(&path) {
             Ok(mut file) => {
-                file.write_all(bytes).map_err(|error| format!("无法写入 {}：{error}", path.display()))?;
+                file.write_all(bytes).map_err(|error| UserError::new("file.write", format!("Could not write {}.", path.display())).arg("path", path.display().to_string()).detail(error))?;
                 return Ok(path);
             }
             Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(error) => return Err(format!("无法保存到 {}：{error}", path.display())),
+            Err(error) => return Err(UserError::new("file.write", format!("Could not write {}.", path.display())).arg("path", path.display().to_string()).detail(error)),
         }
     }
-    Err("下载文件夹里同名文件太多，请清理后重试。".into())
+    Err(UserError::new("mail.tooManyNames", "Too many files with this name in Downloads; clear some and try again."))
 }
 
 fn responses(messages: &Fetches, uid: u32) -> impl Iterator<Item = &Fetch<'_>> {
@@ -160,29 +161,29 @@ pub(super) fn fetch_attachment<T: Read + Write>(
     session: &mut Session<T>,
     message_id: &str,
     part: &str,
-) -> Result<(AttachmentInfo, Vec<u8>), String> {
+) -> Result<(AttachmentInfo, Vec<u8>), UserError> {
     let (validity, uid) = parse_message_id(message_id)?;
-    let mailbox = session.examine("INBOX").map_err(|_| "无法打开收件箱，请稍后重试。")?;
+    let mailbox = session.examine("INBOX").map_err(|_| UserError::new("mail.inbox", "Could not open the inbox; try again later."))?;
     if mailbox.uid_validity != Some(validity) {
-        return Err("收件箱已更新，请刷新列表后重新打开邮件。".into());
+        return Err(UserError::new("mail.inboxChangedOpen", "The inbox changed; refresh the list and open the mail again."));
     }
     let structures = session
         .uid_fetch(uid.to_string(), "(UID BODYSTRUCTURE)")
-        .map_err(|_| "无法读取邮件结构，请稍后重试。")?;
+        .map_err(|_| UserError::new("mail.structure", "Could not read the mail's structure; try again later."))?;
     let structure = responses(&structures, uid)
         .find_map(|item| item.bodystructure())
-        .ok_or("邮件已移除或暂不可用，请刷新收件箱。")?;
+        .ok_or_else(|| UserError::new("mail.unavailable", "The mail was removed or is not available; refresh the inbox."))?;
     let mut listed = Vec::new();
     collect(structure, Vec::new(), &mut listed);
-    let info = listed.into_iter().find(|item| item.part == part).ok_or("找不到这个附件，请重新打开邮件。")?;
+    let info = listed.into_iter().find(|item| item.part == part).ok_or_else(|| UserError::new("mail.noAttachment", "This attachment was not found; open the mail again."))?;
     if info.size > MAX_SAVE_BYTES {
-        return Err(format!("附件超过 {} MB，请在网页中下载。", MAX_SAVE_BYTES / (1024 * 1024)));
+        return Err(UserError::new("mail.attachmentLarge", format!("The attachment is over {} MB; download it in the web mail.", MAX_SAVE_BYTES / (1024 * 1024))).arg("mb", MAX_SAVE_BYTES / (1024 * 1024)));
     }
     // A single-part message has no [1.MIME] (QQ does not answer it); its header is the message's.
     let multipart = matches!(structure, BodyStructure::Multipart { .. });
     let header_query = if multipart { format!("BODY.PEEK[{part}.MIME]") } else { "BODY.PEEK[HEADER]".into() };
     let query = format!("(UID {header_query} BODY.PEEK[{part}])");
-    let messages = session.uid_fetch(uid.to_string(), query).map_err(|_| "无法下载附件，请检查网络并重试。")?;
+    let messages = session.uid_fetch(uid.to_string(), query).map_err(|_| UserError::new("mail.attachmentDownload", "Could not download the attachment; check the network and try again."))?;
     let path: Vec<u32> = part.split('.').filter_map(|segment| segment.parse().ok()).collect();
     let mime_path = SectionPath::Part(path.clone(), Some(MessageSection::Mime));
     let body_path = SectionPath::Part(path, None);
@@ -192,13 +193,13 @@ pub(super) fn fetch_attachment<T: Read + Write>(
         header = header.or_else(|| if multipart { item.section(&mime_path) } else { item.header() });
         body = body.or_else(|| item.section(&body_path));
     }
-    let (header, body) = (header.ok_or("附件已移除，请刷新收件箱。")?, body.ok_or("附件已移除，请刷新收件箱。")?);
+    let (header, body) = (header.ok_or_else(|| UserError::new("mail.attachmentGone", "The attachment was removed; refresh the inbox."))?, body.ok_or_else(|| UserError::new("mail.attachmentGone", "The attachment was removed; refresh the inbox."))?);
     let mut raw = header.to_vec();
     if !raw.ends_with(b"\r\n\r\n") && !raw.ends_with(b"\n\n") {
         raw.extend_from_slice(b"\r\n\r\n");
     }
     raw.extend_from_slice(body);
-    let parsed = mailparse::parse_mail(&raw).map_err(|_| "无法解析附件，请在网页中下载。")?;
-    let bytes = parsed.get_body_raw().map_err(|_| "无法解码附件，请在网页中下载。")?;
+    let parsed = mailparse::parse_mail(&raw).map_err(|_| UserError::new("mail.attachmentParse", "Could not read the attachment; download it in the web mail."))?;
+    let bytes = parsed.get_body_raw().map_err(|_| UserError::new("mail.attachmentDecode", "Could not decode the attachment; download it in the web mail."))?;
     Ok((info, bytes))
 }

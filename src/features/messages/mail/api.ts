@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { NativeError } from "../../../i18n/nativeError";
 import { listen, type EventCallback } from "@tauri-apps/api/event";
 
 // 与 src-tauri/src/mail/mod.rs 中返回给前端的结构对应。
@@ -45,7 +46,8 @@ export type MailSnapshot = {
   unreadCount: number | null;
   items: MailMessage[];
   lastSyncedAt: number | null;
-  error: string | null;
+  /** Words with useErrorText (task D15). */
+  error: NativeError | string | null;
 };
 
 // 每个邮箱各自推送；断开或首次连接失败的邮箱推送 configured: false、status: "disconnected"。

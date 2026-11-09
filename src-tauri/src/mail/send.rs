@@ -1,6 +1,7 @@
 //! Sending plain-text mail over SMTP with the mailbox's authorization code, and
 //! the reply draft for a listed message.
 
+use crate::user_error::UserError;
 use imap::Session;
 use lettre::{
     message::{header::ContentType, Mailbox},
@@ -58,8 +59,8 @@ pub(super) fn smtp_server(email: &str, imap_host: &str) -> String {
     }
 }
 
-fn mailbox(address: &str) -> Result<Mailbox, String> {
-    address.trim().parse::<Mailbox>().map_err(|_| format!("收件人地址无效：{}", address.trim()))
+fn mailbox(address: &str) -> Result<Mailbox, UserError> {
+    address.trim().parse::<Mailbox>().map_err(|_| UserError::new("mail.recipient", format!("Not a valid recipient address: {}", address.trim())).arg("address", address.trim()))
 }
 
 /// A header value from the server, safe to send back: one line, a sane length.
@@ -70,20 +71,20 @@ fn header_value(value: Option<String>) -> Option<String> {
 }
 
 /// Builds the message, checking every field a page could send.
-pub(super) fn build(email: &str, mail: &OutgoingMail, thread: &Thread) -> Result<Message, String> {
+pub(super) fn build(email: &str, mail: &OutgoingMail, thread: &Thread) -> Result<Message, UserError> {
     let to: Vec<&String> = mail.to.iter().filter(|address| !address.trim().is_empty()).collect();
     let cc: Vec<&String> = mail.cc.iter().filter(|address| !address.trim().is_empty()).collect();
     if to.is_empty() {
-        return Err("请填写收件人。".into());
+        return Err(UserError::new("mail.needRecipient", "Fill in a recipient."));
     }
     if to.len() + cc.len() > MAX_RECIPIENTS {
-        return Err(format!("一封邮件最多 {MAX_RECIPIENTS} 个收件人。"));
+        return Err(UserError::new("mail.tooManyRecipients", format!("At most {MAX_RECIPIENTS} recipients in one mail.")).arg("max", MAX_RECIPIENTS));
     }
     if mail.subject.chars().count() > MAX_SUBJECT_CHARS || mail.subject.contains(['\r', '\n']) {
-        return Err("主题太长或包含换行。".into());
+        return Err(UserError::new("mail.subject", "The subject is too long or has a line break."));
     }
     if mail.body.len() > MAX_BODY_BYTES {
-        return Err("正文太长，请在网页中发送。".into());
+        return Err(UserError::new("mail.bodyLong", "The text is too long; send it in the web mail."));
     }
     let mut builder = Message::builder()
         .from(mailbox(email)?)
@@ -99,16 +100,16 @@ pub(super) fn build(email: &str, mail: &OutgoingMail, thread: &Thread) -> Result
         let references = header_value(thread.references.clone()).map_or_else(|| id.clone(), |references| format!("{references} {id}"));
         builder = builder.in_reply_to(id).references(references);
     }
-    builder.body(mail.body.replace("\r\n", "\n")).map_err(|error| format!("无法生成邮件：{error}"))
+    builder.body(mail.body.replace("\r\n", "\n")).map_err(|error| UserError::new("mail.build", "Could not put the mail together.").detail(error))
 }
 
 /// Sends `message` through `server` (host, optionally `:port`), always over TLS.
-pub(super) fn deliver(server: &str, email: &str, secret: &str, message: &Message) -> Result<(), String> {
+pub(super) fn deliver(server: &str, email: &str, secret: &str, message: &Message) -> Result<(), UserError> {
     let (host, port) = match server.split_once(':') {
         Some((host, port)) => (host, port.parse().unwrap_or(SMTPS_PORT)),
         None => (server, SMTPS_PORT),
     };
-    let tls = TlsParameters::new(host.to_string()).map_err(|error| format!("无法建立加密连接：{error}"))?;
+    let tls = TlsParameters::new(host.to_string()).map_err(|error| UserError::new("mail.tls", "Could not set up an encrypted connection.").detail(error))?;
     let transport = SmtpTransport::builder_dangerous(host)
         .port(port)
         .tls(if port == SMTPS_PORT { Tls::Wrapper(tls) } else { Tls::Required(tls) })
@@ -117,36 +118,36 @@ pub(super) fn deliver(server: &str, email: &str, secret: &str, message: &Message
         .build();
     transport.send(message).map(|_| ()).map_err(|error| {
         if error.is_permanent() || error.to_string().contains("535") {
-            "发件服务器拒绝了登录或邮件，请确认已开启 SMTP 服务、授权码正确，以及收件人地址。".to_string()
+            UserError::new("mail.smtpRefused", "The mail server refused the sign-in or the mail; check that SMTP is on, the authorization code and the recipients.")
         } else {
-            format!("发送失败，请检查网络后重试：{error}")
+            UserError::new("mail.sendFailed", "Sending failed; check the network and try again.").detail(error)
         }
     })
 }
 
 /// Reads the answered message's header: who to reply to, its subject and threading.
-pub(super) fn reply_source<T: Read + Write>(session: &mut Session<T>, message_id: &str) -> Result<(ReplyDraft, Thread), String> {
+pub(super) fn reply_source<T: Read + Write>(session: &mut Session<T>, message_id: &str) -> Result<(ReplyDraft, Thread), UserError> {
     let (validity, uid) = parse_message_id(message_id)?;
-    let mailbox = session.examine("INBOX").map_err(|_| "无法打开收件箱，请稍后重试。")?;
+    let mailbox = session.examine("INBOX").map_err(|_| UserError::new("mail.inbox", "Could not open the inbox; try again later."))?;
     if mailbox.uid_validity != Some(validity) {
-        return Err("收件箱已更新，请刷新列表后重试。".into());
+        return Err(UserError::new("mail.inboxChanged", "The inbox changed; refresh the list and try again."));
     }
     let messages = session
         .uid_fetch(uid.to_string(), "(UID BODY.PEEK[HEADER]<0.65536>)")
-        .map_err(|_| "无法读取邮件，请稍后重试。")?;
+        .map_err(|_| UserError::new("mail.readLater", "Could not read the mail; try again later."))?;
     let header = messages
         .iter()
         .filter(|message| message.uid.is_none_or(|found| found == uid))
         .find_map(|message| message.header())
-        .ok_or("邮件已移除，请刷新收件箱。")?;
-    let (headers, _) = mailparse::parse_headers(header).map_err(|_| "无法读取邮件头。")?;
+        .ok_or_else(|| UserError::new("mail.removed", "The mail was removed; refresh the inbox."))?;
+    let (headers, _) = mailparse::parse_headers(header).map_err(|_| UserError::new("mail.headers", "Could not read the mail's headers."))?;
     let get = |name: &str| headers.iter().find(|header| header.get_key().eq_ignore_ascii_case(name)).map(|header| header.get_value());
     let address = |name: &str| {
         let value = headers.iter().find(|header| header.get_key().eq_ignore_ascii_case(name))?;
         let list = mailparse::addrparse_header(value).ok()?;
         list.extract_single_info().map(|info| info.addr)
     };
-    let to = address("Reply-To").or_else(|| address("From")).ok_or("找不到这封邮件的发件人。")?;
+    let to = address("Reply-To").or_else(|| address("From")).ok_or_else(|| UserError::new("mail.noSender", "This mail's sender was not found."))?;
     let subject = get("Subject").unwrap_or_default();
     let subject = subject.trim();
     let lower = subject.to_ascii_lowercase();
