@@ -77,6 +77,7 @@ type IslandShellProps = {
   onPageChange: (page: IslandPage) => void;
   pageDigitModifiers: string;
   hoverSwitchPage: boolean;
+  hoverSwitchDelayMs: number;
   /** Shown over the top row in both modes, e.g. a plugin permission question. */
   overlay?: ReactNode;
   /** Buttons for plugin pages in the expanded header. */
@@ -135,6 +136,7 @@ export function IslandShell({
   onPageChange,
   pageDigitModifiers,
   hoverSwitchPage,
+  hoverSwitchDelayMs,
   overlay,
   pluginPageButtons,
   pageActions,
@@ -260,6 +262,7 @@ export function IslandShell({
             onMinimize={onMinimize}
             pageDigitModifiers={pageDigitModifiers}
             hoverSwitchPage={hoverSwitchPage}
+            hoverSwitchDelayMs={hoverSwitchDelayMs}
             pluginPageButtons={pluginPageButtons}
             pageActions={pageActions}
           />

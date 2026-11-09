@@ -32,6 +32,7 @@ type IslandHeaderProps = {
   pageDigitModifiers: string;
   /** Resting the pointer on a page button opens its page. */
   hoverSwitchPage: boolean;
+  hoverSwitchDelayMs: number;
   /** Buttons for plugin pages, after the built-in page dots. */
   pluginPageButtons?: ReactNode;
   /** Buttons of the open page, first among the window actions. */
@@ -58,12 +59,13 @@ export function IslandHeader({
   onMinimize,
   pageDigitModifiers,
   hoverSwitchPage,
+  hoverSwitchDelayMs,
   pluginPageButtons,
   pageActions,
 }: IslandHeaderProps) {
   const t = useTranslation();
   const updateVersion = useUpdateReminder();
-  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, onPageChange);
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onPageChange);
   const settingsLabel = updateVersion ? t.settings.project.update.islandReminder(updateVersion) : t.settings.title;
   const messageBadgeLabel = t.messages.badge(qqNotificationCount, wechatPending);
   const withShortcut = (label: string, target: IslandPage) => {

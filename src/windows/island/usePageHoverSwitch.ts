@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { IslandPage } from "./types";
 
-/** How long the pointer rests on a page button before its page opens, so sweeping across the row opens nothing. */
-const HOVER_SWITCH_DELAY_MS = 150;
-
 type HoverHandlers = { onPointerEnter: () => void; onPointerLeave: () => void };
 
 /**
  * Pointer handlers for the expanded island's page buttons that open a page once the
  * pointer rests on its button (Settings → General → Opening → Switch pages on hover).
+ * `delayMs` is how long the pointer must rest there; 0 opens the page as soon as it arrives.
  * Returns an empty object for every page while the setting is off.
  */
-export function usePageHoverSwitch(enabled: boolean, onPageChange: (page: IslandPage) => void) {
+export function usePageHoverSwitch(enabled: boolean, delayMs: number, onPageChange: (page: IslandPage) => void) {
   const timerRef = useRef<number | null>(null);
   const onPageChangeRef = useRef(onPageChange);
   useEffect(() => {
@@ -34,14 +32,18 @@ export function usePageHoverSwitch(enabled: boolean, onPageChange: (page: Island
       return {
         onPointerEnter: () => {
           cancel();
+          if (delayMs <= 0) {
+            onPageChangeRef.current(page);
+            return;
+          }
           timerRef.current = window.setTimeout(() => {
             timerRef.current = null;
             onPageChangeRef.current(page);
-          }, HOVER_SWITCH_DELAY_MS);
+          }, delayMs);
         },
         onPointerLeave: cancel,
       };
     },
-    [enabled, cancel],
+    [enabled, delayMs, cancel],
   );
 }

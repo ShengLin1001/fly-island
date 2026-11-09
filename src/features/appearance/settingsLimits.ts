@@ -33,6 +33,10 @@ export const MAX_HOVER_EXPAND_DELAY_MS = 1_000;
 export const DEFAULT_HOVER_COLLAPSE_DELAY_MS = 0;
 export const MIN_HOVER_COLLAPSE_DELAY_MS = 0;
 export const MAX_HOVER_COLLAPSE_DELAY_MS = 2_000;
+/** Pointer rest time (ms) on a page dot before its page opens, with "switch pages on hover" on. */
+export const DEFAULT_HOVER_SWITCH_DELAY_MS = 0;
+export const MIN_HOVER_SWITCH_DELAY_MS = 0;
+export const MAX_HOVER_SWITCH_DELAY_MS = 1_000;
 export const DEFAULT_AUTO_TUCK_RETRACT_DELAY_MS = 500;
 export const MIN_AUTO_TUCK_RETRACT_DELAY_MS = 0;
 export const MAX_AUTO_TUCK_RETRACT_DELAY_MS = 3_000;

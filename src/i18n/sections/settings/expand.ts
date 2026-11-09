@@ -8,6 +8,7 @@ export type SettingsExpandText = {
   /** Resting the pointer on a page dot of the expanded island opens that page. */
   hoverSwitchPage: string;
   hoverSwitchPageHint: string;
+  hoverSwitchDelay: string;
   /** Title of the group for tucking to the screen edge. */
   tuckTitle: string;
   /** Title of the group for how a tucked island comes back. */
@@ -28,6 +29,7 @@ export const zhCN: SettingsExpandText = {
   hoverCollapseDelay: "鼠标移开后收起前等待",
   hoverSwitchPage: "悬停切换页面",
   hoverSwitchPageHint: "鼠标停在展开后顶部的页面圆点上，就切到那一页，不用点击",
+  hoverSwitchDelay: "悬停多久后切换",
   tuckTitle: "贴边隐藏",
   revealTitle: "露出",
   revealOnMessage: "有新消息时露出",
@@ -45,6 +47,7 @@ export const en: SettingsExpandText = {
   hoverCollapseDelay: "Wait before closing after leaving",
   hoverSwitchPage: "Switch pages on hover",
   hoverSwitchPageHint: "Resting the pointer on a page dot at the top of the open island opens that page, no click needed",
+  hoverSwitchDelay: "Hover time before switching",
   tuckTitle: "Tuck to edge",
   revealTitle: "Sliding out",
   revealOnMessage: "Slide out for new messages",

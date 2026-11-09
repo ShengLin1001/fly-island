@@ -14,6 +14,7 @@ export function PluginPageButtons({
   features,
   modifiers,
   hoverSwitchPage,
+  hoverSwitchDelayMs,
   onOpen,
 }: {
   views: readonly PluginViewEntry[];
@@ -22,11 +23,12 @@ export function PluginPageButtons({
   modifiers: string;
   /** Resting the pointer on a button opens its page. */
   hoverSwitchPage: boolean;
+  hoverSwitchDelayMs: number;
   onOpen: (page: IslandPage) => void;
 }) {
   const t = useTranslation();
   const { locale } = useLocale();
-  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, onOpen);
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onOpen);
   return (
     <>
       {views.map((view) => {

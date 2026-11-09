@@ -101,6 +101,17 @@
     {
       "page": "general",
       "zh-CN": {
+        "group": "展开",
+        "title": "悬停多久后切换"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Hover time before switching"
+      }
+    },
+    {
+      "page": "general",
+      "zh-CN": {
         "group": "贴边隐藏",
         "title": "闲置时贴边隐藏",
         "description": "一段时间没有操作后，岛屿贴到屏幕顶部，只露出一条边。"
