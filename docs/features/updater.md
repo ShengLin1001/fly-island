@@ -103,8 +103,14 @@ pnpm tauri signer generate -w $env:USERPROFILE\.tauri\fly-island.key
 
 ## 发布一个可自动更新的版本
 
-1. 三处版本号一起改，保持一致：`package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`。
-2. 写发布说明 `docs/releases/vX.Y.Z.md`，它会成为 `latest.json` 里的 `notes`，同时作为 Release 正文。
+1. 改版本号并起草发布说明，在 lane 里运行：
+
+   ```powershell
+   pnpm release:version 0.3.4          # 测试版写 0.3.4-beta.1
+   ```
+
+   它一次改好四处版本号（`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`，以及 `src-tauri/Cargo.lock` 里岛屿自己那一项），先确认新版本号比已发布的都新。`docs/releases/vX.Y.Z.md` 还不存在时，它会写一份草稿：测试版或正式版固定的开头和下载说明，再加上一条注释，列出上一个版本以来面向用户的 feat / fix / perf 提交。测试版从上一个任意版本算起，正式版从上一个正式版算起，所以正式版的说明会包含它之前的几个测试版。不要再手动改版本号。
+2. 把草稿改写成面向用户的中英文说明，删掉开头的 `<!-- release-notes-draft -->` 标记和提交列表。标记还在时 `pnpm release` 会拒绝发布。发布说明会成为 `latest.json` 里的 `notes`，同时作为 Release 正文。
 3. Windows 发布机器配置一次上述本机凭据即可；其他机器或 CI 设置发布环境变量：
 
    ```powershell
@@ -123,28 +129,26 @@ pnpm tauri signer generate -w $env:USERPROFILE\.tauri\fly-island.key
 
    脚本会依次：
 
-   - 校验三处版本号一致、`docs/releases/vX.Y.Z.md` 存在、工作区没有未提交改动、`gh` 已登录；
+   - 校验四处版本号一致、`docs/releases/vX.Y.Z.md` 存在且不是草稿、工作区没有未提交改动、`gh` 已登录；
    - 生成 `src-tauri/tauri.release.conf.json`（公钥 + `createUpdaterArtifacts`，该文件已被 git 忽略）；
    - `tauri build --config` 出带签名的 NSIS、MSI 安装包与各自 `.sig`；
    - 生成 `latest.json`；
    - 生成两种安装包的 `SHA256SUMS.txt`；
    - 创建指向当前提交的 Release 草稿，上传安装包、`.sig`、`latest.json` 与校验文件；
-   - 比较 GitHub 上每个文件的 SHA-256 与本地产物，一致后才公开并设为最新版本；已存在的版本会被拒绝，避免覆盖用户正在下载的更新包。
+   - 比较 GitHub 上每个文件的 SHA-256 与本地产物，一致后才公开并设为最新版本；已存在的版本会被拒绝，避免覆盖用户正在下载的更新包；
+   - 刷新 beta 通道的清单；
+   - 用 `gh` 读回两个通道的 `latest.json`（直接用 curl 访问下载地址，GitHub 有时返回 504），确认正式版两个通道都是新版本，测试版只有 beta 通道是新版本、稳定通道不是。GitHub 切换 Latest 可能要几秒，读不对时隔 5 秒重试，最多 4 次，还不对就报错并指向下面的「撤回有问题的版本」；
+   - 找出这次发布的提交范围里完成的任务（任务文件的 `issue` 字段和「提交」列表），在对应的 GitHub issue 下留言「已随 vX.Y.Z 发布」，附 Release 地址和任务文档。每个 issue 每个版本只留一次（留言里有标记），所以重跑不会重复。不想留言时加 `--no-issue-comments`。
 
    只出包不上传用 `pnpm release --no-upload`；安装包走镜像分发用 `pnpm release --base-url "https://..."`。
 
 5. 发布后已装「带更新功能」版本的用户点「检查更新」就能收到。更早的版本（v0.2.11 及以前）没有这段逻辑，需要手动下载安装一次。
-6. 发布后检查：
+6. 发布后运行 `pnpm build:exe` 更新本机的 release 程序，并按 `AGENTS.md`「本机更新与桌面快捷方式」核对桌面快捷方式。两个通道的清单已由 `pnpm release` 核对过，不用再手动检查；需要时也可以手动看：
 
-   - 两个通道的清单都是新版本：
-
-     ```powershell
-     curl.exe -sL https://github.com/TixXin/fly-island/releases/latest/download/latest.json
-     curl.exe -sL https://github.com/TixXin/fly-island/releases/download/beta-channel/latest.json
-     ```
-
-     正式版两个都应是新版本；beta 版只有第二个是，第一个仍是上一个正式版。
-   - 运行 `pnpm build:exe` 更新本机的 release 程序，并按 `AGENTS.md`「本机更新与桌面快捷方式」核对桌面快捷方式。
+   ```powershell
+   gh release download --repo TixXin/fly-island --pattern latest.json --dir $env:TEMP\stable --clobber
+   gh release download beta-channel --repo TixXin/fly-island --pattern latest.json --dir $env:TEMP\beta --clobber
+   ```
 
 版本号和发布说明的提交照常在 lane 里 land 到 `main`，再在同一个 lane（停在 land 后的提交、工作区干净）里运行 `pnpm release`，不要在主工作区里发布。
 

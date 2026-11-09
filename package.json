@@ -10,6 +10,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "release": "node scripts/release/release.mjs",
+    "release:version": "node scripts/release/bump.mjs",
     "plugins:index": "node scripts/plugins/build-plugin-index.mjs",
     "plugins:keygen": "node scripts/plugins/plugin-signing.mjs keygen",
     "sdk:build": "node scripts/plugins/build-plugin-sdk.mjs",
