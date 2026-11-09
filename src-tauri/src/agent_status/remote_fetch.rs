@@ -351,7 +351,8 @@ pub(super) fn island_config(resolved: &str, forward_port: Option<u16>) -> String
 }
 
 /// Writes the island's config for `host` to `<app data>/ssh/<host>.conf` and returns its path.
-pub(super) fn write_island_config(app_dir: &Path, host: &str, target: &SshTarget, forward_port: Option<u16>) -> Result<PathBuf, String> {
+/// `host` only names the file: the SSH proxy tunnel passes `tunnel-<host>` for a file of its own.
+pub(crate) fn write_island_config(app_dir: &Path, host: &str, target: &SshTarget, forward_port: Option<u16>) -> Result<PathBuf, String> {
     let mut command = Command::new("ssh");
     command.arg("-G");
     if let Some(port) = target.port {
@@ -372,7 +373,7 @@ pub(super) fn write_island_config(app_dir: &Path, host: &str, target: &SshTarget
 }
 
 /// Runs `script` once on `target` and returns its output.
-pub(super) fn run_ssh(target: &SshTarget, script: &str) -> Result<Vec<u8>, String> {
+pub(crate) fn run_ssh(target: &SshTarget, script: &str) -> Result<Vec<u8>, String> {
     let mut child = ssh_command(target, None).spawn().map_err(|error| format!("Failed to start ssh: {error}"))?;
     if let Some(mut stdin) = child.stdin.take() {
         stdin

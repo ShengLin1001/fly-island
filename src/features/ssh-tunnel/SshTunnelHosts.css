@@ -1,0 +1,85 @@
+/* The SSH proxy tunnel's hosts on its plugin page; fields and buttons come from the plugin page. */
+.ssh-tunnel__host {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-white-a08);
+}
+
+.ssh-tunnel__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.ssh-tunnel__head label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ssh-tunnel__state {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: rgba(248, 246, 240, 0.62);
+  font-size: 11px;
+}
+
+.ssh-tunnel__state--connected {
+  color: rgba(110, 231, 200, 0.95);
+}
+
+.ssh-tunnel__state--portInUse,
+.ssh-tunnel__state--error,
+.ssh-tunnel__port[aria-invalid="true"] {
+  color: rgba(255, 210, 120, 0.95);
+}
+
+.ssh-tunnel__reason {
+  overflow-wrap: anywhere;
+  opacity: 0.8;
+}
+
+.ssh-tunnel__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  color: var(--color-text);
+  background: rgba(255, 210, 120, 0.1);
+  border: 1px solid rgba(255, 210, 120, 0.28);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+
+.ssh-tunnel__confirm > span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.ssh-tunnel__export {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssh-tunnel__export code {
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 8px;
+  color: var(--color-text);
+  background: var(--color-white-a08);
+  border: 1px solid var(--color-white-a10);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

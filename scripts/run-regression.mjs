@@ -41,6 +41,7 @@ export const PAGES = [
   "settings-sidebar.html",
   "settings-search.html",
   "agent-remote.html",
+  "ssh-tunnel.html",
   "tucked-hover.html",
 ];
 
