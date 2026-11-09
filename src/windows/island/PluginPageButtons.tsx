@@ -4,6 +4,7 @@ import { pluginPageId } from "../../features/plugin-views/model";
 import { useLocale, useTranslation } from "../../i18n";
 import { pageShortcutLabel, type IslandFeatures } from "./features";
 import type { IslandPage } from "./types";
+import { usePageHoverSwitch } from "./usePageHoverSwitch";
 import "./PluginPageButtons.css";
 
 /** One small icon button per plugin page, after the built-in page dots. */
@@ -12,16 +13,22 @@ export function PluginPageButtons({
   page,
   features,
   modifiers,
+  hoverSwitchPage,
+  hoverSwitchDelayMs,
   onOpen,
 }: {
   views: readonly PluginViewEntry[];
   page: IslandPage;
   features: IslandFeatures;
   modifiers: string;
+  /** Resting the pointer on a button opens its page. */
+  hoverSwitchPage: boolean;
+  hoverSwitchDelayMs: number;
   onOpen: (page: IslandPage) => void;
 }) {
   const t = useTranslation();
   const { locale } = useLocale();
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onOpen);
   return (
     <>
       {views.map((view) => {
@@ -38,6 +45,7 @@ export function PluginPageButtons({
             data-plugin-page={id}
             aria-label={title}
             aria-pressed={page === id}
+            {...hoverSwitch(id)}
             onClick={(event) => {
               event.stopPropagation();
               onOpen(id);

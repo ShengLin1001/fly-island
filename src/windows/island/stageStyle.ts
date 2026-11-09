@@ -10,6 +10,7 @@ export function getIslandStageStyle(
   mode: IslandMode,
   collapsedIslandWidth: number,
   expandedIslandHeight: number,
+  expandedIslandWidth: number,
 ) {
   const glassStrength = settings.glassIntensity / 100;
   const glassMaskOpacity = settings.opacity / 100;
@@ -17,10 +18,14 @@ export function getIslandStageStyle(
   return ({
     // Classic opacity fades the fill only, so text and icons on it stay solid.
     "--island-fill": hexToRgba(settings.islandBackgroundColor, settings.opacity / 100),
-    "--island-fill-alpha": settings.opacity / 100,
+    // The shell's size follows the current mode's scale; each content layer keeps its own
+    // (IslandShell.css), so neither relays out at a new scale while the island opens or closes.
     "--island-scale": mode === "collapsed" ? settings.collapsedScale : settings.expandedScale,
+    "--island-collapsed-scale": settings.collapsedScale,
+    "--island-expanded-scale": settings.expandedScale,
     "--collapsed-island-width": `${collapsedIslandWidth}px`,
     "--expanded-island-height": `${expandedIslandHeight}px`,
+    "--expanded-island-width": `${expandedIslandWidth}px`,
     // Unitless so IslandTopEdge.css can also fade the fillet layers out at 0.
     "--island-top-fillet-size": settings.topFilletRadius,
     // Unitless; IslandShell.css derives the collapsed, detached and inner panel radii from it.

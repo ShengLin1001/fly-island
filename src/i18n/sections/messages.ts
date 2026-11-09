@@ -32,6 +32,8 @@ export type MessagesText = {
   /** The Messages page opened for new messages (roadmap C11). */
   arrivals: {
     title: string;
+    /** Opens the whole Messages page from the popup. */
+    showAll: string;
   };
 };
 
@@ -67,6 +69,7 @@ export const zhCN: MessagesText = {
   },
   arrivals: {
     title: "新消息",
+    showAll: "全部消息",
   },
 };
 
@@ -102,5 +105,6 @@ export const en: MessagesText = {
   },
   arrivals: {
     title: "New messages",
+    showAll: "All messages",
   },
 };

@@ -88,6 +88,30 @@
     {
       "page": "general",
       "zh-CN": {
+        "group": "展开",
+        "title": "悬停切换页面",
+        "description": "鼠标停在展开后顶部的页面圆点上，就切到那一页，不用点击"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Switch pages on hover",
+        "description": "Resting the pointer on a page dot at the top of the open island opens that page, no click needed"
+      }
+    },
+    {
+      "page": "general",
+      "zh-CN": {
+        "group": "展开",
+        "title": "悬停多久后切换"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Hover time before switching"
+      }
+    },
+    {
+      "page": "general",
+      "zh-CN": {
         "group": "贴边隐藏",
         "title": "闲置时贴边隐藏",
         "description": "一段时间没有操作后，岛屿贴到屏幕顶部，只露出一条边。"
@@ -726,6 +750,40 @@
         "group": "Lyrics",
         "title": "Also ask Kugou and NetEase",
         "description": "Many more Chinese songs, with translations. These are unofficial interfaces that may stop working at any time; the title, artist and length are sent to them. With NetEase's InfLink plugin the song is looked up by its id, which is more exact."
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
+        "group": "歌词",
+        "title": "在收起的岛上显示当前歌词",
+        "description": "播放中、找到带时间轴的歌词时，收起的岛显示正在唱的那一句；暂停、间奏和没找到歌词时照常显示待办。"
+      },
+      "en": {
+        "group": "Lyrics",
+        "title": "Show the current line on the collapsed island",
+        "description": "While a song plays and synced lyrics are found, the collapsed island shows the line being sung; paused, between verses or without lyrics it shows your todo as usual."
+      }
+    },
+    {
+      "page": "music",
+      "zh-CN": {
+        "group": "歌词",
+        "title": "同时有 Agent 在运行时",
+        "description": "歌词优先：Agent 开始新会话、跑完或出错时临时显示 4 秒，做到一半等你审批或回答时一直显示到你处理。Agent 优先：有 Agent 在运行就显示它，空下来才显示歌词。",
+        "options": [
+          "歌词优先",
+          "Agent 优先"
+        ]
+      },
+      "en": {
+        "group": "Lyrics",
+        "title": "While an agent is running",
+        "description": "Lyrics first: an agent shows for 4 seconds when it starts a session, finishes or fails, and stays while it is stopped on an approval or question. Agent first: a running agent shows, and lyrics come back when it is idle.",
+        "options": [
+          "Lyrics first",
+          "Agent first"
+        ]
       }
     },
     {

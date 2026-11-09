@@ -3,11 +3,10 @@ import { useTranslation } from "../../i18n";
 import type { MediaState } from "./api";
 import { MediaWaveform } from "./MediaWaveform";
 import { LyricsView } from "./lyrics/LyricsView";
-import { useLyrics, type LyricsSettings } from "./lyrics/useLyrics";
+import type { LyricsSettings } from "./lyrics/useLyrics";
 import { LyricsOffsetControl } from "./lyrics/LyricsOffsetControl";
-import { trackKey } from "./lyrics/lrc";
 import { suggestsChineseSources } from "./lyrics/chineseHint";
-import { useSongOffset } from "./lyrics/useSongOffset";
+import { usePlayingLyrics, type PlayingLyrics } from "./lyrics/usePlayingLyrics";
 import "./MusicPlayerPanel.css";
 
 const NO_LYRICS = { lyricsFolder: "", lyricsOnline: false, lyricsOffsetMs: 0 };
@@ -21,6 +20,7 @@ export function MusicPlayerPanel({
   onNext,
   onPrevious,
   lyricsSettings = NO_LYRICS,
+  lyrics: shared,
 }: {
   mediaState: MediaState;
   isTrackChanging: boolean;
@@ -32,13 +32,15 @@ export function MusicPlayerPanel({
   onPrevious: () => void;
   /** Where lyrics come from and how far they are moved; without it there are none. */
   lyricsSettings?: LyricsSettings & { lyricsOffsetMs: number };
+  /** Lyrics the island already looked up (it shows them collapsed too); without them the page looks them up itself. */
+  lyrics?: PlayingLyrics;
 }) {
   const t = useTranslation();
   const isPlaying = mediaState.playbackStatus === "playing";
   const hasTrack = Boolean(mediaState.title);
-  const { lines: lyrics, notFound } = useLyrics(mediaState, lyricsSettings);
+  const own = usePlayingLyrics(mediaState, lyricsSettings, !shared);
+  const { lines: lyrics, notFound, songOffsetMs, setSongOffsetMs, offsetMs } = shared ?? own;
   const chineseHint = suggestsChineseSources(mediaState, lyricsSettings, notFound);
-  const [songOffsetMs, setSongOffsetMs] = useSongOffset(lyrics ? trackKey(mediaState) : null);
 
   const prevDisabled = mediaState.available && !mediaState.canPrevious;
   const nextDisabled = mediaState.available && !mediaState.canNext;
@@ -106,7 +108,7 @@ export function MusicPlayerPanel({
           )}
 
           {/* With lyrics, the waveform shrinks to a strip under them rather than going away. */}
-          {lyrics && <LyricsView lines={lyrics} mediaState={mediaState} offsetMs={lyricsSettings.lyricsOffsetMs + songOffsetMs} />}
+          {lyrics && <LyricsView lines={lyrics} mediaState={mediaState} offsetMs={offsetMs} />}
           <MediaWaveform
             playing={isPlaying || mediaState.audioActive}
             audioPeak={mediaState.audioPeak}

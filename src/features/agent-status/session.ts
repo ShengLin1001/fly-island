@@ -15,6 +15,15 @@ export type AgentSession = {
 
 type Candidate = { session: AgentSession; phase: AgentTaskStatus["phase"]; updatedAt: number };
 
+/** How the island names a session of the Agent page's list; the title is empty when it has none. */
+export function sessionName(summary: AgentSessionSummary): AgentSession {
+  return {
+    provider: summary.provider,
+    label: AGENT_PROVIDER_LABELS[summary.provider],
+    title: (summary.title ?? sessionProject(summary.cwd) ?? "").trim(),
+  };
+}
+
 /**
  * Claude Code and Codex come from the session files (the Agent page's list), so the island
  * names them with or without FocuSD's hooks; plugin and local API sources report their own
@@ -22,11 +31,7 @@ type Candidate = { session: AgentSession; phase: AgentTaskStatus["phase"]; updat
  */
 function candidates(sessions: AgentSessionSummary[], others: ExternalAgentStatus[] | undefined): Candidate[] {
   const fromSessions = sessions.map((summary) => ({
-    session: {
-      provider: summary.provider,
-      label: AGENT_PROVIDER_LABELS[summary.provider],
-      title: (summary.title ?? sessionProject(summary.cwd) ?? "").trim(),
-    },
+    session: sessionName(summary),
     phase: summary.phase,
     updatedAt: summary.updatedAt,
   }));

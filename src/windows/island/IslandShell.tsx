@@ -4,6 +4,7 @@ import type { LevelChange } from "../../features/system-levels/api";
 import type { DeviceAlert } from "../../features/device-events/api";
 import type { ReactNode } from "react";
 import type { AgentSession } from "../../features/agent-status/session";
+import type { CurrentLyric } from "../../features/media/lyrics/useCurrentLyric";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { AppearanceMode } from "../../features/appearance/types";
@@ -34,6 +35,8 @@ type IslandShellProps = {
   onOpenMessages: (source: MessageSource) => void;
   mode: IslandMode;
   page: IslandPage;
+  /** Only a popup's card, without the header, on a narrower island (useIslandPopup). */
+  popup?: boolean;
   appearanceMode: AppearanceMode;
   nativeGlassState: NativeGlassState;
   isTucked: boolean;
@@ -44,6 +47,8 @@ type IslandShellProps = {
   collapsedTodoCount: number | null;
   /** Running agent session shown in place of the todo, or null. */
   agentSession: AgentSession | null;
+  /** The line being sung, shown in the summary's place while no agent is named. */
+  lyricLine?: CurrentLyric | null;
   /** Agent sessions still working, shown in place of the tuck dot while the AI Agent switch is on. */
   activeAgentSessionCount: number;
   mediaState: MediaState;
@@ -76,6 +81,8 @@ type IslandShellProps = {
   onReveal: () => void;
   onPageChange: (page: IslandPage) => void;
   pageDigitModifiers: string;
+  hoverSwitchPage: boolean;
+  hoverSwitchDelayMs: number;
   /** Shown over the top row in both modes, e.g. a plugin permission question. */
   overlay?: ReactNode;
   /** Buttons for plugin pages in the expanded header. */
@@ -99,6 +106,7 @@ export function IslandShell({
   onOpenMessages,
   mode,
   page,
+  popup = false,
   appearanceMode,
   nativeGlassState,
   isTucked,
@@ -108,6 +116,7 @@ export function IslandShell({
   collapsedTaskTitle,
   collapsedTodoCount,
   agentSession,
+  lyricLine = null,
   activeAgentSessionCount,
   mediaState,
   agentVisualState,
@@ -133,6 +142,8 @@ export function IslandShell({
   onReveal,
   onPageChange,
   pageDigitModifiers,
+  hoverSwitchPage,
+  hoverSwitchDelayMs,
   overlay,
   pluginPageButtons,
   pageActions,
@@ -158,6 +169,7 @@ export function IslandShell({
     isPreparing && !isExpanded ? "island--preparing" : "",
     isDetached ? "island--detached" : "island--docked",
     isTucked ? "island--tucked" : "",
+    popup ? "island--popup" : "",
     isLiquidGlass ? `island--glass-${nativeGlassState}` : "",
     showTitle ? "" : "island--title-hidden",
   ]
@@ -166,6 +178,8 @@ export function IslandShell({
   const collapsedLabel = showCollapsedText
     ? agentSession
       ? t.island.agentSession(agentSession.label, agentSession.title)
+      : lyricLine?.text
+      ? t.island.lyricLine(lyricLine.text)
       : collapsedTaskTitle
       ? t.messages.collapsedTask(collapsedTaskTitle)
       : collapsedTodoCount !== null
@@ -179,7 +193,7 @@ export function IslandShell({
       aria-label={collapsedLabel}
       onClick={(event) => {
         if (!isExpanded && event.target === event.currentTarget) {
-          onOpenPage(agentSession ? "agents" : page);
+          onOpenPage(agentSession ? "agents" : lyricLine ? "music" : page);
         }
       }}
       onPointerMove={handleGlassPointerMove}
@@ -215,6 +229,7 @@ export function IslandShell({
           collapsedTaskTitle={collapsedTaskTitle}
           collapsedTodoCount={collapsedTodoCount}
           agentSession={agentSession}
+          lyricLine={lyricLine}
           agentSessionCount={features.agents ? activeAgentSessionCount : null}
           mediaState={mediaState}
           showMusic={features.music}
@@ -257,6 +272,8 @@ export function IslandShell({
             minimizesToTray={minimizesToTray}
             onMinimize={onMinimize}
             pageDigitModifiers={pageDigitModifiers}
+            hoverSwitchPage={hoverSwitchPage}
+            hoverSwitchDelayMs={hoverSwitchDelayMs}
             pluginPageButtons={pluginPageButtons}
             pageActions={pageActions}
           />

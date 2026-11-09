@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import { useTranslation } from "../../../i18n";
+import { MessageSourceIcon } from "../MessageSourceIcon";
 import { mailBadgeCount } from "../messagePreview";
 import type { MailSnapshot } from "./api";
 import { MAX_MAIL_ACCOUNTS } from "./mailAccounts";
@@ -23,6 +24,7 @@ export function MailAccountTabs({ mailboxes, selected, busy, onSelect, onAdd }: 
           return (
             <button key={email} type="button" role="tab" className="qq-mail-account" aria-selected={email === selected} onClick={() => onSelect(email)}>
               <span className="message-status" data-state={mailbox.status} aria-label={t.mail.status[mailbox.status]} />
+              <MessageSourceIcon source="qqMail" size={14} account={email} />
               <span className="qq-mail-account__email">{email}</span>
               {unread > 0 && <span className="message-source-count">{mailBadgeCount(unread)}</span>}
             </button>

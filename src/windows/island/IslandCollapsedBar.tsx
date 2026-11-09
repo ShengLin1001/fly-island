@@ -1,11 +1,12 @@
 import { Fragment, type ReactNode } from "react";
-import { Bot } from "lucide-react";
+import { Bot, Music2 } from "lucide-react";
 import { AgentProviderIcon } from "../../features/agent-status/AgentProviderIcon";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import { QuotaAlertPopup } from "../../features/agent-status/QuotaAlertPopup";
 import type { AgentSession } from "../../features/agent-status/session";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { MediaState } from "../../features/media/api";
+import type { CurrentLyric } from "../../features/media/lyrics/useCurrentLyric";
 import { CollapsedMessageContent } from "../../features/messages/CollapsedMessageContent";
 // After CollapsedMessageContent, matching the original stylesheet order: it brings the
 // message icon, music wave and device-use styles in that order.
@@ -49,6 +50,8 @@ type IslandCollapsedBarProps = {
   collapsedTaskTitle: string | null;
   collapsedTodoCount: number | null;
   agentSession: AgentSession | null;
+  /** The line being sung; shown while no agent is named. */
+  lyricLine: CurrentLyric | null;
   /**
    * Agent sessions still working, shown where the tuck dot was; null while the AI Agent switch
    * is off, which keeps the tuck dot.
@@ -122,6 +125,7 @@ export function IslandCollapsedBar({
   collapsedTaskTitle,
   collapsedTodoCount,
   agentSession,
+  lyricLine,
   agentSessionCount,
   mediaState,
   showMusic,
@@ -154,10 +158,11 @@ export function IslandCollapsedBar({
   // While the island names a running agent, opening it shows the Agent page.
   // While the island names a meeting or a running agent, opening it shows that page.
   const showMeeting = showCollapsedText && meeting !== null;
-  const openTarget: IslandPage = showMeeting ? "calendar" : agentSession ? "agents" : page;
+  const openTarget: IslandPage = showMeeting ? "calendar" : agentSession ? "agents" : lyricLine ? "music" : page;
+  const lyric = !agentSession && lyricLine?.text ? lyricLine : null;
   // The centre slot takes the summary's place while the bar has no summary.
   const showCenter = Boolean(slots.center) && !preview && !translationPeek
-    && !(showCollapsedText && (showTitle || agentSession !== null || collapsedTaskTitle !== null || collapsedTodoCount !== null));
+    && !(showCollapsedText && (showTitle || agentSession !== null || lyric !== null || collapsedTaskTitle !== null || collapsedTodoCount !== null));
   const pluginStatus = usePluginStatusItems(pluginViews, onOpenPluginPage);
   const { placements: saved } = useCollapsedPlacements();
   const items = collapsedBarItems({
@@ -256,13 +261,21 @@ export function IslandCollapsedBar({
               <span className="island__agent-session-title">{agentSession.title}</span>
             </span>
           )}
-          {showCollapsedText && !agentSession && collapsedTaskTitle && (
+          {showCollapsedText && lyric && (
+            // Keyed by the line, so each one fades in like a new task title.
+            <span className="island__agent-session island__lyric" key={`lyric:${lyric.index}`}>
+              {showTitle && <span className="island__agent-session-separator">·</span>}
+              <Music2 className="island__agent-session-bot" size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+              <span className="island__agent-session-title">{lyric.text}</span>
+            </span>
+          )}
+          {showCollapsedText && !agentSession && !lyric && collapsedTaskTitle && (
             <span className="island__active-task" key={collapsedTaskTitle}>
               {showTitle ? "· " : ""}
               {collapsedTaskTitle}
             </span>
           )}
-          {showCollapsedText && !agentSession && !collapsedTaskTitle && collapsedTodoCount !== null && (
+          {showCollapsedText && !agentSession && !lyric && !collapsedTaskTitle && collapsedTodoCount !== null && (
             <span className="island__todo-count">
               {showTitle ? "· " : ""}
               {t.island.pendingTodos(collapsedTodoCount)}

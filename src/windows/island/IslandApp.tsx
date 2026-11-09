@@ -39,10 +39,12 @@ import { usePluginPages } from "./usePluginPages";
 import { useMessageView } from "./useMessageView";
 import { useIslandBanner } from "./useIslandBanner";
 import { useIslandMessagePanel } from "./useIslandMessagePanel";
+import { useIslandPopup } from "./useIslandPopup";
 import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
 import { useTrayLanguage } from "./useTrayLanguage";
+import { useIslandLyrics } from "./useIslandLyrics";
 // Must stay the last import: IslandApp.css overrides the feature styles above.
 import "./IslandApp.css";
 
@@ -70,7 +72,7 @@ export function IslandApp() {
   // A banner holds the island like a preview line does, but leaves the bar's summary in place.
   const showsMessage = hasMessagePreview || banner.showing;
   const media = useMediaState(settings.musicEnabled);
-  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession, agentActivity, agentUsages } =
+  const { agentStatus, agentSessions, listedAgentSessions, activeAgentSessionCount, unseenAgentSessions, agentRemoval, agentSession: namedAgent, agentInterjection, agentActivity, agentUsages } =
     useIslandAgents(settings);
   const quotaAlert = useQuotaAlert(agentUsages, settings.agentStatusEnabled ? settings.agentQuotaAlertPercent : 0, {
     quiet: game.quiet,
@@ -89,6 +91,14 @@ export function IslandApp() {
   const { todos, activeTodoId, todoPageMode, notebookProps } = useIslandTodos({ settings, mode, page, agentStatus, collapseIsland });
 
   const translationPeek = useQuickTranslation(settings.translationEnabled);
+  const { lyrics, lyricLine: currentLyric } = useIslandLyrics(settings, media.mediaState, {
+    page,
+    barShown: mode === "collapsed" && !isTucked && settings.showCollapsedText,
+  });
+  // While a line is sung, lyrics first: an agent only for a moment when its session changes, or
+  // while it waits on the user. Agents first: the lyric line only while no agent is named.
+  const agentSession = currentLyric && settings.lyricsIslandPriority === "lyrics" ? agentInterjection : namedAgent;
+  const lyricLine = agentSession ? null : currentLyric;
   const { collapsedTaskTitle, collapsedTodoCount, collapsedIslandWidth } =
     useCollapsedTodo(
       settings.todoEnabled ? todos : NO_TODOS,
@@ -98,6 +108,7 @@ export function IslandApp() {
       agentSession?.title ?? null,
       collapsedSlots,
       banner.hasLinePreview || translationPeek !== null,
+      lyricLine?.longest ?? null,
     );
   useIslandTucking({
     settings,
@@ -127,7 +138,7 @@ export function IslandApp() {
     openIslandPage,
     pluginPages: pluginPages.pageIds,
   });
-  const { alertedSession, approvals: agentApprovals, agentCardHeight } = useIslandAgentAlerts({
+  const { alertedSession, approvals: agentApprovals, agentCardHeight, alertPopup } = useIslandAgentAlerts({
     sessions: agentSessions,
     unseen: unseenAgentSessions.keys,
     settings,
@@ -142,6 +153,7 @@ export function IslandApp() {
     durationMs: settings.messagePanelSeconds * 1000,
     notices, mode, page, openIslandPage, collapseIsland, onOpenMessages: openMessages,
   });
+  const { popup, expandedIslandWidth } = useIslandPopup(mode, messagePanel.arrivals !== null || alertPopup);
   const expandedIslandHeight = getExpandedIslandHeight({
     page,
     todoPageMode,
@@ -156,13 +168,14 @@ export function IslandApp() {
     agentUsageLines: settings.agentShowUsage ? usageLineCount(agentUsages) : 0,
     agentAlertRowHeight: agentCardHeight,
     messageArrivalsHeight: messagePanel.arrivals ? messagePanel.height : undefined,
+    popup,
     pluginTemplate: pluginPages.entry?.template,
     pluginListRows: pluginPages.rows,
     pluginWebviewHeight: pluginPages.entry?.height,
   });
   const stageStyle = useMemo(
-    () => getIslandStageStyle(settings, mode, collapsedIslandWidth, expandedIslandHeight),
-    [collapsedIslandWidth, expandedIslandHeight, mode, settings],
+    () => getIslandStageStyle(settings, mode, collapsedIslandWidth, expandedIslandHeight, expandedIslandWidth),
+    [collapsedIslandWidth, expandedIslandHeight, expandedIslandWidth, mode, settings],
   );
 
   const { fileShelf, isShelfDropping } = useIslandShelf(settings, navigation);
@@ -179,6 +192,7 @@ export function IslandApp() {
     settings,
     setSettings,
     expandedIslandHeight,
+    expandedIslandWidth,
     collapsedIslandWidth,
     onCollapse: collapseIsland,
   });
@@ -188,7 +202,7 @@ export function IslandApp() {
     navigation,
     quiet: game.quiet,
     hasMessagePreview: showsMessage,
-    namesAgent: Boolean(agentSession),
+    leadPage: agentSession ? "agents" : lyricLine ? "music" : null,
     openEnabledPage,
   });
 
@@ -228,6 +242,7 @@ export function IslandApp() {
         onOpenMessages={openMessages}
         mode={mode}
         page={page}
+        popup={popup}
         appearanceMode={settings.appearanceMode}
         nativeGlassState={nativeGlassState}
         isTucked={isTucked}
@@ -237,6 +252,7 @@ export function IslandApp() {
         collapsedTaskTitle={collapsedTaskTitle}
         collapsedTodoCount={collapsedTodoCount}
         agentSession={agentSession}
+        lyricLine={lyricLine}
         activeAgentSessionCount={activeAgentSessionCount}
         mediaState={media.mediaState}
         agentVisualState={agentVisualState}
@@ -262,6 +278,8 @@ export function IslandApp() {
         onReveal={hoverTucked}
         onPageChange={setPage}
         pageDigitModifiers={settings.pageDigitModifiers}
+        hoverSwitchPage={settings.hoverSwitchPage}
+        hoverSwitchDelayMs={settings.hoverSwitchDelayMs}
         overlay={<PluginPermissionPrompt prompts={permissionPrompts} />}
         pluginViews={pluginPages.views}
         onOpenPluginPage={openEnabledPage}
@@ -269,7 +287,7 @@ export function IslandApp() {
         pageActions={page === "agents" && (
           <AgentArrangeButton sort={settings.agentSessionSort} group={settings.agentSessionGroup} onChange={(patch) => setSettings({ ...settings, ...patch })} />
         )}
-        pluginPageButtons={<PluginPageButtons views={pluginPages.views} page={page} features={features} modifiers={settings.pageDigitModifiers} onOpen={setPage} />}
+        pluginPageButtons={<PluginPageButtons views={pluginPages.views} page={page} features={features} modifiers={settings.pageDigitModifiers} hoverSwitchPage={settings.hoverSwitchPage} hoverSwitchDelayMs={settings.hoverSwitchDelayMs} onOpen={setPage} />}
       >
         <IslandPages
           page={page}
@@ -283,6 +301,7 @@ export function IslandApp() {
           messagePanel={messagePanel}
           openMessages={openMessages}
           media={media}
+          lyrics={lyrics}
           clipboard={clipboard}
           agentSessions={listedAgentSessions}
           unseenAgentSessions={unseenAgentSessions}

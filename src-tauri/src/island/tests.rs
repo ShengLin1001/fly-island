@@ -42,7 +42,7 @@ fn notch_has_flat_top_and_rounded_bottom_at_all_scales() {
     for scale in [0.75, DEFAULT_COLLAPSED_SCALE, 1.0, 1.4, 2.1] {
         for mode in [IslandMode::Collapsed, IslandMode::Expanded] {
             let (width, height) =
-                mode.base_size(COLLAPSED_ISLAND_WIDTH, DEFAULT_EXPANDED_ISLAND_HEIGHT);
+                mode.base_size(COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH, DEFAULT_EXPANDED_ISLAND_HEIGHT);
             let width = width * scale;
             let height = height * scale;
             let radius = mode.corner_radius() * scale;
@@ -73,7 +73,7 @@ fn compact_messages_and_mail_reader_keep_the_correct_cursor_boundary() {
     for height in [MIN_EXPANDED_ISLAND_HEIGHT, 244.0, 438.0, 450.0] {
         for scale in [0.75, 1.0, 1.4] {
             let (width, panel_height) =
-                IslandMode::Expanded.base_size(COLLAPSED_ISLAND_WIDTH, height);
+                IslandMode::Expanded.base_size(COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH, height);
             let contains = |y| {
                 point_in_notch(
                     width * scale / 2.0,
@@ -91,7 +91,7 @@ fn compact_messages_and_mail_reader_keep_the_correct_cursor_boundary() {
             assert!(!contains(panel_height * scale + 1.0));
             assert_eq!(
                 IslandMode::Collapsed
-                    .base_size(COLLAPSED_ISLAND_WIDTH, height)
+                    .base_size(COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH, height)
                     .1,
                 COLLAPSED_ISLAND_HEIGHT
             );
@@ -112,7 +112,7 @@ fn detached_island_rounds_top_corners() {
         detached.top_attached = false;
         assert!(detached.top_corner_radius() > 0.0);
         let (width, height) =
-            mode.base_size(COLLAPSED_ISLAND_WIDTH, DEFAULT_EXPANDED_ISLAND_HEIGHT);
+            mode.base_size(COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH, DEFAULT_EXPANDED_ISLAND_HEIGHT);
         let contains = |x, y| {
             point_in_notch(
                 x,
@@ -297,4 +297,19 @@ fn banner_rect_takes_its_own_area_only() {
     set_island_banner_rect(Some(rect));
     set_island_banner_rect(None);
     assert_eq!(banner_rect(), None);
+}
+
+#[test]
+fn popup_width_narrows_the_expanded_hit_area() {
+    let (full, _) = IslandMode::Expanded.base_size(COLLAPSED_ISLAND_WIDTH, EXPANDED_ISLAND_WIDTH, 120.0);
+    let (popup, height) = IslandMode::Expanded.base_size(COLLAPSED_ISLAND_WIDTH, 400.0, 120.0);
+    assert_eq!((full, popup, height), (EXPANDED_ISLAND_WIDTH, 400.0, 120.0));
+    // Centred in the stage: just past the popup's edge is outside it but inside the full panel.
+    let left = (STAGE_WINDOW_WIDTH - popup) / 2.0;
+    let contains = |x: f64, width: f64| {
+        point_in_notch(x, 40.0, (STAGE_WINDOW_WIDTH - width) / 2.0, 0.0, width, height, EXPANDED_RADIUS, 0.0, CornerShape::Round)
+    };
+    assert!(contains(left + 1.0, popup));
+    assert!(!contains(left - 1.0, popup));
+    assert!(contains(left - 1.0, full));
 }

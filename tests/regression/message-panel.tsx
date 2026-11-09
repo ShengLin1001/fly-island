@@ -9,6 +9,7 @@ import "../../src/windows/island/IslandApp";
 import { IslandShell } from "../../src/windows/island/IslandShell";
 import { useLatestMessagePreview } from "../../src/windows/island/useLatestMessagePreview";
 import { useIslandMessagePanel } from "../../src/windows/island/useIslandMessagePanel";
+import { useIslandPopup } from "../../src/windows/island/useIslandPopup";
 import { getExpandedIslandHeight } from "../../src/windows/island/expandedHeight";
 import type { IslandMode, IslandPage } from "../../src/windows/island/types";
 import { MessageArrivalsPanel } from "../../src/features/messages/arrivals/MessageArrivalsPanel";
@@ -85,14 +86,16 @@ function Fixture() {
     mode, page, openIslandPage, collapseIsland,
     onOpenMessages: (source) => { openedSource = source; openIslandPage("qq"); },
   });
+  const { popup, expandedIslandWidth } = useIslandPopup(mode, panel.arrivals !== null);
   const height = getExpandedIslandHeight({
     page, todoPageMode: "today", todos: [], hasMediaCommandError: false, messageSource: "qq", isReadingMail: false,
     maxPanelHeight: 490, clipboardVisibleRows: 3, agentVisibleRows: 3, agentUsageLines: 0,
     messageArrivalsHeight: panel.arrivals ? panel.height : undefined,
+    popup,
   });
-  return <div className="stage" style={{ "--collapsed-island-width": "300px", "--expanded-island-height": `${height}px` } as CSSProperties}>
+  return <div className="stage" style={{ "--collapsed-island-width": "300px", "--expanded-island-height": `${height}px`, "--expanded-island-width": `${expandedIslandWidth}px` } as CSSProperties}>
     <IslandShell deviceUse={{ camera: [], microphone: [] }} qqNotifications={qq} wechatReminders={wechat} qqMail={qqMail} pluginNotifications={plugins} preview={null}
-      mode={mode} page={page} isTucked={false} isDetached={true} showTitle={false}
+      mode={mode} page={page} popup={popup} isTucked={false} isDetached={true} showTitle={false}
       showCollapsedText={true} collapsedTaskTitle="剩余3个待办" collapsedTodoCount={null} agentSession={null} activeAgentSessionCount={0}
       appearanceMode="classic" nativeGlassState="disabled" agentVisualState="idle" agentStatusLabel="AI Agent 空闲或已完成"
       mediaState={UNAVAILABLE_MEDIA}
@@ -100,11 +103,11 @@ function Fixture() {
       shelfCount={null}
       onOpenPage={openIslandPage} onOpenMessages={(source) => { openedSource = source; openIslandPage("qq"); }}
       onPageChange={setPage} onWindowDragStart={() => {}} onCollapse={collapseIsland}
-      onResetPosition={() => {}} minimizesToTray onMinimize={() => {}} onOpenSettings={() => {}} onOpenTranslator={() => {}} translationPeek={null} onOpenTranslationPeek={() => {}} onTuck={() => {}} onReveal={() => {}} pageDigitModifiers="Alt">
+      onResetPosition={() => {}} minimizesToTray onMinimize={() => {}} onOpenSettings={() => {}} onOpenTranslator={() => {}} translationPeek={null} onOpenTranslationPeek={() => {}} onTuck={() => {}} onReveal={() => {}} pageDigitModifiers="Alt" hoverSwitchPage={false} hoverSwitchDelayMs={0}>
       {page === "qq" && (
         <div className="message-panel">
           {panel.arrivals
-            ? <MessageArrivalsPanel arrivals={panel.arrivals} onOpen={panel.open} onAction={panel.runAction} onMeasure={panel.measure} />
+            ? <MessageArrivalsPanel arrivals={panel.arrivals} onOpen={panel.open} onAction={panel.runAction} onMeasure={panel.measure} onShowAll={panel.showAll} />
             : <span className="message-panel-full">完整消息页</span>}
         </div>
       )}
@@ -159,6 +162,10 @@ async function runChecks() {
     await notify("qq");
     await waitFor(() => state.mode === "expanded" && rows().length === 1, "展开到消息页");
     check(state.page === "qq" && senders()[0] === "小林", "QQ 新消息让收起的岛展开到消息页，只列这一条");
+    const islandBox = () => document.querySelector(".island")!.getBoundingClientRect();
+    const headerShown = () => getComputedStyle(document.querySelector(".island__header")!).display !== "none";
+    await waitFor(() => Math.round(islandBox().width) === 400, "岛收窄到卡片宽度", 1500);
+    check(!headerShown() && document.querySelector(".island--popup"), "弹出时不显示顶部栏，岛宽 400");
     check(rows()[0].querySelector(".message-arrivals__body")?.textContent?.includes("设计方案") && /^\d\d:\d\d$/.test(rows()[0].querySelector(".message-arrivals__time")?.textContent ?? ""), "行里写摘要和到达时间");
 
     await notify("qqMail", "项目组");
@@ -204,8 +211,14 @@ async function runChecks() {
 
     await notify("qq", "老王");
     await waitFor(() => rows().length === 1, "第三次弹出");
-    await act(async () => { document.querySelector(".island__header, .island__expanded")!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })); });
-    check(rows().length === 0 && document.querySelector(".message-panel-full"), "在面板别处按下回到完整消息页");
+    await act(async () => {
+      const all = document.querySelector<HTMLButtonElement>(".message-arrivals__all")!;
+      all.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      all.click();
+    });
+    check(rows().length === 0 && document.querySelector(".message-panel-full"), "点「全部消息」回到完整消息页");
+    await waitFor(() => Math.round(islandBox().width) === 560, "岛回到完整宽度", 1500);
+    check(headerShown() && !document.querySelector(".island--popup"), "完整消息页显示顶部栏，岛宽 560");
     await wait(DURATION_MS + 200);
     check(state.mode === "expanded", "按过之后不再自动收起");
     await notify("qq", "小张");

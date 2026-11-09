@@ -10,6 +10,8 @@ export type MessagePreview = {
   title: string;
   body: string;
   receivedAt: number;
+  /** The mailbox a mail preview came from, which picks the mail icon. */
+  account?: string | null;
 };
 
 export const MESSAGE_SOURCE_LABELS: Record<MessageSource, string> = zhCN.messages.sourceLabels;

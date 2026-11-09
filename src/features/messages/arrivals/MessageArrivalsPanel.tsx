@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "../../../i18n";
 import { MessageSourceIcon } from "../MessageSourceIcon";
@@ -9,18 +10,21 @@ import "./MessageArrivalsPanel.css";
 /**
  * The Messages page while it opened by itself for new messages (roadmap C11): only what arrived
  * since, newest first. A row does what clicking the one-line preview does; plugin rows carry
- * their buttons. Reports its height so the island fits it.
+ * their buttons. Reports its height so the island fits it. Shown as a popup without the island's
+ * header (C11b), so its title row carries the way to the whole Messages page.
  */
 export function MessageArrivalsPanel({
   arrivals,
   onOpen,
   onAction,
   onMeasure,
+  onShowAll,
 }: {
   arrivals: readonly ArrivalMessage[];
   onOpen: (message: ArrivalMessage) => void;
   onAction: (message: ArrivalMessage, action: string) => void;
   onMeasure: (height: number) => void;
+  onShowAll: () => void;
 }) {
   const t = useTranslation().messages;
   const ref = useRef<HTMLElement | null>(null);
@@ -37,7 +41,13 @@ export function MessageArrivalsPanel({
 
   return (
     <section className="message-arrivals" ref={ref} aria-label={t.arrivals.title}>
-      <h2 className="message-arrivals__title">{t.arrivals.title}</h2>
+      <div className="message-arrivals__top">
+        <h2 className="message-arrivals__title">{t.arrivals.title}</h2>
+        <button className="message-arrivals__all" type="button" onClick={onShowAll}>
+          {t.arrivals.showAll}
+          <ChevronRight size={14} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+        </button>
+      </div>
       <ul className="message-arrivals__list">
         {arrivals.map((message) => {
           const title = message.source === "wechat" ? t.wechat : message.title.trim() || (message.source === "qq" ? "QQ" : t.sourceLabels[message.source]);
@@ -52,7 +62,7 @@ export function MessageArrivalsPanel({
                 aria-label={t.openPreview(messagePreviewText(message, t), t.sourceLabels[message.source])}
                 onClick={() => onOpen(message)}
               >
-                <MessageSourceIcon source={message.source} size={20} />
+                <MessageSourceIcon source={message.source} size={20} account={message.account} />
                 <span className="message-arrivals__text">
                   <span className="message-arrivals__head">
                     <strong className="message-arrivals__sender">{title}</strong>

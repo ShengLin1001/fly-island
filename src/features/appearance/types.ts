@@ -1,4 +1,5 @@
 import type { CalendarSettingValues } from "../calendar/calendarSettings";
+import type { LyricsIslandPriority } from "../media/lyrics/lyricsSettings";
 export type TranslationTarget = "window" | "island";
 
 export type AppearanceMode = "classic" | "liquidGlass";
@@ -119,6 +120,10 @@ export type IslandSettings = CalendarSettingValues & {
   hoverExpandDelayMs: number;
   /** Time (ms) a hover-opened panel stays open after the pointer leaves it. */
   hoverCollapseDelayMs: number;
+  /** Resting the pointer on a page button of the expanded island opens that page. */
+  hoverSwitchPage: boolean;
+  /** Pointer rest time (ms) on a page button before its page opens. */
+  hoverSwitchDelayMs: number;
   minimizeAction: MinimizeAction;
   tuckedHoverAction: TuckedHoverAction;
   /** Modifiers held with 1–9 to open that page, left to right. The digits themselves stay fixed. */
@@ -165,6 +170,10 @@ export type IslandSettings = CalendarSettingValues & {
   lyricsChinese: boolean;
   /** Lyrics shown this many ms later (positive) or earlier than the position Windows reports. */
   lyricsOffsetMs: number;
+  /** The collapsed island shows the line being sung, while playing and lyrics were found. */
+  lyricsOnIsland: boolean;
+  /** Lyrics first (agents shown when their session changes or waits on the user), or agents first. */
+  lyricsIslandPriority: LyricsIslandPriority;
   mailEnabled: boolean;
   /** Show the running agent's icon and session title on the collapsed island. */
   agentTitleEnabled: boolean;

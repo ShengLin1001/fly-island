@@ -52,6 +52,8 @@ export type IslandInteraction = {
   expandedScale: number;
   marginY: number;
   expandedHeight: number;
+  /** The full panel's 560, or less while a popup shows only its card. */
+  expandedWidth: number;
   collapsedWidth: number;
   customPosition: IslandPosition | null;
   isTucked: boolean;

@@ -9,12 +9,15 @@ import {
   DEFAULT_AUTO_TUCK_RETRACT_DELAY_MS,
   DEFAULT_HOVER_COLLAPSE_DELAY_MS,
   DEFAULT_HOVER_EXPAND_DELAY_MS,
+  DEFAULT_HOVER_SWITCH_DELAY_MS,
   MAX_AUTO_TUCK_RETRACT_DELAY_MS,
   MAX_HOVER_COLLAPSE_DELAY_MS,
   MAX_HOVER_EXPAND_DELAY_MS,
+  MAX_HOVER_SWITCH_DELAY_MS,
   MIN_AUTO_TUCK_RETRACT_DELAY_MS,
   MIN_HOVER_COLLAPSE_DELAY_MS,
   MIN_HOVER_EXPAND_DELAY_MS,
+  MIN_HOVER_SWITCH_DELAY_MS,
 } from "./settings";
 import type { ExpandTrigger, IslandSettings, TuckedHoverAction } from "./types";
 
@@ -92,6 +95,26 @@ export function ExpandSettingsSection({
               onChange={(hoverCollapseDelayMs) => update({ hoverCollapseDelayMs })}
             />
           </>
+        )}
+        <SettingsToggleRow
+          title={expand.hoverSwitchPage}
+          description={expand.hoverSwitchPageHint}
+          checked={settings.hoverSwitchPage}
+          onChange={(hoverSwitchPage) => update({ hoverSwitchPage })}
+        />
+        {settings.hoverSwitchPage && (
+          <SettingsSliderRow
+            indent
+            title={expand.hoverSwitchDelay}
+            value={settings.hoverSwitchDelayMs}
+            min={MIN_HOVER_SWITCH_DELAY_MS}
+            max={MAX_HOVER_SWITCH_DELAY_MS}
+            step={50}
+            format={seconds}
+            defaultValue={DEFAULT_HOVER_SWITCH_DELAY_MS}
+            resetLabel={layout.resetToDefault}
+            onChange={(hoverSwitchDelayMs) => update({ hoverSwitchDelayMs })}
+          />
         )}
       </SettingsGroup>
 

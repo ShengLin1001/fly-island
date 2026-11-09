@@ -5,8 +5,8 @@ import { normalizeCalendarSettings } from "../calendar/calendarSettings.ts";
 import { DEFAULT_PAGE_NEXT_SHORTCUT, DEFAULT_PAGE_PREVIOUS_SHORTCUT, normalizePageCycleShortcut, normalizePageDigitModifiers } from "./pageShortcuts.ts";
 import { DEFAULT_SETTINGS, LEGACY_FALLBACKS } from "./settingsDefaults.ts";
 import {
-  MAX_AUTO_TUCK_RETRACT_DELAY_MS, MAX_HOVER_COLLAPSE_DELAY_MS, MAX_HOVER_EXPAND_DELAY_MS, MAX_SHELF_ITEMS,
-  MIN_AUTO_TUCK_RETRACT_DELAY_MS, MIN_HOVER_COLLAPSE_DELAY_MS, MIN_HOVER_EXPAND_DELAY_MS, MIN_SHELF_ITEMS,
+  MAX_AUTO_TUCK_RETRACT_DELAY_MS, MAX_HOVER_COLLAPSE_DELAY_MS, MAX_HOVER_EXPAND_DELAY_MS, MAX_HOVER_SWITCH_DELAY_MS, MAX_SHELF_ITEMS,
+  MIN_AUTO_TUCK_RETRACT_DELAY_MS, MIN_HOVER_COLLAPSE_DELAY_MS, MIN_HOVER_EXPAND_DELAY_MS, MIN_HOVER_SWITCH_DELAY_MS, MIN_SHELF_ITEMS,
   MESSAGE_NOTICES, MESSAGE_PANEL_SECONDS, SHELF_CLEANUP_DAYS, oneOf,
 } from "./settingsLimits.ts";
 import type { IslandSettings, LegacyIslandSettings } from "./types";
@@ -48,6 +48,10 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     hoverCollapseDelayMs: typeof settings?.hoverCollapseDelayMs === "number" && Number.isFinite(settings.hoverCollapseDelayMs)
       ? clamp(Math.round(settings.hoverCollapseDelayMs), MIN_HOVER_COLLAPSE_DELAY_MS, MAX_HOVER_COLLAPSE_DELAY_MS)
       : LEGACY_FALLBACKS.hoverCollapseDelayMs,
+    hoverSwitchPage: settings?.hoverSwitchPage === true,
+    hoverSwitchDelayMs: typeof settings?.hoverSwitchDelayMs === "number" && Number.isFinite(settings.hoverSwitchDelayMs)
+      ? clamp(Math.round(settings.hoverSwitchDelayMs), MIN_HOVER_SWITCH_DELAY_MS, MAX_HOVER_SWITCH_DELAY_MS)
+      : DEFAULT_SETTINGS.hoverSwitchDelayMs,
     minimizeAction: settings?.minimizeAction === "tuck" ? "tuck" : "tray",
     tuckedHoverAction: settings?.tuckedHoverAction === "expand" ? "expand" : "reveal",
     pageDigitModifiers: normalizePageDigitModifiers(settings?.pageDigitModifiers),
