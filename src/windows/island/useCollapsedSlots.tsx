@@ -49,7 +49,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const usage = useBuiltinPlugin(CLAUDE_USAGE_PLUGIN_ID);
   const sessionRing = useBuiltinPlugin(SESSION_RING_PLUGIN_ID);
   const showRemaining = usage.settings.show === "remaining";
-  const ringStyle = SESSION_RING_STYLES.find((known) => known === sessionRing.settings.style) ?? ("grid" satisfies SessionRingStyle);
+  const ringStyle = SESSION_RING_STYLES.find((known) => known === sessionRing.settings.style) ?? ("ring" satisfies SessionRingStyle);
   const ringCount = sessionRing.settings.showCount !== false;
   const mood = usePetMood(agents, center.enabled);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);

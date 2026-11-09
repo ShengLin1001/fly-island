@@ -59,7 +59,7 @@ const QUIET: AgentSessionSummary[] = [];
 const CROWD = [...BUSY, ...["g7", "h8", "i9", "j10", "k11", "l12"].map((id, index) => session(id, index % 3 ? "running" : "stale", id))];
 // What the mocked host answers; each scenario sets these, then mounts a fresh island.
 let pluginOn = true;
-let pluginSettings: Record<string, unknown> = {};
+let pluginSettings: Record<string, unknown> = { style: "grid" };
 let sessions: AgentSessionSummary[] = BUSY;
 mockIPC((command) => {
   if (command === "get_qq_mail_state") return [{
@@ -137,7 +137,7 @@ async function runChecks() {
       "AI Agent 开启时会话格替换蓝色数字，排在最右，不加宽收起条");
     const cells = [...ring!.querySelectorAll<HTMLElement>(".session-grid--3 .session-grid__cell")];
     check(cells.length === 9 && cells.map((cell) => cell.dataset.state ?? "").join(",") === "needs,yourturn,working,working,done,done,,,",
-      "默认像素格：Agent 页列出的 6 个会话用 3×3 格，按等你确认、等你回复、运行、完成的顺序点亮（一小时前完成的照样算）");
+      "像素格：Agent 页列出的 6 个会话用 3×3 格，按等你确认、等你回复、运行、完成的顺序点亮（一小时前完成的照样算）");
     const box = ring!.querySelector(".session-grid")!.getBoundingClientRect();
     check(box.width === 22 && box.height === 22 && getComputedStyle(cells[0]).backgroundColor === "rgb(255, 69, 58)",
       "3×3 格 22px 见方，格子用状态色");
@@ -147,11 +147,11 @@ async function runChecks() {
     await act(async () => ring!.click());
     check(openedPage === "agents", "点击会话环打开 Agent 页");
 
-    pluginSettings = { style: "ring" };
-    [bar] = await mount("样式选分段环：中心写总数", true);
+    pluginSettings = {};
+    [bar] = await mount("没选样式：默认分段环，中心写总数", true);
     ring = bar.querySelector<HTMLButtonElement>("button.session-ring");
     check(ring!.querySelector(".mini-ring__label")?.textContent === "6" && ring!.querySelectorAll(".mini-ring__arc").length === 4,
-      "分段环：中心写总数，四种状态各一段");
+      "没选样式时是分段环：中心写总数，四种状态各一段");
     check(getComputedStyle(ring!.querySelector(".mini-ring__label")!).fontSize === "12px", "分段环中心数字 12px");
     pluginSettings = { style: "bar" };
     [bar] = await mount("样式选状态条：总数加分段条", true);
@@ -193,7 +193,7 @@ async function runChecks() {
       && bar.querySelectorAll(".session-signal__column[data-column='done'] .session-signal__bar").length === 7,
     "一根柱子超过 5 格时每根柱子都加到最多 7 格、横条变 2px，可能已停的画在上面");
 
-    pluginSettings = {};
+    pluginSettings = { style: "grid" };
     [bar] = await mount("12 个会话：最后一格是加号", true);
     const crowd = [...bar.querySelectorAll<HTMLElement>(".session-grid__cell")];
     check(crowd.length === 9 && crowd[8].dataset.state === "more" && crowd[0].dataset.state === "needs", "超过 9 个会话：亮最急的 8 个，最后一格是加号");
