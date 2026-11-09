@@ -1,7 +1,7 @@
-//! WeChat reminders: watches WeChat's tray flash and restores its window on request. When WeChat
-//! exposes its UI (Qt accessibility switched on, e.g. by a screen reader or a plugin), a flash also
-//! reads the chat list to tell who wrote and what. The "expose WeChat's UI" setting switches that
-//! on in the running WeChat (gate.rs).
+//! WeChat reminders: watches WeChat's tray flash and restores its window on request. With the
+//! "show the contact and message" setting on, a flash also reads the chat list to tell who wrote
+//! and what; the setting exposes WeChat's UI (Qt accessibility) in the running WeChat (gate.rs),
+//! unless a screen reader has already. Off, the list is not read even when the UI is exposed.
 
 mod button;
 mod chats;
@@ -398,10 +398,13 @@ struct ChatReader {
     /// not news at the next flash.
     rebase: Option<Instant>,
     in_wechat: bool,
+    /// The "show the contact and message" setting. Off, the list is never read, even while a
+    /// screen reader has WeChat's UI exposed: who wrote and what shows only when the user asked.
+    allowed: bool,
 }
 
 impl ChatReader {
-    fn new(executable: PathBuf) -> Self {
+    fn new(executable: PathBuf, allowed: bool) -> Self {
         let mut reader = Self {
             executable,
             seen: None,
@@ -409,13 +412,25 @@ impl ChatReader {
             reads: 0,
             rebase: None,
             in_wechat: false,
+            allowed,
         };
         reader.seen = reader.read();
         reader
     }
 
     fn read(&self) -> Option<Vec<chats::Session>> {
+        if !self.allowed {
+            return None;
+        }
         chats::read(main_window(&self.executable)?)
+    }
+
+    /// Follows the setting; turned on, the list as it is becomes the baseline.
+    fn set_allowed(&mut self, allowed: bool) {
+        if self.allowed != allowed {
+            self.allowed = allowed;
+            self.seen = self.read();
+        }
     }
 
     fn flashed(&mut self) {
@@ -525,7 +540,8 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
         match listener {
             Ok((listener, executable)) => {
                 connection(&service, generation, None);
-                let mut reader = ChatReader::new(executable);
+                let allowed = || service.state.lock().is_ok_and(|state| state.snapshot.expose_ui);
+                let mut reader = ChatReader::new(executable, allowed());
                 loop {
                     if !service
                         .state
@@ -542,6 +558,7 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
                         reader.seen = reader.read();
                     }
                     keep_button(&service, &reader.executable);
+                    reader.set_allowed(allowed());
                     listener.poll();
                     let _ = listener.stats();
                     for event in events.take() {

@@ -22,8 +22,9 @@ const EXECUTE: u32 = 0x2000_0000;
 const WRITE: u32 = 0x8000_0000;
 /// Gate checks this far from code that names the accessibility logging category rank first.
 const NEAR: u32 = 0x20000;
-/// Unverified addresses tried before giving up: each try writes one byte into WeChat.
-const MAX_TRIES: usize = 3;
+/// Unverified addresses tried before giving up: only the best-ranked one. Each try writes a byte
+/// into WeChat, and a pattern that matched some other flag could upset WeChat while it is set.
+const MAX_TRIES: usize = 1;
 /// A restarted WeChat starts with the byte back at 0; look for one this often.
 const CHECK: Duration = Duration::from_secs(5);
 

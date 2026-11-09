@@ -78,8 +78,10 @@ impl Drop for ProcessMemory {
 /// Where module `name` (e.g. "Weixin.dll") is loaded in process `process_id`: its base address
 /// and its path on disk.
 pub(crate) fn module(process_id: u32, name: &str) -> Option<(usize, PathBuf)> {
-    // SAFETY: CreateToolhelp32Snapshot takes plain values and returns an owned handle, closed below.
-    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, process_id) }.ok()?;
+    // SAFETY: CreateToolhelp32Snapshot takes plain values and returns an owned handle, closed by
+    // the guard on every way out.
+    let guard = Snapshot(unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, process_id) }.ok()?);
+    let snapshot = guard.0;
     let mut entry = MODULEENTRY32W {
         dwSize: size_of::<MODULEENTRY32W>() as u32,
         ..Default::default()
@@ -102,7 +104,15 @@ pub(crate) fn module(process_id: u32, name: &str) -> Option<(usize, PathBuf)> {
         // SAFETY: as for Module32FirstW.
         more = unsafe { Module32NextW(snapshot, &mut entry) }.is_ok();
     }
-    // SAFETY: the snapshot handle is owned here and closed exactly once.
-    let _ = unsafe { CloseHandle(snapshot) };
     found
+}
+
+/// A ToolHelp snapshot handle, closed on drop.
+struct Snapshot(HANDLE);
+
+impl Drop for Snapshot {
+    fn drop(&mut self) {
+        // SAFETY: the handle came from CreateToolhelp32Snapshot and is closed exactly once.
+        let _ = unsafe { CloseHandle(self.0) };
+    }
 }
