@@ -11,6 +11,10 @@ export type ReminderSnapshot = {
   error: string | null;
   /** The newest message read from WeChat's chat list; null while WeChat keeps its UI hidden. */
   message: ChatMessage | null;
+  /** Setting: switch WeChat's accessibility on so its chat list can be read. */
+  exposeUi: boolean;
+  /** How that is going; null while off. */
+  exposeStatus: string | null;
 };
 
 /** One chat with a new message (contact and the last message as WeChat's chat list shows them). */
@@ -31,6 +35,10 @@ export const WECHAT_REMINDER_CHANGED_EVENT = "wechat-reminder-changed";
 
 export function setWeChatRemindersEnabled(enabled: boolean) {
   return invoke<ReminderSnapshot>("set_wechat_reminders_enabled", { enabled });
+}
+
+export function setWeChatExposeUi(enabled: boolean) {
+  return invoke<ReminderSnapshot>("set_wechat_expose_ui", { enabled });
 }
 
 /** Brings WeChat up; with `chat` it also opens that chat when WeChat's list shows it. */

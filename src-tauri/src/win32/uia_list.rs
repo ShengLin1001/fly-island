@@ -49,10 +49,37 @@ pub(crate) fn list_rows(window: HWND, prefix: &str) -> Option<Vec<ListRow>> {
     read(window, prefix).ok().flatten()
 }
 
-fn read(window: HWND, prefix: &str) -> windows::core::Result<Option<Vec<ListRow>>> {
-    // SAFETY: COM is initialized on this thread (above) for the whole call; every interface here
-    // is an owned, reference-counted value used only within it, and the HWND is passed by value
-    // (UI Automation fails for windows that do not exist).
+/// Whether a Qt window shows UI Automation its controls rather than only its frame: Qt reports
+/// itself as the framework then (WeChat's main window also gets an `mmui::` class name).
+pub(crate) fn shows_qt_controls(window: HWND) -> bool {
+    if window.is_invalid() {
+        return false;
+    }
+    let _com = ComApartment::multithreaded().ok();
+    let check = || -> windows::core::Result<bool> {
+        // SAFETY: as in `read`.
+        unsafe {
+            let root = automation()?.ElementFromHandle(window)?;
+            let framework = root
+                .CurrentFrameworkId()
+                .map(|id| id.to_string())
+                .unwrap_or_default();
+            let class = root
+                .CurrentClassName()
+                .map(|name| name.to_string())
+                .unwrap_or_default();
+            Ok(framework == "Qt" || class.starts_with("mmui::"))
+        }
+    };
+    check().unwrap_or(false)
+}
+
+/// A UI Automation client that gives up on a busy app after `TIMEOUT_MS`.
+///
+/// # Safety
+/// COM must be initialized on the calling thread.
+unsafe fn automation() -> windows::core::Result<IUIAutomation> {
+    // SAFETY: COM is initialized on this thread (the caller's contract).
     unsafe {
         let automation: IUIAutomation =
             CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER)?;
@@ -60,6 +87,16 @@ fn read(window: HWND, prefix: &str) -> windows::core::Result<Option<Vec<ListRow>
             let _ = options.SetConnectionTimeout(TIMEOUT_MS);
             let _ = options.SetTransactionTimeout(TIMEOUT_MS);
         }
+        Ok(automation)
+    }
+}
+
+fn read(window: HWND, prefix: &str) -> windows::core::Result<Option<Vec<ListRow>>> {
+    // SAFETY: COM is initialized on this thread (above) for the whole call; every interface here
+    // is an owned, reference-counted value used only within it, and the HWND is passed by value
+    // (UI Automation fails for windows that do not exist).
+    unsafe {
+        let automation = automation()?;
         let root = automation.ElementFromHandle(window)?;
         let of_type = |id: i32| {
             automation.CreatePropertyCondition(UIA_ControlTypePropertyId, &VARIANT::from(id))

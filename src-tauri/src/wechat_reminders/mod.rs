@@ -1,8 +1,10 @@
 //! WeChat reminders: watches WeChat's tray flash and restores its window on request. When WeChat
 //! exposes its UI (Qt accessibility switched on, e.g. by a screen reader or a plugin), a flash also
-//! reads the chat list to tell who wrote and what.
+//! reads the chat list to tell who wrote and what. The "expose WeChat's UI" setting switches that
+//! on in the running WeChat (gate.rs).
 
 mod chats;
+mod gate;
 mod plugin_view;
 mod source;
 
@@ -39,6 +41,10 @@ pub struct ReminderSnapshot {
     error: Option<String>,
     /// The newest message read from WeChat's chat list; `None` while the list is not readable.
     message: Option<ChatMessage>,
+    /// Setting: switch WeChat's Qt accessibility on so its chat list can be read.
+    expose_ui: bool,
+    /// How that is going, for the settings; `None` while off.
+    expose_status: Option<String>,
 }
 
 /// One chat with a new message, as WeChat's chat list shows it.
@@ -65,6 +71,8 @@ impl Default for ReminderSnapshot {
             last_attention_at: None,
             error: None,
             message: None,
+            expose_ui: false,
+            expose_status: None,
         }
     }
 }
@@ -85,8 +93,28 @@ impl ReminderState {
             revision: self.snapshot.revision + 1,
             enabled,
             status: if enabled { "waiting" } else { "disabled" }.into(),
+            expose_ui: self.snapshot.expose_ui,
+            expose_status: self.snapshot.expose_status.take(),
             ..Default::default()
         };
+        true
+    }
+
+    fn set_expose_ui(&mut self, on: bool) -> bool {
+        if self.snapshot.expose_ui == on {
+            return false;
+        }
+        self.snapshot.expose_ui = on;
+        self.snapshot.revision += 1;
+        true
+    }
+
+    fn set_expose_status(&mut self, status: Option<String>) -> bool {
+        if self.snapshot.expose_status == status {
+            return false;
+        }
+        self.snapshot.expose_status = status;
+        self.snapshot.revision += 1;
         true
     }
 
@@ -124,6 +152,8 @@ impl ReminderState {
 struct ReminderService {
     app: AppHandle,
     state: Mutex<ReminderState>,
+    /// WeChat's accessibility byte, when the island set it.
+    gate: Mutex<gate::Keeper>,
     wake: mpsc::SyncSender<()>,
 }
 
@@ -132,9 +162,15 @@ pub fn init(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
     let (wake, receiver) = mpsc::sync_channel(1);
+    let folder = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("wechat-gate");
     let service = Arc::new(ReminderService {
         app: app.clone(),
         state: Mutex::new(ReminderState::default()),
+        gate: Mutex::new(gate::Keeper::new(folder)),
         wake,
     });
     let worker = service.clone();
@@ -205,6 +241,64 @@ pub fn set_wechat_reminders_enabled(enabled: bool) -> Result<ReminderSnapshot, S
         let _ = service.wake.try_send(());
     }
     Ok(snapshot)
+}
+
+/// Turns the "expose WeChat's UI" setting on or off. Off puts WeChat's byte back right away; on
+/// takes effect on the listener's next round (it may scan Weixin.dll for a few seconds once).
+#[tauri::command]
+pub fn set_wechat_expose_ui(enabled: bool) -> Result<ReminderSnapshot, String> {
+    let service = service()?;
+    if !enabled {
+        let _ = service.gate.lock().map(|mut gate| gate.off());
+    }
+    let (snapshot, changed) = {
+        let mut state = service.state.lock().map_err(|_| "微信提醒状态不可用。")?;
+        let mut changed = state.set_expose_ui(enabled);
+        if !enabled {
+            changed |= state.set_expose_status(None);
+        }
+        (state.snapshot.clone(), changed)
+    };
+    if changed {
+        publish(service, snapshot.clone());
+        let _ = service.wake.try_send(());
+    }
+    Ok(snapshot)
+}
+
+/// Puts WeChat's byte back when the island exits.
+pub(crate) fn shutdown() {
+    if let Some(service) = SERVICE.get() {
+        let _ = service.gate.lock().map(|mut gate| gate.off());
+    }
+}
+
+/// Keeps WeChat's UI exposed while the setting asks for it, and tells the settings how it goes.
+/// True when the island has just exposed it.
+fn keep_gate(service: &ReminderService, executable: &Path) -> bool {
+    let on = service
+        .state
+        .lock()
+        .is_ok_and(|state| state.snapshot.enabled && state.snapshot.expose_ui);
+    let Ok(mut gate) = service.gate.lock() else {
+        return false;
+    };
+    let was_on = gate.is_on();
+    if !gate.tick(on, || main_window(executable)) {
+        return false;
+    }
+    let status = gate.status.clone();
+    let now_on = gate.is_on();
+    drop(gate);
+    let snapshot = service.state.lock().ok().and_then(|mut state| {
+        state
+            .set_expose_status(status)
+            .then(|| state.snapshot.clone())
+    });
+    if let Some(snapshot) = snapshot {
+        publish(service, snapshot);
+    }
+    now_on && !was_on
 }
 
 fn now_ms() -> u64 {
@@ -391,7 +485,13 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
                         .lock()
                         .is_ok_and(|state| state.snapshot.enabled && state.generation == generation)
                     {
+                        // Reminders off: WeChat's UI goes back to hidden too.
+                        keep_gate(&service, &reader.executable);
                         break;
+                    }
+                    if keep_gate(&service, &reader.executable) {
+                        // Readable from now on: take the list as it is as the baseline.
+                        reader.seen = reader.read();
                     }
                     listener.poll();
                     let _ = listener.stats();
@@ -567,6 +667,7 @@ macro_rules! tauri_commands {
             crate::wechat_reminders::get_wechat_reminder_state,
             crate::wechat_reminders::set_wechat_reminders_enabled,
             crate::wechat_reminders::open_wechat,
+            crate::wechat_reminders::set_wechat_expose_ui,
         ] $($rest)*)
     };
 }

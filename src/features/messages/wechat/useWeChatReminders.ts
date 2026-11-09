@@ -1,12 +1,12 @@
 import { useTranslation } from "../../../i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { launchWeChat, listenWeChatReminderChanged, setWeChatRemindersEnabled, type ChatMessage, type ReminderSnapshot } from "./api";
-import { isWeChatRemindersEnabled, saveWeChatRemindersEnabled } from "./storage";
+import { launchWeChat, listenWeChatReminderChanged, setWeChatExposeUi, setWeChatRemindersEnabled, type ChatMessage, type ReminderSnapshot } from "./api";
+import { isWeChatExposeUiEnabled, isWeChatRemindersEnabled, saveWeChatExposeUiEnabled, saveWeChatRemindersEnabled } from "./storage";
 
 const EMPTY_SNAPSHOT: ReminderSnapshot = {
   revision: 0, enabled: false, status: "disabled", pending: false,
-  lastAttentionAt: null, error: null, message: null,
+  lastAttentionAt: null, error: null, message: null, exposeUi: false, exposeStatus: null,
 };
 
 export function useWeChatReminders(canPreview: boolean) {
@@ -65,6 +65,8 @@ export function useWeChatReminders(canPreview: boolean) {
         isWeChatRemindersEnabled(),
       );
       if (!cancelled) acceptSnapshot(next);
+      const exposed = await setWeChatExposeUi(isWeChatExposeUiEnabled());
+      if (!cancelled) acceptSnapshot(exposed);
     })().catch((error: unknown) => {
       if (!cancelled) setActionError(String(error));
     }).finally(() => {
@@ -107,6 +109,12 @@ export function useWeChatReminders(canPreview: boolean) {
     if (!enabled) setPreviewReceivedAt(null);
   }), [acceptSnapshot, run]);
 
+  /** Switches WeChat's accessibility on (or back off) so the chat list can be read. */
+  const setExposeUi = useCallback((enabled: boolean) => run(async () => {
+    acceptSnapshot(await setWeChatExposeUi(enabled));
+    saveWeChatExposeUiEnabled(enabled);
+  }), [acceptSnapshot, run]);
+
   /** Brings WeChat up; `chat` (a preview's) also opens that chat. */
   const openWeChat = useCallback((chat?: string | null) => run(async () => {
     await launchWeChat(chat);
@@ -115,7 +123,7 @@ export function useWeChatReminders(canPreview: boolean) {
 
   const showing = canPreview && snapshot.pending && previewReceivedAt !== null;
   return {
-    snapshot, busy, actionError, setEnabled, openWeChat,
+    snapshot, busy, actionError, setEnabled, setExposeUi, openWeChat,
     previewReceivedAt: showing ? previewReceivedAt : null,
     previewMessage: showing ? previewMessage : null,
   };

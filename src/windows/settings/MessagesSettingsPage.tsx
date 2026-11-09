@@ -72,6 +72,15 @@ export function MessagesSettingsPage({
           checked={wechatReminders.snapshot.enabled}
           onChange={(enabled) => void wechatReminders.setEnabled(enabled)}
         />
+        {wechatReminders.snapshot.enabled && (
+          <SettingsToggleRow
+            title={t.wechat.exposeUi}
+            description={<>{t.wechat.exposeUiDescription}{wechatReminders.snapshot.exposeStatus && <><br />{wechatReminders.snapshot.exposeStatus}</>}</>}
+            checked={wechatReminders.snapshot.exposeUi}
+            indent
+            onChange={(enabled) => void wechatReminders.setExposeUi(enabled)}
+          />
+        )}
       </SettingsGroup>
       <MailGroups settings={settings} onSettingsChange={onSettingsChange} />
     </>
