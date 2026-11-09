@@ -75,6 +75,8 @@ pub(super) fn toggle(app: &AppHandle, position: PopupPosition) -> Result<(), Str
     if window.is_visible().unwrap_or(false) {
         return hide(app);
     }
+    // Opening the window again ends a paste sequence still running (C24.7).
+    super::sequence::stop();
     let foreground = win32::window::foreground_window();
     let own = window.hwnd().map(|hwnd| hwnd.0 as isize).unwrap_or_default();
     if let Ok(mut target) = TARGET_WINDOW.lock() {
@@ -150,9 +152,24 @@ pub(super) fn paste(app: &AppHandle, id: &str, plain: bool) -> Result<(), String
     };
     service.copy_item_as(id, copy_as)?;
     hide(app)?;
+    paste_into(target, settings.auto_paste);
+    Ok(())
+}
 
-    let (Some(target), true) = (target, settings.auto_paste) else {
-        return Ok(());
+/// Puts `text` on the clipboard (not into the history) and pastes it like an entry (C24.6).
+pub(super) fn paste_text(app: &AppHandle, text: &str) -> Result<(), String> {
+    let auto_paste = service()?.snapshot()?.settings.auto_paste;
+    super::suspend_clipboard_capture(Duration::from_millis(800));
+    super::clipboard_io::write_clipboard_text(text)?;
+    hide(app)?;
+    paste_into(take_target(), auto_paste);
+    Ok(())
+}
+
+/// Hands the focus back to `target` and sends Ctrl+V there, when auto-paste is on.
+fn paste_into(target: Option<HWND>, auto_paste: bool) {
+    let (Some(target), true) = (target, auto_paste) else {
+        return;
     };
     // An HWND is not Send; the thread rebuilds it from the value.
     let target = target.0 as isize;
@@ -162,7 +179,6 @@ pub(super) fn paste(app: &AppHandle, id: &str, plain: bool) -> Result<(), String
             win32::input::send_paste_shortcut();
         }
     });
-    Ok(())
 }
 
 #[cfg(test)]

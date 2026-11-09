@@ -20,6 +20,8 @@ const THUMBNAIL_MAX_SIDE: u32 = 128;
 pub(super) struct PersistedClipboardHistory {
     pub(super) settings: ClipboardHistorySettings,
     pub(super) items: Vec<ClipboardHistoryItem>,
+    #[serde(default)]
+    pub(super) snippets: Vec<super::snippets::ClipboardSnippet>,
 }
 
 pub(super) fn load_history(history_path: &Path) -> PersistedClipboardHistory {

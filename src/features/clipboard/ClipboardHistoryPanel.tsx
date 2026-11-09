@@ -110,6 +110,7 @@ export function ClipboardHistoryPanel({
               onSaveNote={saveNote}
               onCancelEditNote={cancelEditingNote}
               onDelete={handleDeleteItem}
+              onTag={(tag) => setQuery(`#${tag}`)}
             />
           ))
         )}

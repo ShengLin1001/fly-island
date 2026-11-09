@@ -34,6 +34,20 @@ export type SettingsClipboardText = {
   secretsOptions: Record<"mask" | "skip" | "keep", string>;
   excludedApps: string;
   excludedAppsHint: string;
+  snippets: {
+    title: string;
+    hintTitle: string;
+    hint: string;
+    add: string;
+    adding: string;
+    editing: string;
+    edit: (title: string) => string;
+    remove: (title: string) => string;
+    titlePlaceholder: string;
+    textPlaceholder: string;
+    save: string;
+    cancel: string;
+  };
 };
 
 export const zhCN: SettingsClipboardText = {
@@ -72,6 +86,20 @@ export const zhCN: SettingsClipboardText = {
   secretsOptions: { mask: "打码", skip: "不记录", keep: "照常" },
   excludedApps: "不记录这些程序复制的内容",
   excludedAppsHint: "填程序名，逗号分隔，比如 keepass.exe。每条记录旁边会显示它来自哪个程序。",
+  snippets: {
+    title: "常用片段",
+    hintTitle: "在剪贴板窗口按 Tab 切到「片段」",
+    hint: "粘贴时会填好这些变量：{date} 日期、{time} 时间、{datetime} 日期和时间、{weekday} 星期、{clipboard} 剪贴板里现在的文字。",
+    add: "新建片段",
+    adding: "新建片段",
+    editing: "修改片段",
+    edit: (title) => `修改「${title}」`,
+    remove: (title) => `删除「${title}」`,
+    titlePlaceholder: "名字（不填就用第一行）",
+    textPlaceholder: "内容，比如：{date} 周报",
+    save: "保存",
+    cancel: "取消",
+  },
 };
 
 export const en: SettingsClipboardText = {
@@ -110,4 +138,18 @@ export const en: SettingsClipboardText = {
   secretsOptions: { mask: "Mask", skip: "Skip", keep: "Keep" },
   excludedApps: "Do not record copies from these programs",
   excludedAppsHint: "Program names separated by commas, such as keepass.exe. Each entry shows the program it came from.",
+  snippets: {
+    title: "Snippets",
+    hintTitle: "Press Tab in the clipboard window for Snippets",
+    hint: "When pasted, these are filled in: {date}, {time}, {datetime}, {weekday} and {clipboard} (the text on the clipboard now).",
+    add: "New snippet",
+    adding: "New snippet",
+    editing: "Edit snippet",
+    edit: (title) => `Edit "${title}"`,
+    remove: (title) => `Delete "${title}"`,
+    titlePlaceholder: "Name (the first line if empty)",
+    textPlaceholder: "Text, such as: Weekly report {date}",
+    save: "Save",
+    cancel: "Cancel",
+  },
 };

@@ -1,0 +1,87 @@
+/* Settings → Clipboard → Snippets (C24.6). */
+.clipboard-snippet__actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.clipboard-snippet__actions button,
+.clipboard-snippet__add {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-white-a06);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.clipboard-snippet__actions button:hover,
+.clipboard-snippet__add:hover {
+  background: var(--color-white-a12);
+  color: var(--text-1);
+}
+
+.clipboard-snippet__form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.clipboard-snippet__text {
+  min-height: 84px;
+  padding: var(--space-md) var(--space-lg);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-white-a06);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.clipboard-snippet__text:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.clipboard-snippet__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+.clipboard-snippet__buttons button {
+  min-height: 28px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-white-a08);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.clipboard-snippet__buttons .clipboard-snippet__save {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.clipboard-snippet__buttons button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.clipboard-snippet__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.clipboard-snippet__actions button:focus-visible,
+.clipboard-snippet__add:focus-visible,
+.clipboard-snippet__buttons button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}

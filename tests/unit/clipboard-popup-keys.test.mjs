@@ -18,3 +18,10 @@ test("digits paste that row only while the search box is empty", () => {
   assert.equal(popupIndexAfterKey("1", 0, 3, false), null);
   assert.equal(popupIndexAfterKey("0", 0, 3, true), null);
 });
+
+test("picking entries for a sequence adds them in order and a second pick takes one out", async () => {
+  const { toggleQueued } = await import("../../src/features/clipboard/popupKeys.ts");
+  assert.deepEqual(toggleQueued([], "a"), ["a"]);
+  assert.deepEqual(toggleQueued(["a"], "b"), ["a", "b"]);
+  assert.deepEqual(toggleQueued(["a", "b", "c"], "b"), ["a", "c"]);
+});

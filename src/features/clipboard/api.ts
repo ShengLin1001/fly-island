@@ -75,7 +75,12 @@ export type ClipboardHistoryItem = {
 export type ClipboardHistorySnapshot = {
   settings: ClipboardHistorySettings;
   items: ClipboardHistoryItem[];
+  /** Saved texts for pasting again (C24.6); missing before. */
+  snippets?: ClipboardSnippet[];
 };
+
+/** A saved text; {date}, {time}, {datetime}, {weekday} and {clipboard} are filled in on paste. */
+export type ClipboardSnippet = { id: string; title: string; text: string };
 
 // 与 clipboard_history/mod.rs 中的 HISTORY_CHANGED_EVENT、clipboard_history/hotkey.rs 中的 HOTKEY_EVENT 一致。
 export const CLIPBOARD_HISTORY_CHANGED_EVENT = "clipboard-history-changed";
@@ -116,6 +121,23 @@ export function pasteClipboardItem(id: string, plain = false) {
 /** A program's icon as a PNG data URL (get_agent_host_icon in agent_status), null without one. */
 export function getAppIcon(path: string) {
   return invoke<string | null>("get_agent_host_icon", { path });
+}
+
+export function saveClipboardSnippet(id: string | null, title: string, text: string) {
+  return invoke<ClipboardHistorySnapshot>("save_clipboard_snippet", { id, title, text });
+}
+
+export function deleteClipboardSnippet(id: string) {
+  return invoke<ClipboardHistorySnapshot>("delete_clipboard_snippet", { id });
+}
+
+export function pasteClipboardSnippet(id: string) {
+  return invoke<void>("paste_clipboard_snippet", { id });
+}
+
+/** Pastes the first entry now; each Ctrl+V after it pastes the next one (C24.7). */
+export function pasteClipboardSequence(ids: string[]) {
+  return invoke<void>("paste_clipboard_sequence", { ids });
 }
 
 export function hideClipboardPopup() {

@@ -16,7 +16,7 @@ use windows::Win32::{
 
 use super::hotkey::{
     refresh_registered_hotkey, unregister_current_hotkey, CLIPBOARD_HOTKEY_WINDOW, HOTKEY_ID,
-    HOTKEY_REFRESH_MESSAGE, WIN_V_MESSAGE,
+    HOTKEY_REFRESH_MESSAGE, PASTED_MESSAGE, WIN_V_MESSAGE,
 };
 use super::service;
 use crate::win32::{
@@ -110,6 +110,11 @@ impl WindowMessages for ClipboardWindow {
             if let Ok(service) = service() {
                 service.emit_shortcut();
             }
+            return Some(LRESULT(0));
+        }
+
+        if message == PASTED_MESSAGE {
+            super::sequence::advance();
             return Some(LRESULT(0));
         }
 

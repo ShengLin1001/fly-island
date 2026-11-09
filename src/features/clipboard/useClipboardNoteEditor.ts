@@ -68,7 +68,8 @@ export function useClipboardNoteEditor(
     (item: ClipboardHistoryItem) => {
       dismissConfirmations();
       setEditingNoteId(item.id);
-      setNoteDraft(item.note ?? "");
+      // Tags are edited as "#tag" words in front of the note (C24.5).
+      setNoteDraft([...(item.tags ?? []).map((tag) => `#${tag}`), item.note ?? ""].filter(Boolean).join(" "));
     },
     [dismissConfirmations],
   );

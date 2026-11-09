@@ -6,7 +6,9 @@ mod listener;
 mod plugin_view;
 mod popup;
 mod secrets;
+mod sequence;
 mod service;
+mod snippets;
 mod store;
 
 use serde::{Deserialize, Serialize};
@@ -74,6 +76,8 @@ pub(crate) fn clipboard_capture_suspended() -> bool {
 pub struct ClipboardHistorySnapshot {
     settings: ClipboardHistorySettings,
     items: Vec<ClipboardHistoryItem>,
+    /// Saved texts for pasting again (C24.6).
+    snippets: Vec<snippets::ClipboardSnippet>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -292,6 +296,25 @@ fn normalized_app_names(names: &[String]) -> Vec<String> {
     seen
 }
 
+/// A note as typed, split into its words and its "#tag" words (C24.5): "#work meeting link" is the
+/// note "meeting link" with the tag "work". The note is capped at MAX_NOTE_CHARACTERS.
+pub(crate) fn split_note_tags(note: &str) -> (String, Vec<String>) {
+    let (tags, words): (Vec<&str>, Vec<&str>) = note
+        .split_whitespace()
+        .partition(|word| word.len() > 1 && (word.starts_with('#') || word.starts_with('＃')));
+    let tags: Vec<String> = tags.iter().map(|tag| tag.trim_start_matches(['#', '＃']).to_string()).collect();
+    (words.join(" ").chars().take(MAX_NOTE_CHARACTERS).collect(), normalized_tags(&tags))
+}
+
+#[cfg(test)]
+#[test]
+fn notes_give_their_hash_words_as_tags() {
+    let (note, tags) = split_note_tags("#Work  meeting link #ops #work ＃周报");
+    assert_eq!(note, "meeting link");
+    assert_eq!(tags, ["Work", "ops", "周报"]);
+    assert_eq!(split_note_tags("# alone"), ("# alone".to_string(), Vec::<String>::new()));
+}
+
 /// Tags as the user typed them: trimmed, without a leading '#', no blanks or duplicates, capped.
 pub(crate) fn normalized_tags(tags: &[String]) -> Vec<String> {
     let mut kept: Vec<String> = Vec::new();
@@ -318,6 +341,7 @@ pub struct ClipboardHistoryImage {
 struct ClipboardHistoryState {
     settings: ClipboardHistorySettings,
     items: Vec<ClipboardHistoryItem>,
+    snippets: Vec<snippets::ClipboardSnippet>,
     last_capture_hash: Option<String>,
 }
 
@@ -362,6 +386,30 @@ pub fn copy_clipboard_history_item_as(id: String, copy_as: CopyAs) -> Result<Cli
 #[tauri::command]
 pub async fn paste_clipboard_history_item(app: AppHandle, id: String, plain: Option<bool>) -> Result<(), String> {
     popup::paste(&app, &id, plain.unwrap_or(false))
+}
+
+#[tauri::command]
+pub fn save_clipboard_snippet(id: Option<String>, title: String, text: String) -> Result<ClipboardHistorySnapshot, String> {
+    service()?.save_snippet(id.as_deref(), &title, &text)
+}
+
+#[tauri::command]
+pub fn delete_clipboard_snippet(id: String) -> Result<ClipboardHistorySnapshot, String> {
+    service()?.delete_snippet(&id)
+}
+
+/// From the clipboard window: fills in the snippet's variables and pastes it like an entry (C24.6).
+#[tauri::command]
+pub async fn paste_clipboard_snippet(app: AppHandle, id: String) -> Result<(), String> {
+    let text = service()?.snippet_text(&id)?;
+    popup::paste_text(&app, &text)
+}
+
+/// From the clipboard window: pastes the first of `ids` now and each next one on the user's
+/// following Ctrl+V (C24.7).
+#[tauri::command]
+pub async fn paste_clipboard_sequence(app: AppHandle, ids: Vec<String>) -> Result<(), String> {
+    sequence::start(&app, ids)
 }
 
 #[tauri::command]
@@ -415,6 +463,7 @@ pub fn init(app: &AppHandle) -> Result<(), String> {
         state: Mutex::new(ClipboardHistoryState {
             settings: persisted.settings.normalized(),
             items: persisted.items,
+            snippets: persisted.snippets,
             last_capture_hash: None,
         }),
     };
@@ -452,6 +501,10 @@ macro_rules! tauri_commands {
             crate::clipboard_history::copy_clipboard_history_item_as,
             crate::clipboard_history::paste_clipboard_history_item,
             crate::clipboard_history::hide_clipboard_popup,
+            crate::clipboard_history::paste_clipboard_sequence,
+            crate::clipboard_history::save_clipboard_snippet,
+            crate::clipboard_history::delete_clipboard_snippet,
+            crate::clipboard_history::paste_clipboard_snippet,
             crate::clipboard_history::toggle_clipboard_history_favorite,
             crate::clipboard_history::set_clipboard_history_item_note,
             crate::clipboard_history::delete_clipboard_history_item,

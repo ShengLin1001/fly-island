@@ -20,7 +20,7 @@ use super::{
     current_unix_millis, ClipboardHistoryImage, ClipboardHistoryItem, ClipboardSource, SecretHandling,
     ClipboardHistoryItemKind, ClipboardHistoryService, CopyAs, ClipboardHistorySettings,
     ClipboardHistorySnapshot, ClipboardHistoryState, HISTORY_CHANGED_EVENT, MAIN_WINDOW_LABEL,
-    MAX_NOTE_CHARACTERS, SHORT_DUPLICATE_WINDOW_MS,
+    SHORT_DUPLICATE_WINDOW_MS,
 };
 use crate::win32;
 
@@ -164,7 +164,10 @@ impl ClipboardHistoryService {
             .iter_mut()
             .find(|item| item.id == id)
             .ok_or_else(|| "Clipboard history item was not found.".to_string())?;
-        item.note = note.trim().chars().take(MAX_NOTE_CHARACTERS).collect();
+        // "#tag" words in the note are its tags (C24.5).
+        let (note, tags) = super::split_note_tags(note);
+        item.note = note;
+        item.tags = tags;
         self.persist_locked(&state)?;
         let snapshot = Self::snapshot_locked(&state);
         drop(state);
@@ -392,10 +395,11 @@ impl ClipboardHistoryService {
         }
     }
 
-    fn persist_locked(&self, state: &ClipboardHistoryState) -> Result<(), String> {
+    pub(super) fn persist_locked(&self, state: &ClipboardHistoryState) -> Result<(), String> {
         let history = PersistedClipboardHistory {
             settings: state.settings.clone(),
             items: state.items.clone(),
+            snippets: state.snippets.clone(),
         };
         let content = serde_json::to_string_pretty(&history)
             .map_err(|error| format!("Failed to serialize clipboard history: {error}"))?;
@@ -410,15 +414,16 @@ impl ClipboardHistoryService {
         }
     }
 
-    fn snapshot_locked(state: &ClipboardHistoryState) -> ClipboardHistorySnapshot {
+    pub(super) fn snapshot_locked(state: &ClipboardHistoryState) -> ClipboardHistorySnapshot {
         ClipboardHistorySnapshot {
             settings: state.settings.clone(),
             items: state.items.clone(),
+            snippets: state.snippets.clone(),
         }
     }
 
     /// Called after the state lock is released.
-    fn emit_changed(&self) {
+    pub(super) fn emit_changed(&self) {
         let _ = self.app.emit(HISTORY_CHANGED_EVENT, ());
         let enabled = self.state.lock().map(|state| state.settings.enabled).unwrap_or(false);
         super::plugin_view::publish_changed(enabled);
@@ -454,7 +459,7 @@ fn source_app() -> Option<ClipboardSource> {
 /// Whether the program at `path` is on the "do not record" list (lower-case executable names).
 pub(super) fn is_excluded(excluded: &[String], path: &str) -> bool {
     let name = Path::new(path).file_name().map(|name| name.to_string_lossy().to_lowercase());
-    name.is_some_and(|name| excluded.iter().any(|excluded| *excluded == name))
+    name.is_some_and(|name| excluded.contains(&name))
 }
 
 #[cfg(test)]

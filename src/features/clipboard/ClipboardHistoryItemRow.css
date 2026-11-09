@@ -82,6 +82,25 @@
   justify-content: flex-end;
 }
 
+/* A tag in front of the note (C24.5); clicking it filters the list by it. */
+.clipboard-tag {
+  flex: 0 0 auto;
+  min-height: 20px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-white-a08);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.clipboard-tag:hover {
+  background: var(--color-white-a16);
+  color: var(--text-1);
+}
+
 .clipboard-note {
   min-width: 0;
   max-width: 100%;

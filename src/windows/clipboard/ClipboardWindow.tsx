@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ClipboardPopup } from "../../features/clipboard/ClipboardPopup";
-import { hideClipboardPopup, listenClipboardPopupBlur, listenClipboardPopupOpened, pasteClipboardItem } from "../../features/clipboard/api";
+import { hideClipboardPopup, listenClipboardPopupBlur, listenClipboardPopupOpened, pasteClipboardItem, pasteClipboardSequence, pasteClipboardSnippet } from "../../features/clipboard/api";
 import { useClipboardHistory } from "../../features/clipboard/useClipboardHistory";
 import "./ClipboardWindow.css";
 
 const NO_SHORTCUT = () => {};
+const reportError = (action: string) => (error: unknown) => console.error(`Failed to ${action}`, error);
 
 /**
  * The clipboard window (C22.2), opened by the clipboard shortcut (or Win+V) unless the settings
@@ -35,6 +36,9 @@ export function ClipboardWindow() {
   return (
     <ClipboardPopup
       items={clipboardHistory.items}
+      snippets={clipboardHistory.snippets ?? []}
+      onPasteSnippet={(id) => void pasteClipboardSnippet(id).catch(reportError("paste a snippet"))}
+      onPasteSequence={(ids) => void pasteClipboardSequence(ids).catch(reportError("start a paste sequence"))}
       openCount={openCount}
       onPaste={(id, plain) => void pasteClipboardItem(id, plain).catch((error: unknown) => console.error("Failed to paste a clipboard entry", error))}
       onClose={close}

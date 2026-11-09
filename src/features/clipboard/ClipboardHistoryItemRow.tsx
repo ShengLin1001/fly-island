@@ -19,6 +19,7 @@ export function ClipboardHistoryItemRow({
   onSaveNote,
   onCancelEditNote,
   onDelete,
+  onTag,
 }: {
   item: ClipboardHistoryItem;
   elementRef: (node: HTMLElement | null) => void;
@@ -35,6 +36,8 @@ export function ClipboardHistoryItemRow({
   onSaveNote: (id: string) => void;
   onCancelEditNote: () => void;
   onDelete: (id: string) => void;
+  /** A tag was clicked: filter by it (C24.5). */
+  onTag?: (tag: string) => void;
 }) {
   const t = useTranslation();
   const isCopied = copied === "original";
@@ -81,7 +84,7 @@ export function ClipboardHistoryItemRow({
             <input
               autoFocus
               value={noteDraft}
-              maxLength={80}
+              maxLength={160}
               placeholder={t.clipboard.notePlaceholder}
               aria-label={t.clipboard.noteInputLabel}
               disabled={isSavingNote}
@@ -110,6 +113,12 @@ export function ClipboardHistoryItemRow({
             </button>
           </form>
         ) : (
+          <>
+          {item.tags?.map((tag) => (
+            <button key={tag} className="clipboard-tag" type="button" aria-label={t.clipboard.filterByTag(tag)} onClick={() => onTag?.(tag)}>
+              #{tag}
+            </button>
+          ))}
           <button
             className={item.note ? "clipboard-note clipboard-note--filled" : "clipboard-note"}
             type="button"
@@ -119,8 +128,9 @@ export function ClipboardHistoryItemRow({
             onClick={() => onStartEditNote(item)}
           >
             <Pencil size={12} strokeWidth={2.3} />
-            <span>{item.note || t.clipboard.noteFallback}</span>
+            <span>{item.note || (item.tags?.length ? "" : t.clipboard.noteFallback)}</span>
           </button>
+          </>
         )}
       </div>
       <div className="clipboard-item__actions">

@@ -15,7 +15,47 @@
   font-family: var(--font-ui);
 }
 
+.clipboard-popup__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.clipboard-popup__tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-lg);
+  background: var(--color-white-a06);
+}
+
+.clipboard-popup__tab {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.clipboard-popup__tab--active {
+  background: var(--color-white-a12);
+  color: var(--text-1);
+}
+
+/* Picked for a sequence (C24.7): its place shows in the number column. */
+.clipboard-popup__item--queued .clipboard-popup__index {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 .clipboard-popup__search {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-md);

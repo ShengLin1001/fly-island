@@ -1,3 +1,8 @@
+/** Adds `id` to the end of a sequence being picked, or takes it out (C24.7). */
+export function toggleQueued(queue: readonly string[], id: string): string[] {
+  return queue.includes(id) ? queue.filter((queued) => queued !== id) : [...queue, id];
+}
+
 /**
  * What a key does in the clipboard window's list (C22.2): move the selection to `index`, paste the
  * row at `index` (`paste`), or nothing (null). Digits 1–9 paste that row, only when `digitsPaste`
