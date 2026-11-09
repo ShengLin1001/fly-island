@@ -86,8 +86,8 @@ export function useIslandBanner({ messageNotice, notices, mode, isTucked, quiet,
       void qqMail.readMail(message.mail.message, message.mail.account);
     } else if (message.source === "qq" || message.source === "wechat") {
       const source = message.source;
-      const launch = source === "qq" ? qqNotifications.openQQ : wechatReminders.openWeChat;
-      void launch().then((opened) => {
+      const launch = source === "qq" ? qqNotifications.openQQ() : wechatReminders.openWeChat(message.chat);
+      void launch.then((opened) => {
         if (opened === false) onOpenMessages(source);
       });
     }

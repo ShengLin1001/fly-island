@@ -143,3 +143,25 @@ fn finds_existing_wechat_main_window_without_launching() {
         "The existing main window must be preferred over a login window"
     );
 }
+
+#[test]
+fn every_message_read_from_the_list_is_published_while_the_reminder_is_pending() {
+    let mut state = ReminderState::default();
+    state.set_enabled(true);
+    let generation = state.generation;
+    let message = |chat: &str, at| ChatMessage {
+        chat: chat.into(),
+        contact: chat.into(),
+        preview: "hi".into(),
+        unread: Some(1),
+        at,
+    };
+    assert!(state.receive(generation, message("a", 1000)));
+    assert!(state.receive(generation, message("b", 1001)));
+    assert!(state.snapshot.pending);
+    assert_eq!(state.snapshot.last_attention_at, Some(1000));
+    assert_eq!(state.snapshot.message.as_ref().map(|m| m.chat.as_str()), Some("b"));
+    assert!(!state.receive(generation + 1, message("c", 1002)));
+    state.set_enabled(false);
+    assert_eq!(state.snapshot.message, None);
+}

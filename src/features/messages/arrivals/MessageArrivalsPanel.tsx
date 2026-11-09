@@ -60,8 +60,9 @@ export function MessageArrivalsPanel({
       )}
       <ul className="message-arrivals__list">
         {arrivals.map((message) => {
-          const title = message.source === "wechat" ? t.wechat : message.title.trim() || (message.source === "qq" ? "QQ" : t.sourceLabels[message.source]);
-          const body = message.source === "wechat" ? t.wechatPreview
+          const plainWeChat = message.source === "wechat" && !message.chat;
+          const title = plainWeChat ? t.wechat : message.title.trim() || (message.source === "qq" ? "QQ" : t.sourceLabels[message.source]);
+          const body = plainWeChat ? t.wechatPreview
             : message.source === "qqMail" ? message.body.trim() || t.newMail
               : message.source === "plugin" ? message.body.trim() : message.body.trim() || t.newMessage;
           const controls = message.mediaControls && media ? media : null;

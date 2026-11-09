@@ -1,5 +1,8 @@
-//! WeChat reminders: watches WeChat's tray flash and restores its window on request.
+//! WeChat reminders: watches WeChat's tray flash and restores its window on request. When WeChat
+//! exposes its UI (Qt accessibility switched on, e.g. by a screen reader or a plugin), a flash also
+//! reads the chat list to tell who wrote and what.
 
+mod chats;
 mod plugin_view;
 mod source;
 
@@ -9,9 +12,12 @@ mod tests;
 use serde::Serialize;
 use source::{installed_executable, ReminderListener, ReminderSignal};
 use std::{
+    cell::RefCell,
+    path::{Path, PathBuf},
+    rc::Rc,
     sync::{mpsc, Arc, Mutex, OnceLock},
     thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager};
 use windows::Win32::Foundation::HWND;
@@ -31,6 +37,22 @@ pub struct ReminderSnapshot {
     pending: bool,
     last_attention_at: Option<u64>,
     error: Option<String>,
+    /// The newest message read from WeChat's chat list; `None` while the list is not readable.
+    message: Option<ChatMessage>,
+}
+
+/// One chat with a new message, as WeChat's chat list shows it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatMessage {
+    /// What opens the chat again (`open_wechat`).
+    chat: String,
+    contact: String,
+    /// The last message, as WeChat cuts it short; a group's starts with the sender.
+    preview: String,
+    unread: Option<u32>,
+    /// When it was read, in ms; unique per message, so each one is its own preview.
+    at: u64,
 }
 
 impl Default for ReminderSnapshot {
@@ -42,6 +64,7 @@ impl Default for ReminderSnapshot {
             pending: false,
             last_attention_at: None,
             error: None,
+            message: None,
         }
     }
 }
@@ -79,6 +102,20 @@ impl ReminderState {
             ReminderSignal::Activated if self.snapshot.pending => self.snapshot.pending = false,
             _ => return false,
         }
+        self.snapshot.revision += 1;
+        true
+    }
+
+    /// A message read from the chat list: pending as for a flash, plus the message to show.
+    fn receive(&mut self, generation: u64, message: ChatMessage) -> bool {
+        if !self.snapshot.enabled || self.generation != generation {
+            return false;
+        }
+        if !self.snapshot.pending {
+            self.snapshot.pending = true;
+            self.snapshot.last_attention_at = Some(message.at);
+        }
+        self.snapshot.message = Some(message);
         self.snapshot.revision += 1;
         true
     }
@@ -170,11 +207,15 @@ pub fn set_wechat_reminders_enabled(enabled: bool) -> Result<ReminderSnapshot, S
     Ok(snapshot)
 }
 
-fn signal(service: &ReminderService, generation: u64, event: ReminderSignal) {
-    let now = SystemTime::now()
+fn now_ms() -> u64 {
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
-        .as_millis() as u64;
+        .as_millis() as u64
+}
+
+fn signal(service: &ReminderService, generation: u64, event: ReminderSignal) {
+    let now = now_ms();
     let snapshot = {
         let Ok(mut state) = service.state.lock() else {
             return;
@@ -185,6 +226,115 @@ fn signal(service: &ReminderService, generation: u64, event: ReminderSignal) {
         state.snapshot.clone()
     };
     publish(service, snapshot);
+}
+
+fn receive(service: &ReminderService, generation: u64, message: ChatMessage) {
+    let snapshot = {
+        let Ok(mut state) = service.state.lock() else {
+            return;
+        };
+        if !state.receive(generation, message) {
+            return;
+        }
+        state.snapshot.clone()
+    };
+    publish(service, snapshot);
+}
+
+/// WeChat updates its list a moment after the flash; a list that has not changed yet is read
+/// again a few times before the reminder goes out without a message.
+const SETTLE: Duration = Duration::from_millis(400);
+const RETRY: Duration = Duration::from_millis(700);
+const READS: u32 = 3;
+
+/// Reads WeChat's chat list after flashes and compares it with the last read.
+struct ChatReader {
+    executable: PathBuf,
+    seen: Option<Vec<chats::Session>>,
+    due: Option<Instant>,
+    reads: u32,
+    /// Read the list again once the user has left WeChat: what changed while they were in it is
+    /// not news at the next flash.
+    rebase: Option<Instant>,
+    in_wechat: bool,
+}
+
+impl ChatReader {
+    fn new(executable: PathBuf) -> Self {
+        let mut reader = Self {
+            executable,
+            seen: None,
+            due: None,
+            reads: 0,
+            rebase: None,
+            in_wechat: false,
+        };
+        reader.seen = reader.read();
+        reader
+    }
+
+    fn read(&self) -> Option<Vec<chats::Session>> {
+        chats::read(main_window(&self.executable)?)
+    }
+
+    fn flashed(&mut self) {
+        self.rebase = None;
+        if self.due.is_none() {
+            // Nothing readable last time: find out now rather than hold the reminder back.
+            let wait = if self.seen.is_some() {
+                SETTLE
+            } else {
+                Duration::ZERO
+            };
+            self.due = Some(Instant::now() + wait);
+            self.reads = 0;
+        }
+    }
+
+    fn activated(&mut self, in_wechat: bool) {
+        let left = std::mem::replace(&mut self.in_wechat, in_wechat) && !in_wechat;
+        if left && self.due.is_none() {
+            self.rebase = Some(Instant::now() + SETTLE);
+        }
+    }
+
+    /// The chats with a new message once a flash's reads are done (empty: none could be told, so
+    /// the plain reminder shows); `None` while there is nothing to report yet.
+    fn tick(&mut self) -> Option<Vec<chats::Session>> {
+        let now = Instant::now();
+        if self.rebase.is_some_and(|at| now >= at) {
+            self.rebase = None;
+            if let Some(rows) = self.read() {
+                self.seen = Some(rows);
+            }
+        }
+        if !self.due.is_some_and(|at| now >= at) {
+            return None;
+        }
+        let fresh = match (self.read(), self.seen.take()) {
+            (Some(rows), Some(before)) => {
+                let fresh: Vec<_> = chats::new_messages(&before, &rows)
+                    .into_iter()
+                    .cloned()
+                    .collect();
+                self.seen = Some(rows);
+                fresh
+            }
+            // Not readable, or the first readable list, which is only the baseline.
+            (rows, before) => {
+                self.seen = rows.or(before);
+                self.due = None;
+                return Some(Vec::new());
+            }
+        };
+        self.reads += 1;
+        if fresh.is_empty() && self.reads < READS {
+            self.due = Some(now + RETRY);
+            return None;
+        }
+        self.due = None;
+        Some(fresh)
+    }
 }
 
 fn connection(service: &ReminderService, generation: u64, error: Option<String>) {
@@ -223,15 +373,18 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
             }
             continue;
         }
-        let callback_service = service.clone();
+        let events = Rc::new(RefCell::new(Vec::new()));
+        let sink = events.clone();
         let listener = installed_executable().and_then(|executable| {
-            ReminderListener::new(executable, move |event| {
-                signal(&callback_service, generation, event)
+            ReminderListener::new(executable.clone(), move |event| {
+                sink.borrow_mut().push(event)
             })
+            .map(|listener| (listener, executable))
         });
         match listener {
-            Ok(listener) => {
+            Ok((listener, executable)) => {
                 connection(&service, generation, None);
+                let mut reader = ChatReader::new(executable);
                 loop {
                     if !service
                         .state
@@ -242,6 +395,36 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
                     }
                     listener.poll();
                     let _ = listener.stats();
+                    for event in events.take() {
+                        match event {
+                            ReminderSignal::Attention => reader.flashed(),
+                            ReminderSignal::ActivatedElsewhere => reader.activated(false),
+                            ReminderSignal::Activated => {
+                                reader.activated(true);
+                                signal(&service, generation, event);
+                            }
+                            _ => signal(&service, generation, event),
+                        }
+                    }
+                    match reader.tick() {
+                        Some(fresh) if fresh.is_empty() => {
+                            signal(&service, generation, ReminderSignal::Attention)
+                        }
+                        Some(fresh) => {
+                            let at = now_ms();
+                            for (index, chat) in fresh.into_iter().enumerate() {
+                                let message = ChatMessage {
+                                    chat: chat.key,
+                                    contact: chat.contact,
+                                    preview: chat.preview,
+                                    unread: chat.unread,
+                                    at: at + index as u64,
+                                };
+                                receive(&service, generation, message);
+                            }
+                        }
+                        None => {}
+                    }
                     if receiver.recv_timeout(Duration::from_millis(50))
                         == Err(mpsc::RecvTimeoutError::Disconnected)
                     {
@@ -261,11 +444,23 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
     }
 }
 
+/// Brings WeChat up; with `chat` (a `ChatMessage`'s) it also opens that chat when its row is in
+/// view, otherwise WeChat stays on the chat it showed last.
 #[tauri::command]
-pub async fn open_wechat() -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(|| {
+pub async fn open_wechat(chat: Option<String>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
         let executable = installed_executable()?;
         if activate_existing_wechat(&executable)? {
+            if let Some(chat) = chat {
+                // A window just restored lays its list out a moment later.
+                thread::sleep(Duration::from_millis(300));
+                let opened = main_window(&executable)
+                    .ok_or("no main window")
+                    .and_then(|window| chats::open(window, &chat));
+                if let Err(why) = opened {
+                    eprintln!("WeChat reminders: could not open the chat ({why}); WeChat shows its last chat");
+                }
+            }
             return Ok(());
         }
         Err("未找到正在运行的微信窗口，请先打开并登录桌面版微信。".into())
@@ -318,6 +513,11 @@ fn find_wechat_window(search: &mut WindowSearch, window: HWND) {
         main_sized,
         visible: win32::window::is_visible(window),
     });
+}
+
+fn main_window(executable: &Path) -> Option<HWND> {
+    let search = existing_wechat_windows(executable).ok()?;
+    preferred_window(&search.found).map(|window| window.handle)
 }
 
 fn existing_wechat_windows(executable: &std::path::Path) -> Result<WindowSearch, String> {
