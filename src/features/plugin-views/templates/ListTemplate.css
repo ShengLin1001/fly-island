@@ -221,7 +221,7 @@ button.plugin-list__main:hover .plugin-list__title {
  * text takes the island's ink (stageStyle.ts sets --island-ink-rgb), so a light island gets
  * dark text. The page frame itself is PluginViewPage's; this only undoes it for list pages.
  */
-.plugin-view--list {
+.plugin-view.plugin-view--list {
   --list-ink: var(--island-ink-rgb, 241, 240, 246);
   --text-1: rgba(var(--list-ink), 0.96);
   --text-2: rgba(var(--list-ink), 0.68);
@@ -234,7 +234,7 @@ button.plugin-list__main:hover .plugin-list__title {
   box-shadow: none;
 }
 
-.plugin-view--list .plugin-view__title {
+.plugin-view.plugin-view--list .plugin-view__title {
   padding: 0 6px;
 }
 

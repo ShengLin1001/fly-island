@@ -5,12 +5,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import "../../src/styles/tokens.css";
-import "../../src/features/plugin-views/PluginViewPage.css";
 import { I18nProvider } from "../../src/i18n";
 import { DetailTemplate } from "../../src/features/plugin-views/templates/DetailTemplate";
 import { FormTemplate } from "../../src/features/plugin-views/templates/FormTemplate";
 import { ListTemplate } from "../../src/features/plugin-views/templates/ListTemplate";
 import { StatusTemplate } from "../../src/features/plugin-views/templates/StatusTemplate";
+// After the templates, as PluginViewPage.tsx loads it: the page frame comes last in the app too.
+import "../../src/features/plugin-views/PluginViewPage.css";
 
 const sent: string[] = [];
 mockIPC((command, payload) => {
