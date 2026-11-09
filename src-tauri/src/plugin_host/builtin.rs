@@ -14,7 +14,7 @@ use serde_json::{Map, Value};
 
 use super::manifest::{parse_builtin_manifest, LocalizedText, PluginManifest};
 use super::settings::InfoItem;
-use crate::{claude_usage, local_api};
+use crate::{claude_usage, local_api, ssh_tunnel};
 
 pub(super) const LOCAL_API_ID: &str = "focusd.local-api";
 pub(super) const LOCAL_API_ALLOW_WRITE: &str = "allowWrite";
@@ -66,7 +66,7 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
         "key": "pattern",
         "type": "select",
         "title": { "zh-CN": "图案", "en": "Pattern" },
-        "default": "eyes",
+        "default": "pet",
         "options": [
           { "value": "eyes", "title": { "zh-CN": "眼睛", "en": "Eyes" } },
           { "value": "bird", "title": { "zh-CN": "小鸟", "en": "Bird" } },
@@ -80,10 +80,10 @@ const CENTER_PATTERN_MANIFEST: &str = r#"{
         "type": "string",
         "title": { "zh-CN": "宠物", "en": "Pet" },
         "description": {
-          "zh-CN": "图案选「宠物」时显示哪一只。宠物包（pet.json + spritesheet）放在 ~/.codex/pets 或应用数据目录的 pets 文件夹里；找不到时显示眼睛。",
-          "en": "Which pet the Pet pattern shows. Pet packs (pet.json + spritesheet) go in ~/.codex/pets or the pets folder of the app data directory; without one the eyes show."
+          "zh-CN": "图案选「宠物」时显示哪一只，默认小八（xiaoba）。宠物包（pet.json + spritesheet）放在 ~/.codex/pets 或应用数据目录的 pets 文件夹里；找不到时显示眼睛。",
+          "en": "Which pet the Pet pattern shows; xiaoba by default. Pet packs (pet.json + spritesheet) go in ~/.codex/pets or the pets folder of the app data directory; without one the eyes show."
         },
-        "default": ""
+        "default": "xiaoba"
       }
     ]
   }
@@ -187,13 +187,84 @@ const SESSION_RING_MANIFEST: &str = r#"{
   "id": "focusd.session-ring",
   "name": { "zh-CN": "Agent 会话环", "en": "Agent session ring" },
   "description": {
-    "zh-CN": "在收起条上用一个分段小环代替蓝色会话数：等你确认、等你回复、运行、刚完成各有颜色，中间是会话数，悬停列出等你处理的会话，点击打开 Agent 页。数据就是 Agent 页的会话列表（Claude Code 和 Codex），需要开启 AI Agent。",
-    "en": "Replaces the blue session count on the collapsed bar with a small segmented ring: needs you, your turn, running and just done each have a colour, the count sits in the middle, hovering lists the sessions waiting on you and a click opens the Agent page. Uses the Agent page's sessions (Claude Code and Codex); needs AI Agent switched on."
+    "zh-CN": "在收起条上代替蓝色会话数，四种样式：每个会话一个像素格（最多 3 × 3）、中间写会话数的分段小环、会话数加一段状态条、信号格（每种颜色一根柱子，每个会话一格横条，柱子越高会话越多）。等你确认、等你回复、运行、完成各有颜色，悬停列出等你处理的会话，点击打开 Agent 页。显示的就是 Agent 页列出的会话（Claude Code 和 Codex），跟着它隐藏、移除；需要开启 AI Agent。",
+    "en": "Takes the blue session count's place on the collapsed bar, in one of four styles: a pixel per session (up to 3 × 3), a small segmented ring with the count in the middle, the count with a state bar, or signal bars (a column per colour, a bar per session, so the taller the column the more sessions). Needs you, your turn, running and done each have a colour; hovering lists the sessions waiting on you and a click opens the Agent page. It shows exactly the sessions the Agent page lists (Claude Code and Codex) and drops them as the page hides or removes them; needs AI Agent switched on."
+  },
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "author": "ShengLin1001",
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "style",
+        "type": "select",
+        "title": { "zh-CN": "样式", "en": "Style" },
+        "default": "ring",
+        "options": [
+          { "value": "grid", "title": { "zh-CN": "像素格", "en": "Pixel grid" } },
+          { "value": "ring", "title": { "zh-CN": "分段环", "en": "Segmented ring" } },
+          { "value": "bar", "title": { "zh-CN": "状态条", "en": "State bar" } },
+          { "value": "signal", "title": { "zh-CN": "信号格", "en": "Signal bars" } }
+        ]
+      },
+      {
+        "key": "showCount",
+        "type": "boolean",
+        "title": { "zh-CN": "显示会话数", "en": "Show the count" },
+        "description": {
+          "zh-CN": "分段环中间和状态条前面的数字。关掉后只看颜色比例；像素格和信号格本来就不写数字。",
+          "en": "The number in the segmented ring and before the state bar. Off, only the colours' shares show; the pixel grid and signal bars have no number anyway."
+        },
+        "default": true
+      }
+    ]
+  }
+}"#;
+
+pub(super) const SSH_TUNNEL_ID: &str = "focusd.ssh-proxy-tunnel";
+
+// The hosts, their switches and ports there are not plugin settings: the plugin page lists them
+// from the SSH list (src/features/ssh-tunnel) and they live in ssh-tunnels.json (ssh_tunnel/).
+const SSH_TUNNEL_MANIFEST: &str = r#"{
+  "id": "focusd.ssh-proxy-tunnel",
+  "name": { "zh-CN": "SSH 代理隧道", "en": "SSH proxy tunnel" },
+  "description": {
+    "zh-CN": "把这台电脑的代理借给 SSH 服务器：为下面打开的每台主机常驻一条 ssh 反向隧道（服务器上的 127.0.0.1:端口 → 这里的本地代理），服务器上设好 http_proxy 就能经这里上网。主机来自 ~/.ssh/config 和 AI Agent 页添加的电脑，只用密钥登录；断开后自动重连，关闭插件或退出岛屿时隧道一起结束。",
+    "en": "Lends this computer's proxy to SSH servers: for each host switched on below, a resident ssh reverse tunnel (127.0.0.1:port on the server to the local proxy here), so the server reaches the internet through here once http_proxy is set there. Hosts come from ~/.ssh/config and the computers added on the AI Agent page, key login only; it reconnects after a drop, and the tunnels end when the plugin is switched off or the island quits."
   },
   "version": "1.0.0",
   "apiVersion": 1,
   "author": "ShengLin1001",
-  "runtime": { "type": "builtin" }
+  "runtime": { "type": "builtin" },
+  "contributes": {
+    "settings": [
+      {
+        "key": "localProxy",
+        "type": "select",
+        "title": { "zh-CN": "本地代理", "en": "Local proxy" },
+        "description": {
+          "zh-CN": "隧道转发到这台电脑上的哪个代理端口。自动检测依次看 Clash Verge 的设置、正在运行的 v2rayN 的设置和 Windows 系统代理，再试两者的默认端口，用第一个真有程序在监听的；之后每 15 秒再看一次，端口变了隧道跟着换。选 Clash Verge 或 v2rayN 时也先读它们的设置，读不到才用默认端口（7897、10808）。",
+          "en": "Which proxy port on this computer the tunnels forward to. Auto looks in turn at Clash Verge's settings, a running v2rayN's settings and the Windows system proxy, then tries both apps' default ports, and takes the first one something listens on; it looks again every 15 seconds and moves the tunnels when the port changes. Clash Verge and v2rayN also read the app's settings first, and use the default port (7897, 10808) only when there are none."
+        },
+        "default": "auto",
+        "options": [
+          { "value": "auto", "title": { "zh-CN": "自动检测", "en": "Auto" } },
+          { "value": "clash-verge", "title": { "zh-CN": "Clash Verge（默认 7897）", "en": "Clash Verge (7897 by default)" } },
+          { "value": "v2rayn", "title": { "zh-CN": "v2rayN（默认 10808）", "en": "v2rayN (10808 by default)" } },
+          { "value": "custom", "title": { "zh-CN": "自定义端口", "en": "Custom port" } }
+        ]
+      },
+      {
+        "key": "customPort",
+        "type": "number",
+        "title": { "zh-CN": "本地端口", "en": "Local port" },
+        "min": 1,
+        "max": 65535,
+        "default": 7897
+      }
+    ]
+  }
 }"#;
 
 /// Every built-in plugin: its id, its manifest (whose "id" must match), and
@@ -203,6 +274,7 @@ pub(super) const BUILTINS: &[(&str, &str, bool)] = &[
     ("focusd.center-pattern", CENTER_PATTERN_MANIFEST, false),
     (CLAUDE_USAGE_ID, CLAUDE_USAGE_MANIFEST, true),
     ("focusd.session-ring", SESSION_RING_MANIFEST, false),
+    (SSH_TUNNEL_ID, SSH_TUNNEL_MANIFEST, true),
 ];
 
 /// Every built-in plugin's id and manifest.
@@ -273,6 +345,7 @@ pub(super) fn start(id: &str, settings: &Map<String, Value>) -> Result<Vec<InfoI
     match id {
         LOCAL_API_ID => local_api::start(allow_write(settings)).map(local_api_info),
         CLAUDE_USAGE_ID => apply_claude_usage(settings).map(|()| Vec::new()),
+        SSH_TUNNEL_ID => ssh_tunnel::start(settings).map(|()| Vec::new()),
         _ => Err(format!("Built-in plugin {id} is marked native but has no start.")),
     }
 }
@@ -287,6 +360,10 @@ pub(super) fn stop(id: &str) -> Result<(), String> {
             claude_usage::stop();
             Ok(())
         }
+        SSH_TUNNEL_ID => {
+            ssh_tunnel::stop();
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
@@ -295,6 +372,7 @@ pub(super) fn settings_changed(id: &str, settings: &Map<String, Value>) -> Resul
     match id {
         LOCAL_API_ID => local_api::set_allow_write(allow_write(settings)),
         CLAUDE_USAGE_ID => apply_claude_usage(settings),
+        SSH_TUNNEL_ID => ssh_tunnel::start(settings),
         _ => Ok(()),
     }
 }
