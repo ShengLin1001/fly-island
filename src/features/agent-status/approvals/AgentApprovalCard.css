@@ -91,6 +91,9 @@
 }
 
 .agent-approval__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: 0 0 auto;
   height: 24px;
   padding: 0 11px;
@@ -102,6 +105,30 @@
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* The global shortcut, quieter than the label so the decision still reads first. */
+.agent-approval__key {
+  min-width: 15px;
+  padding: 2px 3px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: rgba(var(--agent-ink), 0.12);
+  font: 600 10px/1 var(--font-mono, ui-monospace, Consolas, monospace);
+  text-align: center;
+  opacity: 0.75;
+}
+
+.agent-approval__button--allow .agent-approval__key {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* The modifiers all the keys share, written once before the buttons. */
+.agent-approval__modifiers {
+  align-self: center;
+  color: rgba(var(--agent-ink), 0.4);
+  font: 600 10px/1 var(--font-mono, ui-monospace, Consolas, monospace);
+  white-space: nowrap;
 }
 
 /* Out of the way of the decisions, on the far side. */

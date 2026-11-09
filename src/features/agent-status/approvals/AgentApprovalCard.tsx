@@ -7,6 +7,7 @@ import { sessionProject } from "../sessionList";
 import { AGENT_PROVIDER_LABELS } from "../status";
 import { APPROVAL_HOTKEYS, type AgentApprovalDecision } from "./api";
 import type { AgentApprovals } from "./useAgentApprovals";
+import { ApprovalShortcut, ApprovalShortcutModifiers } from "./ApprovalShortcut";
 import { useApprovalCard } from "./useApprovalCard";
 import { alwaysAllowRule, approvalPreview } from "./preview";
 import "./AgentApprovalCard.css";
@@ -77,19 +78,23 @@ export function AgentApprovalCard({ approvals, sessions }: { approvals: AgentApp
         {preview.text}
       </button>
       <div className="agent-approval__actions">
-        <button className="agent-approval__button agent-approval__button--terminal" type="button" disabled={!armed} title={`${labels.terminalHint} (${keyOf("terminal")})`} onClick={toTerminal}>
-          {labels.terminal}
+        <ApprovalShortcutModifiers shortcut={keyOf("terminal")} />
+        <button className="agent-approval__button agent-approval__button--terminal" type="button" disabled={!armed} title={`${labels.terminalHint} (${keyOf("terminal")})`} aria-keyshortcuts={keyOf("terminal")} onClick={toTerminal}>
+          <span className="agent-approval__label">{labels.terminal}</span>
+          <ApprovalShortcut shortcut={keyOf("terminal")} />
         </button>
-        <button className="agent-approval__button agent-approval__button--deny" type="button" disabled={!armed} title={keyOf("deny")} onClick={() => approvals.decide("deny")}>
-          {labels.deny}
+        <button className="agent-approval__button agent-approval__button--deny" type="button" disabled={!armed} title={keyOf("deny")} aria-keyshortcuts={keyOf("deny")} onClick={() => approvals.decide("deny")}>
+          <span className="agent-approval__label">{labels.deny}</span>
+          <ApprovalShortcut shortcut={keyOf("deny")} />
         </button>
         {rule && (
           <button className="agent-approval__button" type="button" disabled={!armed} title={labels.allowAlwaysHint(rule)} onClick={() => approvals.decide("allowAlways")}>
-            {labels.allowAlways}
+            <span className="agent-approval__label">{labels.allowAlways}</span>
           </button>
         )}
-        <button className="agent-approval__button agent-approval__button--allow" type="button" disabled={!armed} title={keyOf("allow")} onClick={() => approvals.decide("allow")}>
-          {labels.allow}
+        <button className="agent-approval__button agent-approval__button--allow" type="button" disabled={!armed} title={keyOf("allow")} aria-keyshortcuts={keyOf("allow")} onClick={() => approvals.decide("allow")}>
+          <span className="agent-approval__label">{labels.allow}</span>
+          <ApprovalShortcut shortcut={keyOf("allow")} />
         </button>
       </div>
     </section>

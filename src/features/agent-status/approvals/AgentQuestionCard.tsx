@@ -7,6 +7,7 @@ import { sessionProject } from "../sessionList";
 import { AGENT_PROVIDER_LABELS } from "../status";
 import { APPROVAL_HOTKEYS } from "./api";
 import type { AgentApprovals } from "./useAgentApprovals";
+import { ApprovalShortcut, ApprovalShortcutModifiers } from "./ApprovalShortcut";
 import { useApprovalCard } from "./useApprovalCard";
 import { answerOf, answersFor, answersOnPick, EMPTY_PICK, parseQuestions, togglePick, type QuestionPick } from "./questions";
 import "./AgentApprovalCard.css";
@@ -144,18 +145,21 @@ export function AgentQuestionCard({ approvals, sessions }: { approvals: AgentApp
         );
       })}
       <div className="agent-approval__actions">
+        <ApprovalShortcutModifiers shortcut={QUESTION_HOTKEYS[0]?.shortcut} />
         <button
           className="agent-approval__button agent-approval__button--terminal"
           type="button"
           disabled={!armed}
           title={`${t.agent.approval.terminalHint} (${QUESTION_HOTKEYS[0]?.shortcut ?? ""})`}
+          aria-keyshortcuts={QUESTION_HOTKEYS[0]?.shortcut}
           onClick={toTerminal}
         >
-          {t.agent.approval.terminal}
+          <span className="agent-approval__label">{t.agent.approval.terminal}</span>
+          <ApprovalShortcut shortcut={QUESTION_HOTKEYS[0]?.shortcut} />
         </button>
         {(!instant || picks.some((item) => item?.text.trim())) && (
           <button className="agent-approval__button agent-approval__button--allow" type="button" disabled={!armed || !answers} onClick={submit}>
-            {labels.submit}
+            <span className="agent-approval__label">{labels.submit}</span>
           </button>
         )}
       </div>

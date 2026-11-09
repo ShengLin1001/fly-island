@@ -86,7 +86,7 @@ const wait = (ms: number) => act(async () => { await new Promise((resolve) => se
 const send = (item: AgentApprovalRequest) => act(async () => { await emit("agent-approval-requested", item); });
 const close = (name: string, reason: string) => act(async () => { await emit("agent-approval-closed", { id: idOf(name), reason }); });
 const button = (name: string) =>
-  [...document.querySelectorAll<HTMLButtonElement>("#fixture .agent-approval__button")].find((item) => item.textContent === name);
+  [...document.querySelectorAll<HTMLButtonElement>("#fixture .agent-approval__button")].find((item) => item.querySelector(".agent-approval__label")?.textContent === name);
 const click = (target: HTMLElement | undefined) => act(async () => { target?.click(); });
 const messages: string[] = [];
 function check(condition: unknown, label: string) {
