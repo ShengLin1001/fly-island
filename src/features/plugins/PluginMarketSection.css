@@ -292,6 +292,11 @@
   max-width: 240px;
 }
 
+/* Sort stays at the end of the row, or on its own line when the window is narrow. */
+.plugin-market__sort {
+  margin-left: auto;
+}
+
 .plugin-market__refresh {
   flex: none;
   width: 26px;
@@ -324,6 +329,34 @@
   color: #f5c84c;
 }
 
+/* The like count follows the star, and the two stay on the left. */
+.plugin-market__favorite:has(+ .plugin-market__like) {
+  margin-right: 0;
+}
+
+.plugin-market__like {
+  display: inline-flex;
+  margin-right: auto;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 6px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plugin-market__like:hover {
+  color: var(--color-text-strong);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.plugin-market__like:focus-visible,
 .plugin-market__favorite:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;

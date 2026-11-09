@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { RefreshCcw } from "lucide-react";
+import { SelectControl } from "../../components/controls/SelectControl";
 import { useLocale, useTranslation } from "../../i18n";
 import { MARKET_CATEGORIES, type MarketCategory, type MarketPlugin, type PluginsSnapshot } from "./api";
 import { filterMarketPlugins, usedCategories } from "./marketFilter";
 import { useMarketFavorites } from "./marketFavorites";
+import { sortMarketPlugins, useMarketLikes, type MarketSort } from "./marketLikes";
 import { groupMarketPlugins } from "./marketGroups";
 import { MarketPluginItem } from "./MarketPluginItem";
 import { usePluginMarket } from "./usePluginMarket";
@@ -28,6 +30,9 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<MarketCategory | "" | typeof FAVORITES>("");
   const { favorites, toggleFavorite } = useMarketFavorites();
+  const likes = useMarketLikes(loadedAt);
+  const hasLikes = Object.keys(likes).length > 0;
+  const [sort, setSort] = useState<MarketSort>("index");
   const failedPlugin = installError && market?.plugins.find((plugin) => plugin.id === installError.id);
   const categories = useMemo(() => (market ? usedCategories(market.plugins, MARKET_CATEGORIES) : []), [market]);
   const shown = useMemo(() => {
@@ -35,7 +40,7 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
     const plugins = category === FAVORITES ? market.plugins.filter((plugin) => favorites.includes(plugin.id)) : market.plugins;
     return filterMarketPlugins(plugins, { query, category: category === FAVORITES ? "" : category }, market.officialPublisher);
   }, [market, query, category, favorites]);
-  const groups = useMemo(() => groupMarketPlugins(shown), [shown]);
+  const groups = useMemo(() => groupMarketPlugins(sortMarketPlugins(shown, hasLikes ? sort : "index", likes)), [shown, sort, likes, hasLikes]);
   const hasPlugins = Boolean(market && market.plugins.length > 0);
   const status = loading
     ? text.refreshing
@@ -57,6 +62,7 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
                   market={market}
                   installingId={installingId}
                   favorite={favorites.includes(plugin.id)}
+                  like={likes[plugin.id]}
                   onToggleFavorite={toggleFavorite}
                   onInstall={(id, trust, acceptKeyChange) => void install(id, trust, acceptKeyChange)}
                   onManage={onManage}
@@ -116,6 +122,16 @@ export function PluginMarketSection({ onInstalled, onManage }: { onInstalled?: (
                   <span>{name === "" ? text.allCategories : name === FAVORITES ? text.favorites(favorites.length) : text.category[name]}</span>
                 </button>
               ))}
+            </div>
+          ) : null}
+          {hasLikes ? (
+            <div className="plugin-market__sort">
+              <SelectControl
+                value={sort}
+                ariaLabel={text.sortLabel}
+                options={[{ value: "index", label: text.sortIndex }, { value: "likes", label: text.sortLikes }]}
+                onChange={setSort}
+              />
             </div>
           ) : null}
         </div>

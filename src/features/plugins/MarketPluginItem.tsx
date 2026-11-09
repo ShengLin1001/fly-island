@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { BadgeCheck, KeyRound, Lock, Star } from "lucide-react";
+import { BadgeCheck, KeyRound, Lock, Star, ThumbsUp } from "lucide-react";
 import { useLocale, useTranslation } from "../../i18n";
-import { MARKET_CATEGORIES, marketPublisher, type MarketCategory, type MarketPlugin, type MarketSnapshot } from "./api";
+import { MARKET_CATEGORIES, marketPublisher, openPluginHomepage, type MarketCategory, type MarketPlugin, type MarketSnapshot } from "./api";
+import type { MarketLike } from "./marketLikes";
 import { MarketPluginAction } from "./MarketPluginAction";
 import { MarketPluginDetails } from "./MarketPluginDetails";
 import { pluginIconTone, pluginInitial } from "./marketGroups";
@@ -21,6 +22,7 @@ export function MarketPluginItem({
   market,
   installingId,
   favorite,
+  like,
   onToggleFavorite,
   onInstall,
   onManage,
@@ -30,6 +32,8 @@ export function MarketPluginItem({
   installingId: string | null;
   /** Starred by the user; kept on this computer only. */
   favorite: boolean;
+  /** Its 👍 count and the discussion to give one on; missing when the likes could not be read. */
+  like?: MarketLike;
   onToggleFavorite: (id: string) => void;
   /** `trust`: the user agreed to trust the publisher first. `acceptKeyChange`: the user confirmed a new author key. */
   onInstall: (id: string, trust: boolean, acceptKeyChange: boolean) => void;
@@ -103,6 +107,17 @@ export function MarketPluginItem({
         >
           <Star size={14} strokeWidth={2} fill={favorite ? "currentColor" : "none"} aria-hidden="true" />
         </button>
+        {like ? (
+          <button
+            className="plugin-market__like"
+            type="button"
+            aria-label={text.like(plugin.name[locale], like.count)}
+            onClick={() => void openPluginHomepage(like.url)}
+          >
+            <ThumbsUp size={13} strokeWidth={2} aria-hidden="true" />
+            <span>{like.count}</span>
+          </button>
+        ) : null}
         <MarketPluginAction plugin={plugin} trusted={trusted} installingId={installingId} onInstall={onInstall} onManage={onManage} />
       </div>
       <div className="plugin-market__notes">

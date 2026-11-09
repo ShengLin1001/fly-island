@@ -10,7 +10,7 @@ import { SettingsWindow } from "../../src/windows/settings/SettingsWindow";
 import { DEFAULT_SETTINGS } from "../../src/features/appearance/settings";
 import { settingsCategoryFor } from "../../src/windows/settings/categories";
 import { I18nProvider, LOCALE_STORAGE_KEY } from "../../src/i18n";
-import { commands, keybindingCalls, mailCalls, marketInstalls, REPLY_MARKER, replyMarkerCalls, revokedPermissions } from "./settingsMocks";
+import { commands, keybindingCalls, mailCalls, marketInstalls, openedUrls, REPLY_MARKER, replyMarkerCalls, revokedPermissions } from "./settingsMocks";
 
 const query = new URLSearchParams(location.search);
 const automated = query.has("test");
@@ -159,6 +159,12 @@ if (!automated) {
     await act(async () => { document.querySelector<HTMLButtonElement>(".plugin-market__favorite")?.click(); });
     await act(async () => { categoryButton("全部")?.click(); });
     check(localStorage.getItem("focusd-island-plugin-market-favorites") === null, "Unstarring the last plugin clears the saved list");
+    const likeButtons = [...document.querySelectorAll<HTMLButtonElement>(".plugin-market__like")];
+    check(likeButtons.map((button) => button.textContent).sort().join("|") === "12|3" && likeButtons.some((button) => button.getAttribute("aria-label") === "新插件：12 个赞，在 GitHub 上点赞")
+      && document.querySelector(".plugin-market__sort"), "Cards show the likes from GitHub, and a sort menu appears with them (E14)");
+    const opensBefore = openedUrls.length;
+    await act(async () => { likeButtons.find((button) => button.textContent === "12")?.click(); });
+    check(openedUrls.length === opensBefore + 1 && openedUrls[openedUrls.length - 1] === "https://github.com/TixXin/focusd-plugins/discussions/9", "The like button opens the plugin's discussion");
     check(document.querySelector(".plugin-market__status")?.textContent?.startsWith("共 ") && !document.querySelector(".plugin-market__header > span:only-child"), "A status line with the plugin count takes the place of a second Plugin market title");
     const officialBadges = document.querySelectorAll(".plugin-market__badge--official");
     check(officialBadges.length > 0 && [...document.querySelectorAll(".plugin-market__meta")].every((meta) => !meta.textContent?.includes("· 官方")), "Official plugins carry one small mark instead of a publisher line");

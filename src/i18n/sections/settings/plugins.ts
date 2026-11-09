@@ -157,6 +157,11 @@ export type SettingsPluginsText = {
     noFavorites: string;
     favorite: (name: string) => string;
     unfavorite: (name: string) => string;
+    /** Likes from each plugin's discussion on GitHub (E14): the card's button and the sort menu. */
+    like: (name: string, count: number) => string;
+    sortLabel: string;
+    sortIndex: string;
+    sortLikes: string;
     manage: string;
     verified: string;
     noPermissions: string;
@@ -404,6 +409,10 @@ export const zhCN: SettingsPluginsText = {
     noFavorites: "还没有收藏的插件。点卡片右侧的星标收藏，收藏只保存在这台电脑上。",
     favorite: (name: string) => `收藏 ${name}`,
     unfavorite: (name: string) => `取消收藏 ${name}`,
+    like: (name: string, count: number) => `${name}：${count} 个赞，在 GitHub 上点赞`,
+    sortLabel: "排序",
+    sortIndex: "默认顺序",
+    sortLikes: "按点赞数",
     manage: "管理",
     verified: "已验证",
     noPermissions: "无需权限",
@@ -660,6 +669,10 @@ export const en: SettingsPluginsText = {
     noFavorites: "No starred plugins yet. Use the star on a card; stars are kept on this computer only.",
     favorite: (name: string) => `Star ${name}`,
     unfavorite: (name: string) => `Unstar ${name}`,
+    like: (name: string, count: number) => `${name}: ${count} ${count === 1 ? "like" : "likes"}, like it on GitHub`,
+    sortLabel: "Sort",
+    sortIndex: "Default order",
+    sortLikes: "Most liked",
     manage: "Manage",
     verified: "Verified",
     noPermissions: "No permissions",
