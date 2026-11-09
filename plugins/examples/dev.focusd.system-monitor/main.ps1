@@ -3,7 +3,9 @@
 #
 # It reads only while something shows the figures: every second while the page is open
 # (programs every 3 s, the GPU every 2 s), every 2 s for the collapsed bar when some bar
-# items are ticked, and not at all otherwise. Bar items keep the plugin running
+# items are ticked, and not at all otherwise. With "record in the background" ticked it also
+# reads CPU, GPU and network every second while the page is closed and keeps the last five minutes,
+# which the page gets when it opens. Bar items and background recording keep the plugin running
 # (host.keepAlive); without them it starts 10 s after the island and stops when idle.
 #
 # Sources, all readable without administrator rights: .NET performance counters (CPU, cores,
@@ -31,6 +33,9 @@ $script:Degree = [string][char]0x00B0
 $script:TotalMemory = [double](Get-CimInstance Win32_ComputerSystem -Property TotalPhysicalMemory).TotalPhysicalMemory
 
 $BarKeys = @('barCpu', 'barMemory', 'barCpuTemperature', 'barGpuTemperature')
+# The page's charts show five minutes, one sample a second.
+$HistoryLength = 300
+$script:History = @{ cpu = @(); gpu = @(); down = @(); up = @() }
 
 function Test-Setting([string]$Key) {
     $script:Settings.ContainsKey($Key) -and [bool]$script:Settings[$Key]
@@ -39,6 +44,10 @@ function Test-Setting([string]$Key) {
 function Test-Bar {
     foreach ($key in $BarKeys) { if (Test-Setting $key) { return $true } }
     $false
+}
+
+function Test-Sampling {
+    $script:Visible -or (Test-Setting 'backgroundHistory')
 }
 
 function Read-Settings($Values) {
@@ -50,8 +59,9 @@ function Read-Settings($Values) {
         Set-FocusdKeepAlive 'Shows system figures on the collapsed bar'
         $script:NextBar = [datetime]::MinValue
     } else {
-        Set-FocusdKeepAlive $null
         Clear-FocusdStatus 'bar'
+        if (Test-Setting 'backgroundHistory') { Set-FocusdKeepAlive 'Records the charts in the background' }
+        else { Set-FocusdKeepAlive $null }
     }
 }
 
@@ -201,6 +211,23 @@ function Send-Bar {
     else { Update-FocusdStatus 'bar' $text -Tone $worst }
 }
 
+# The four charted series, the same values the page pushes (GPU 0 when there is none).
+function Add-History([double]$Cpu, $Gpu, $Network) {
+    $usage = 0.0
+    if ($null -ne $Gpu -and $null -ne $Gpu.usage) { $usage = $Gpu.usage }
+    $new = @{ cpu = $Cpu; gpu = $usage; down = $Network.down; up = $Network.up }
+    foreach ($key in $new.Keys) {
+        $values = @($script:History[$key]) + $new[$key]
+        if ($values.Count -gt $HistoryLength) { $values = $values[($values.Count - $HistoryLength)..($values.Count - 1)] }
+        $script:History[$key] = $values
+    }
+}
+
+# Background recording with the page closed: only what the charts draw.
+function Save-Sample {
+    Add-History (Read-Cpu $false).cpu (Read-Gpu) (Read-Network)
+}
+
 function Send-Page {
     $now = Get-Date
     $cpu = Read-Cpu $true
@@ -217,6 +244,7 @@ function Send-Page {
     $network = Read-Network
     $sample.download = $network.down
     $sample.upload = $network.up
+    Add-History $sample.cpu $sample.gpu $network
     if (($now - $script:ProcsAt).TotalMilliseconds -ge 2900) {
         $script:ProcsAt = $now
         $processes = Read-Processes
@@ -227,10 +255,10 @@ function Send-Page {
 
 function Invoke-Due {
     $now = Get-Date
-    if ($script:Visible -and $now -ge $script:NextPage) {
+    if ((Test-Sampling) -and $now -ge $script:NextPage) {
         $script:NextPage = $now.AddMilliseconds(1000)
         Open-Counters
-        Send-Page
+        if ($script:Visible) { Send-Page } else { Save-Sample }
     }
     if ((Test-Bar) -and $now -ge $script:NextBar) {
         $script:NextBar = $now.AddMilliseconds(2000)
@@ -241,7 +269,7 @@ function Invoke-Due {
 
 function Get-WaitMs {
     $due = @()
-    if ($script:Visible) { $due += $script:NextPage }
+    if (Test-Sampling) { $due += $script:NextPage }
     if (Test-Bar) { $due += $script:NextBar }
     if ($due.Count -eq 0) { return 60000 }
     $next = ($due | Measure-Object -Minimum).Minimum
@@ -263,11 +291,19 @@ while ($true) {
                 'settings.changed' { Read-Settings $message.params.settings }
                 'view.visible' {
                     $script:Visible = [bool]$message.params.visible
-                    if (-not $script:Visible) { $script:LastNet = $null; $script:LastProcs = $null; $script:ProcsAt = [datetime]::MinValue }
+                    if (-not $script:Visible) {
+                        # Background recording goes on reading the network, so its byte counts stay the baseline.
+                        if (-not (Test-Setting 'backgroundHistory')) { $script:LastNet = $null }
+                        $script:LastProcs = $null; $script:ProcsAt = [datetime]::MinValue
+                    }
                 }
                 'webview.message' {
-                    # The page sends { type: "ready" } once it has loaded; answer at once.
-                    if ($message.params.message.type -eq 'ready') { $script:Visible = $true; $script:NextPage = [datetime]::MinValue }
+                    # The page sends { type: "ready" } once it has loaded; answer at once,
+                    # first with the five minutes recorded while it was closed.
+                    if ($message.params.message.type -eq 'ready') {
+                        $script:Visible = $true; $script:NextPage = [datetime]::MinValue
+                        if (Test-Setting 'backgroundHistory') { [void](Send-FocusdWebviewMessage 'monitor' (@{ type = 'history' } + $script:History)) }
+                    }
                 }
                 'shutdown' { exit 0 }
             }

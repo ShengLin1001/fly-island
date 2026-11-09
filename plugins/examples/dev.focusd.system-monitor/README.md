@@ -4,14 +4,15 @@
 
 ## 怎么用
 
-- 安装并启用后，岛上会多一个「系统监控」页面：CPU 总占用和一分钟曲线、每个逻辑核心一根小柱、CPU 温度；GPU 占用、温度、显存和功耗（只支持 NVIDIA）；内存；上下行网速和曲线；电池；最占 CPU 或内存的 5 个程序（同一程序的进程合在一起）。
+- 安装并启用后，岛上会多一个「系统监控」页面：CPU 总占用和五分钟曲线、每个逻辑核心一根小柱、CPU 温度；GPU 占用、温度、显存和功耗（只支持 NVIDIA）；内存；上下行网速和曲线；电池；最占 CPU 或内存的 5 个程序（同一程序的进程合在一起）。
 - 在插件设置里勾选「收起条显示 CPU 占用 / 内存占用 / CPU 温度 / GPU 温度」，收起条上就会出现对应的几列，数值偏高时变黄、变红，点击打开监控页。默认都不勾。
+- 曲线默认只记页面开着时的数据。勾选「后台记录曲线」后，页面关着时插件也每秒记一次 CPU、GPU 和网速，打开页面就能看到最近五分钟。默认不勾。
 
 ## 开销
 
-- 只在需要时读取：监控页打开时每秒一次（程序列表每 3 秒），收起条有勾选项时每 2 秒一次，都没有时不读。
-- 没勾收起条项目时，插件在空闲 60 秒后停下，打开页面时再启动；勾了就一直运行（插件卡片上会写原因）。
-- 运行时是一个 Windows 自带的 PowerShell 进程，常驻内存约 60–120 MB（大部分是 PowerShell 本身）。
+- 只在需要时读取：监控页打开时每秒一次（程序列表每 3 秒），收起条有勾选项时每 2 秒一次，勾了「后台记录曲线」时页面关着也每秒读一次 CPU、GPU 和网速，都没有时不读。
+- 收起条项目和「后台记录曲线」都没勾时，插件在空闲 60 秒后停下，打开页面时再启动；勾了就一直运行（插件卡片上会写原因）。
+- 运行时是一个 Windows 自带的 PowerShell 进程，常驻内存约 60–120 MB（大部分是 PowerShell 本身；空进程约 57 MB，开着监控页读数时约 85 MB）。
 
 ## 数据来源
 
@@ -41,6 +42,6 @@ ShengLin1001 在 [TixXin/fly-island#7](https://github.com/TixXin/fly-island/pull
 Designed by ShengLin1001 as a built-in feature in TixXin/fly-island#7; turned into a market plugin by TixXin (data reading rewritten in PowerShell, the bar drawn through `status.update` cells).
 
 
-Adds a System page: CPU load with a minute of history, one bar per logical core and the CPU temperature; GPU load, temperature, memory and power (NVIDIA only); memory; download and upload speed; the battery; and the five programs using the most CPU or memory. Tick the plugin's settings to show CPU load, memory, CPU or GPU temperature as small columns on the collapsed bar; they turn yellow and red as they climb.
+Adds a System page: CPU load with five minutes of history, one bar per logical core and the CPU temperature; GPU load, temperature, memory and power (NVIDIA only); memory; download and upload speed; the battery; and the five programs using the most CPU or memory. Tick the plugin's settings to show CPU load, memory, CPU or GPU temperature as small columns on the collapsed bar; they turn yellow and red as they climb.
 
-It reads only while the page is open (every second) or the bar shows figures (every 2 s), needs no administrator rights and never goes online. The CPU temperature is the hottest ACPI thermal zone, which many desktops do not have.
+It reads only while the page is open (every second) or the bar shows figures (every 2 s); with "record the charts in the background" ticked it also reads CPU, GPU and network every second while the page is closed, so the charts show the last five minutes when it opens. It needs no administrator rights and never goes online. The CPU temperature is the hottest ACPI thermal zone, which many desktops do not have.

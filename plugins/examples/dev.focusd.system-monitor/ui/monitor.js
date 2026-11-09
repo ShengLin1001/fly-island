@@ -1,10 +1,11 @@
 // The page side of the system monitor. The page cannot read the system itself: main.ps1
 // sends a { type: "sample" } every second while the page is open, and this script keeps
-// a minute of history for the charts. getState / setState keep that minute while the
-// island runs, so the charts are not empty when the page opens again.
+// five minutes of history for the charts. getState / setState keep them while the
+// island runs, so the charts are not empty when the page opens again. With background
+// recording on, main.ps1 also sends { type: "history" }, the five minutes before the page opened.
 const focusd = acquireFocusdApi();
 const chinese = focusd.locale === "zh-CN";
-const HISTORY = 60;
+const HISTORY = 300;
 const text = chinese
   ? { memory: "内存", processes: "程序", byMemory: "内存", reading: "正在读取…", vram: "显存", down: "下载", up: "上传", battery: "电池", charging: "充电中", count: (n) => `${n} 个进程` }
   : { memory: "Memory", processes: "Programs", byMemory: "Memory", reading: "Reading…", vram: "VRAM", down: "Download", up: "Upload", battery: "Battery", charging: "charging", count: (n) => (n === 1 ? "1 process" : `${n} processes`) };
@@ -41,7 +42,7 @@ function bytes(value) {
 const percent = (value) => `${Math.round(Math.min(100, Math.max(0, value)))}%`;
 const gigabytes = (used, total) => `${(used / 1024 ** 3).toFixed(1)} / ${Number((total / 1024 ** 3).toFixed(1))} GB`;
 
-/** A minute of samples, right-aligned so the newest sits at the right edge. */
+/** Five minutes of samples, right-aligned so the newest sits at the right edge. */
 function spark(svg, values, max) {
   const [, , width, height] = svg.getAttribute("viewBox").split(" ").map(Number);
   if (values.length === 0) {
@@ -158,6 +159,12 @@ $("sort").addEventListener("click", (event) => {
 });
 
 focusd.onMessage((message) => {
+  if (message && message.type === "history") {
+    for (const key of Object.keys(history)) if (Array.isArray(message[key])) history[key] = message[key].slice(-HISTORY);
+    if (last) show(last);
+    focusd.setState({ history, sortBy, processes, last });
+    return;
+  }
   if (!message || message.type !== "sample") return;
   push(history.cpu, message.cpu);
   push(history.gpu, message.gpu && message.gpu.usage != null ? message.gpu.usage : 0);
