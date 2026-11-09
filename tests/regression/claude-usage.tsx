@@ -204,6 +204,7 @@ async function runChecks() {
     check(USAGE_PROVIDERS.slice(1).every((provider, index) => colorsOf(all[index + 1]).every((color) => color === provider.color)), "Codex、GLM、Kimi 各用自己的颜色");
     const allIsland = document.querySelector(".stage--all .island")!.getBoundingClientRect();
     const boxes = all.map((gauge) => gauge.getBoundingClientRect());
+    check(boxes.every((box) => box.width === 24 && box.height === 24), "用量环 24px，和会话环的分段环一样大");
     check(boxes.every((box, index) => box.right <= allIsland.right && (index === 0 || box.left >= boxes[index - 1].right)), "四个环都在胶囊里，互不重叠");
     check(planReads.includes("glm:false") && planReads.includes("kimi:false"), "GLM 和 Kimi 的环按各自的 provider 读用量");
     await act(async () => all[2].click());

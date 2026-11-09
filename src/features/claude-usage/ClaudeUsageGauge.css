@@ -1,8 +1,9 @@
 .claude-usage-gauge {
   display: inline-grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  /* CLAUDE_USAGE_RING_SIZE */
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 50%;

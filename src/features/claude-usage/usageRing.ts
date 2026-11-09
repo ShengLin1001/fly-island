@@ -4,8 +4,10 @@ import type { HoverCardLine } from "../../components/IslandHoverCard";
 import type { MiniRingTrack } from "../../components/MiniRing";
 import type { ClaudeUsageText } from "../../i18n/sections/claudeUsage";
 
+/** The ring's size: the session ring's, so the two match on the bar. */
+export const CLAUDE_USAGE_RING_SIZE = 24;
 /** Ring size plus the gauge slot's gap, for the collapsed width (CollapsedSlots.sideWidth). */
-export const CLAUDE_USAGE_GAUGE_WIDTH = 20 + 6;
+export const CLAUDE_USAGE_GAUGE_WIDTH = CLAUDE_USAGE_RING_SIZE + 6;
 
 /** Older numbers turn the ring grey (the Agent page's usage line uses the same age). */
 export const USAGE_STALE_MS = 15 * 60_000;
