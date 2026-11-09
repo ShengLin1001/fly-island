@@ -15,6 +15,17 @@ export type ClipboardText = {
   emptyFavorites: string;
   emptySearch: string;
   copyBack: string;
+  popup: {
+    title: string;
+    search: string;
+    hint: string;
+    empty: string;
+    quickPaste: (index: number) => string;
+  };
+  /** An image as its file: chat apps and Explorer paste the file. */
+  copyAsFile: string;
+  /** An image as its path in quotes: terminal CLIs such as Claude Code attach it as an image. */
+  copyPath: string;
   copy: string;
   copied: string;
   favorite: string;
@@ -49,6 +60,15 @@ export const zhCN: ClipboardText = {
   emptyFavorites: "还没有收藏剪贴记录",
   emptySearch: "没有匹配的剪贴记录",
   copyBack: "复制回剪贴板",
+  popup: {
+    title: "剪贴板",
+    search: "搜索剪贴记录",
+    hint: "↑↓ 选择 · Enter 粘贴 · 1–9 快速粘贴 · Esc 关闭",
+    empty: "还没有剪贴记录",
+    quickPaste: (index) => `按 ${index} 粘贴`,
+  },
+  copyAsFile: "复制为文件（聊天软件、资源管理器里粘贴成文件）",
+  copyPath: "复制图片路径（贴到 Claude Code 等终端里会当成图片）",
   copy: "复制",
   copied: "已复制",
   favorite: "收藏",
@@ -83,6 +103,15 @@ export const en: ClipboardText = {
   emptyFavorites: "No starred entries yet",
   emptySearch: "No matching entries",
   copyBack: "Copy back to clipboard",
+  popup: {
+    title: "Clipboard",
+    search: "Search clipboard history",
+    hint: "↑↓ select · Enter paste · 1–9 quick paste · Esc close",
+    empty: "Nothing copied yet",
+    quickPaste: (index) => `Press ${index} to paste`,
+  },
+  copyAsFile: "Copy as a file (chat apps and Explorer paste the file)",
+  copyPath: "Copy the image's path (Claude Code and other terminals take it as an image)",
   copy: "Copy",
   copied: "Copied",
   favorite: "Star",

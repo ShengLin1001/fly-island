@@ -41,6 +41,20 @@
         "shadow": false
       },
       {
+        "label": "clipboard",
+        "title": "fly-island 剪贴板",
+        "url": "index.html?window=clipboard",
+        "width": 380,
+        "height": 500,
+        "decorations": false,
+        "transparent": true,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "shadow": false
+      },
+      {
         "label": "settings",
         "create": false,
         "title": "fly-island",

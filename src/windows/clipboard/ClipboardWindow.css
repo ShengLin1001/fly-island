@@ -1,0 +1,7 @@
+/* The window itself is transparent; ClipboardPopup draws the panel. */
+html,
+body,
+#root {
+  background: transparent;
+  overflow: hidden;
+}

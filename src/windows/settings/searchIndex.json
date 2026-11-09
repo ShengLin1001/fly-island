@@ -519,6 +519,19 @@
     {
       "page": "shortcuts",
       "zh-CN": {
+        "group": "全局快捷键",
+        "title": "用 Win+V 打开",
+        "description": "按 Win+V 打开岛屿的剪贴板，代替系统自带的剪贴板历史；关掉后 Win+V 还给系统。"
+      },
+      "en": {
+        "group": "Global shortcuts",
+        "title": "Open with Win+V",
+        "description": "Win+V opens the island's clipboard instead of Windows' own clipboard history; turned off, Win+V goes back to Windows."
+      }
+    },
+    {
+      "page": "shortcuts",
+      "zh-CN": {
         "group": "岛上操作",
         "title": "收起展开的岛"
       },
@@ -953,12 +966,102 @@
     {
       "page": "clipboard",
       "zh-CN": {
+        "group": "打开方式",
+        "title": "快捷键打开",
+        "description": "独立窗口在鼠标旁弹出，选中一条直接粘贴到原来的窗口；岛上页面和以前一样，展开岛的剪贴板页。",
+        "options": [
+          "独立窗口",
+          "岛上页面"
+        ]
+      },
+      "en": {
+        "group": "Opening",
+        "title": "The shortcut opens",
+        "description": "The window pops up by the pointer and pastes what you pick into the window you were in; the island page opens the island's clipboard page as before.",
+        "options": [
+          "A window",
+          "The island page"
+        ]
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "打开方式",
+        "title": "弹出位置",
+        "options": [
+          "鼠标旁",
+          "屏幕中间"
+        ]
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Where it appears",
+        "options": [
+          "By the pointer",
+          "Screen centre"
+        ]
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "打开方式",
+        "title": "选中后自动粘贴",
+        "description": "关掉时只复制，回到原来的窗口自己按 Ctrl+V。"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Paste what you pick",
+        "description": "Off: it is only copied, and you press Ctrl+V back in your window."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "打开方式",
+        "title": "粘贴图片到终端时贴文件路径",
+        "description": "Windows Terminal 等终端里粘贴图片时改贴它的文件路径，Claude Code 会把路径当成图片附上（直接粘贴位图常常贴不上）。"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Paste images into terminals as their path",
+        "description": "In Windows Terminal and other terminals an image is pasted as its file path, which Claude Code attaches as an image (pasting the bitmap often fails there)."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "打开方式",
+        "title": "展开后显示条数"
+      },
+      "en": {
+        "group": "Opening",
+        "title": "Entries shown when open"
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
         "group": "剪贴板历史",
         "title": "记录图片"
       },
       "en": {
         "group": "Clipboard history",
         "title": "Record images"
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
+        "title": "不记录密码",
+        "description": "密码管理器（KeePass、Bitwarden、1Password 等）复制的密码带着「不要记录」的标记，和系统剪贴板历史一样跳过它们。"
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Do not record passwords",
+        "description": "Password managers (KeePass, Bitwarden, 1Password...) mark the passwords they copy; like Windows' own clipboard history, these are skipped."
       }
     },
     {
@@ -976,11 +1079,13 @@
       "page": "clipboard",
       "zh-CN": {
         "group": "剪贴板历史",
-        "title": "展开后显示条数"
+        "title": "自动清理",
+        "description": "超过这个时间没再复制过的记录自动删除，收藏的不删。"
       },
       "en": {
         "group": "Clipboard history",
-        "title": "Entries shown when open"
+        "title": "Clean up",
+        "description": "Entries not copied again for this long are deleted; favourites stay."
       }
     },
     {

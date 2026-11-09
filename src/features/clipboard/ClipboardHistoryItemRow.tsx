@@ -1,6 +1,6 @@
-import { Check, ClipboardList, Copy, ImageIcon, Pencil, Star, Trash2, X } from "lucide-react";
+import { Check, ClipboardList, Copy, FileImage, ImageIcon, Pencil, SquareTerminal, Star, Trash2, X } from "lucide-react";
 import { useTranslation } from "../../i18n";
-import type { ClipboardHistoryItem } from "./api";
+import type { ClipboardCopyAs, ClipboardHistoryItem } from "./api";
 import "./ClipboardHistoryItemRow.css";
 
 export function ClipboardHistoryItemRow({
@@ -10,7 +10,7 @@ export function ClipboardHistoryItemRow({
   noteDraft,
   isSavingNote,
   isConfirmingDelete,
-  isCopied,
+  copied,
   onCopy,
   onToggleFavorite,
   onStartEditNote,
@@ -25,8 +25,9 @@ export function ClipboardHistoryItemRow({
   noteDraft: string;
   isSavingNote: boolean;
   isConfirmingDelete: boolean;
-  isCopied: boolean;
-  onCopy: (id: string) => void;
+  /** Which copy button just copied this item, or null. */
+  copied: ClipboardCopyAs | null;
+  onCopy: (id: string, copyAs?: ClipboardCopyAs) => void;
   onToggleFavorite: (id: string) => void;
   onStartEditNote: (item: ClipboardHistoryItem) => void;
   onNoteDraftChange: (value: string) => void;
@@ -35,6 +36,13 @@ export function ClipboardHistoryItemRow({
   onDelete: (id: string) => void;
 }) {
   const t = useTranslation();
+  const isCopied = copied === "original";
+  // Images also go as the saved file or as its path, which terminal CLIs such as Claude Code take
+  // as an image (C22.1).
+  const imageCopies = item.kind === "image" ? ([
+    ["file", t.clipboard.copyAsFile, FileImage],
+    ["path", t.clipboard.copyPath, SquareTerminal],
+  ] as const) : [];
 
   return (
     <article className="clipboard-item" role="listitem" ref={elementRef} data-clipboard-id={item.kind === "text" ? item.id : undefined}>
@@ -155,6 +163,18 @@ export function ClipboardHistoryItemRow({
             <Trash2 size={14} strokeWidth={2.3} />
           )}
         </button>
+        {imageCopies.map(([copyAs, label, Icon]) => (
+          <button
+            key={copyAs}
+            className={`clipboard-copy-button${copied === copyAs ? " clipboard-copy-button--copied" : ""}`}
+            type="button"
+            aria-label={label}
+            title={label}
+            onClick={() => onCopy(item.id, copyAs)}
+          >
+            {copied === copyAs ? <Check className="save-check-icon" size={14} strokeWidth={2.7} /> : <Icon size={14} strokeWidth={2.3} />}
+          </button>
+        ))}
         <button
           className={[
             "clipboard-copy-button",

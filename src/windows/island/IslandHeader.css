@@ -151,13 +151,14 @@
   gap: var(--space-md);
 }
 
-/* The status light opens the Agent page; a ring marks it while that page is open. */
+/* The Agent icon, coloured by the agent state, opens the Agent page; a fill marks it while that
+   page is open. As big as the page buttons beside it (.dot-button). */
 .island__agent-button {
   display: inline-grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  margin: -4px;
+  width: 26px;
+  height: 26px;
+  margin: -5px;
   padding: 0;
   background: transparent;
   border: 0;

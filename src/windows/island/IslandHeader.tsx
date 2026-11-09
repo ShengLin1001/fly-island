@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Bell, CalendarDays, CircleDot, ClipboardList, Inbox, Languages, ListTodo, Minus, Music, RotateCcw, Settings, type LucideIcon } from "lucide-react";
+import { Bell, Bot, CalendarDays, ClipboardList, Inbox, Languages, ListTodo, Minus, Music, RotateCcw, Settings, type LucideIcon } from "lucide-react";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { MessageSource } from "../../features/messages/messagePreview";
 import { useUpdateReminder } from "../../features/updater/useBackgroundUpdateCheck";
@@ -76,7 +76,7 @@ export function IslandHeader({
 }: IslandHeaderProps) {
   const t = useTranslation();
   const updateVersion = useUpdateReminder();
-  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, onPageChange);
+  const hoverSwitch = usePageHoverSwitch(hoverSwitchPage, hoverSwitchDelayMs, page, onPageChange);
   const settingsLabel = updateVersion ? t.settings.project.update.islandReminder(updateVersion) : t.settings.title;
   const messageBadgeLabel = t.messages.badge(qqNotificationCount, wechatPending);
   const withShortcut = (label: string, target: IslandPage) => {
@@ -111,10 +111,10 @@ export function IslandHeader({
               onPageChange("agents");
             }}
           >
-            <CircleDot className={agentStatusIconClassName} size={16} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+            <Bot className={agentStatusIconClassName} size={16} strokeWidth={1.8} absoluteStrokeWidth aria-hidden="true" />
           </button>
         ) : (
-          <CircleDot
+          <Bot
             className={agentStatusIconClassName}
             size={16}
             strokeWidth={1.5}

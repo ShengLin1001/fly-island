@@ -23,6 +23,9 @@ pub(super) const HOTKEY_ID: i32 = 0x4643;
 
 pub(super) const HOTKEY_REFRESH_MESSAGE: u32 = WM_APP + 0x51;
 
+/// Posted by the Win+V hook (win32::win_key_hook) to the hotkey window, which opens the history.
+pub(super) const WIN_V_MESSAGE: u32 = WM_APP + 0x52;
+
 pub(super) static CLIPBOARD_HOTKEY_WINDOW: OnceLock<Mutex<Option<isize>>> = OnceLock::new();
 
 static CLIPBOARD_HOTKEY_REGISTERED: OnceLock<Mutex<bool>> = OnceLock::new();
@@ -63,6 +66,14 @@ pub(super) fn refresh_registered_hotkey(hwnd: HWND) {
 
     let snapshot = service().ok().and_then(|service| service.snapshot().ok());
 
+    // Win+V (C22.3) is separate from the recorded shortcut: either or both can be on.
+    let win_v = snapshot
+        .as_ref()
+        .is_some_and(|snapshot| snapshot.settings.enabled && snapshot.settings.win_v);
+    if let Err(error) = win32::win_key_hook::set(win_v.then_some((hwnd, WIN_V_MESSAGE))) {
+        eprintln!("failed to take Win+V: {error}");
+    }
+
     // Turning clipboard history off also frees its shortcut for other apps.
     if snapshot
         .as_ref()
@@ -95,6 +106,7 @@ pub(super) fn refresh_registered_hotkey(hwnd: HWND) {
 }
 
 pub(super) fn unregister_current_hotkey(hwnd: HWND) {
+    let _ = win32::win_key_hook::set(None);
     if hotkey_registered() {
         let _ = win32::hotkey::unregister(hwnd, HOTKEY_ID);
         set_hotkey_registered(false);

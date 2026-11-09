@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ClipboardHistoryItem } from "./api";
+import type { ClipboardCopyAs, ClipboardHistoryItem } from "./api";
 
 export function useClipboardNoteEditor(
   items: ClipboardHistoryItem[],
-  onCopyItem: (id: string) => Promise<boolean> | boolean,
+  onCopyItem: (id: string, copyAs?: ClipboardCopyAs) => Promise<boolean> | boolean,
   onToggleFavorite: (id: string) => Promise<void> | void,
   onUpdateNote: (id: string, note: string) => Promise<boolean> | boolean,
   dismissConfirmations: () => void,
@@ -44,11 +44,12 @@ export function useClipboardNoteEditor(
     }, 1100);
   }, []);
 
+  // The copied mark goes on the button used: the id for a plain copy, "id:file" / "id:path" else.
   const handleCopyItem = useCallback(
-    (id: string) => {
-      void Promise.resolve(onCopyItem(id)).then((didCopy) => {
+    (id: string, copyAs: ClipboardCopyAs = "original") => {
+      void Promise.resolve(onCopyItem(id, copyAs)).then((didCopy) => {
         if (didCopy) {
-          showCopiedState(id);
+          showCopiedState(copyAs === "original" ? id : `${id}:${copyAs}`);
         }
       });
     },

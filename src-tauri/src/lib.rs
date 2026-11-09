@@ -62,7 +62,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .on_window_event(|window, event| {
-            if window.label() == "translation" {
+            if window.label() == "translation" || window.label() == clipboard_history::POPUP_WINDOW_LABEL {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
