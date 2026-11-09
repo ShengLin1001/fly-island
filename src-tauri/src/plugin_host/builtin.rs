@@ -171,6 +171,16 @@ const SESSION_RING_MANIFEST: &str = r#"{
           { "value": "bar", "title": { "zh-CN": "状态条", "en": "State bar" } },
           { "value": "signal", "title": { "zh-CN": "信号格", "en": "Signal bars" } }
         ]
+      },
+      {
+        "key": "showCount",
+        "type": "boolean",
+        "title": { "zh-CN": "显示会话数", "en": "Show the count" },
+        "description": {
+          "zh-CN": "分段环中间和状态条前面的数字。关掉后只看颜色比例；像素格和信号格本来就不写数字。",
+          "en": "The number in the segmented ring and before the state bar. Off, only the colours' shares show; the pixel grid and signal bars have no number anyway."
+        },
+        "default": true
       }
     ]
   }

@@ -159,6 +159,13 @@ async function runChecks() {
     check(bar.querySelector(".session-bar__count")?.textContent === "6" && parts.map((part) => part.dataset.state).join(",") === "needs,yourturn,working,done"
       && parts[2].getBoundingClientRect().width > parts[0].getBoundingClientRect().width,
       "状态条：写总数，每种状态一段，按会话数分长短");
+    pluginSettings = { style: "ring", showCount: false };
+    [bar] = await mount("关掉「显示会话数」：分段环中心不写数字", true);
+    check(!bar.querySelector(".mini-ring__label") && bar.querySelectorAll(".mini-ring__arc").length === 4
+      && bar.querySelector(".mini-ring")!.getBoundingClientRect().width === 24, "关掉「显示会话数」：分段环只画四段、不写数字，大小不变");
+    pluginSettings = { style: "bar", showCount: false };
+    [bar] = await mount("关掉「显示会话数」：状态条前面不写数字", true);
+    check(!bar.querySelector(".session-bar__count") && bar.querySelectorAll(".session-bar__part").length === 4, "关掉「显示会话数」：状态条只剩分段条");
     pluginSettings = { style: "signal" };
     corners = { "--island-corner-radius-size": 16, "--island-corner-shape": "squircle" } as CSSProperties;
     [bar] = await mount("样式选信号格：每种颜色一根柱子，每个会话一格（岛屿圆角 16、方圆）", true);
@@ -239,5 +246,9 @@ else {
     await mount(`信号格：岛屿圆角 ${radius}，${shape === "round" ? "圆角" : "方圆"}`, true);
   }
   corners = {};
+  for (const [style, name] of [["ring", "分段环"], ["bar", "状态条"]]) {
+    pluginSettings = { style, showCount: false };
+    await mount(`${name}：关掉「显示会话数」`, true);
+  }
   results.textContent = "演示：收起条上的 Agent 会话环。加 ?test=1 运行检查。";
 }

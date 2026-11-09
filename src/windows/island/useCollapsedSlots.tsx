@@ -50,6 +50,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
   const sessionRing = useBuiltinPlugin(SESSION_RING_PLUGIN_ID);
   const showRemaining = usage.settings.show === "remaining";
   const ringStyle = SESSION_RING_STYLES.find((known) => known === sessionRing.settings.style) ?? ("grid" satisfies SessionRingStyle);
+  const ringCount = sessionRing.settings.showCount !== false;
   const mood = usePetMood(agents, center.enabled);
   const choice = useMemo(() => centerPatternChoice(center.settings), [center.settings]);
   // Read here, not in the slot, so the pet is ready whenever the slot or the title shows it.
@@ -71,7 +72,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       // Nothing to show: the blue count stays (it is empty too when no session runs).
       if (counts.total > 0) {
         slots.agentCount = (
-          <SessionRing sessions={sessions} unseen={unseen} counts={counts} style={ringStyle} paused={still} onOpen={onOpenAgents} />
+          <SessionRing sessions={sessions} unseen={unseen} counts={counts} style={ringStyle} showCount={ringCount} paused={still} onOpen={onOpenAgents} />
         );
       }
     }
@@ -80,7 +81,7 @@ export function useCollapsedSlots({ paused, agents, sessions, unseen, agentsOn, 
       slots.sideWidth = CLAUDE_USAGE_GAUGE_WIDTH;
     }
     return Object.keys(slots).length === 0 ? EMPTY : slots;
-  }, [center.enabled, usage.enabled, showRemaining, sessionRing.enabled, ringStyle, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
+  }, [center.enabled, usage.enabled, showRemaining, sessionRing.enabled, ringStyle, ringCount, agentsOn, sessions, unseen, onOpenAgents, choice, sheet, mood, still]);
 }
 
 /** Follows the native island hover here, so the slots above stay the same object. */

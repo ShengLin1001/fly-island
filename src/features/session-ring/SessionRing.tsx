@@ -30,6 +30,8 @@ type SessionRingProps = {
   unseen: ReadonlySet<string>;
   counts: SessionRingCounts;
   style: SessionRingStyle;
+  /** The ring's and the state bar's count (the plugin's "showCount" setting). */
+  showCount: boolean;
   /** Stops the pulsing while the bar is not on screen. */
   paused: boolean;
   /** Opens the Agent page. */
@@ -53,10 +55,10 @@ function SessionGrid({ counts }: { counts: SessionRingCounts }) {
 }
 
 /** The count, then one capsule split by state, each part as long as its share of sessions. */
-function SessionBar({ counts }: { counts: SessionRingCounts }) {
+function SessionBar({ counts, showCount }: { counts: SessionRingCounts; showCount: boolean }) {
   return (
     <span className="session-bar" aria-hidden="true">
-      <span className="session-bar__count">{counts.total}</span>
+      {showCount && <span className="session-bar__count">{counts.total}</span>}
       <span className="session-bar__track">
         {SESSION_RING_STATES.filter(({ key }) => counts[key] > 0).map(({ key }) => (
           <span key={key} className="session-bar__part" data-state={key} style={{ ...colorOf(key), flexGrow: counts[key] }} />
@@ -89,7 +91,7 @@ function SessionSignal({ counts }: { counts: SessionRingCounts }) {
  * The Agent page's sessions on the collapsed bar: a pixel grid, a segmented ring with the count
  * in the middle, a count with a state bar, or signal bars.
  */
-export function SessionRing({ sessions, unseen, counts, style, paused, onOpen }: SessionRingProps) {
+export function SessionRing({ sessions, unseen, counts, style, showCount, paused, onOpen }: SessionRingProps) {
   const t = useTranslation();
   const summary = sessionRingSummary(counts, t.sessionRing);
   const lines = useMemo(
@@ -113,11 +115,11 @@ export function SessionRing({ sessions, unseen, counts, style, paused, onOpen }:
             className={counts.total >= 10 ? "session-ring__ring--long" : undefined}
             segments={sessionRingSegments(counts)}
             size={SESSION_RING_SIZE}
-            label={String(counts.total)}
+            label={showCount ? String(counts.total) : undefined}
             ariaLabel={summary}
           />
         ) : style === "bar" ? (
-          <SessionBar counts={counts} />
+          <SessionBar counts={counts} showCount={showCount} />
         ) : style === "signal" ? (
           <SessionSignal counts={counts} />
         ) : (
