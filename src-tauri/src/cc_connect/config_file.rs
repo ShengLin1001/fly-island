@@ -35,28 +35,28 @@ fn id_like(value: &str) -> bool {
 /// Why `project` cannot be added to a config whose projects are `taken`, if it cannot.
 pub(super) fn check(project: &NewProject, taken: &[String]) -> Result<(), String> {
     if !id_like(project.name) {
-        return Err("项目名只能用字母、数字、- 和 _，最多 64 个字符。".into());
+        return Err("A project name takes letters, digits, - and _, up to 64 characters.".into());
     }
     if taken.iter().any(|name| name == project.name) {
-        return Err(format!("cc-connect 已经有叫 {} 的项目了，换个名字。", project.name));
+        return Err(format!("cc-connect already has a project called {}; pick another name.", project.name));
     }
     let dir = Path::new(project.work_dir);
     if !dir.is_absolute() || !dir.is_dir() {
-        return Err(format!("工作文件夹不存在：{}", project.work_dir));
+        return Err(format!("The work folder does not exist: {}", project.work_dir));
     }
     if !PLATFORMS.contains(&project.platform) {
-        return Err(format!("不支持的平台：{}", project.platform));
+        return Err(format!("Unsupported platform: {}", project.platform));
     }
     if project.platform == "feishu" {
         return Ok(());
     }
     if project.token.is_empty() || project.token.len() > 512 || project.token.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
-        return Err("机器人 token 不对。".into());
+        return Err("That bot token does not look right.".into());
     }
     // Empty or "*" lets anyone who finds the bot work on this computer.
     let ids: Vec<&str> = project.allow_from.split(',').map(str::trim).collect();
     if ids.iter().any(|id| !id_like(id)) {
-        return Err("请填写你自己的用户 ID（多个用英文逗号隔开），不然谁找到机器人都能用这台电脑。".into());
+        return Err("Fill in your own user ID (several separated by commas), or anyone who finds the bot can use this computer.".into());
     }
     Ok(())
 }
@@ -126,13 +126,13 @@ pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp:
     let original = match fs::read_to_string(path) {
         Ok(text) => Some(text),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-        Err(error) => return Err(format!("读不了 {}：{error}", path.display())),
+        Err(error) => return Err(format!("Could not read {}: {error}", path.display())),
     };
     check(project, &original.as_deref().map(project_names).unwrap_or_default())?;
     let mut text = match &original {
         Some(text) => {
             let backup = path.with_file_name(format!("{FILE_NAME}.bak-focusd-{stamp}"));
-            fs::write(&backup, text).map_err(|error| format!("无法备份 {}：{error}", path.display()))?;
+            fs::write(&backup, text).map_err(|error| format!("Could not back up {}: {error}", path.display()))?;
             text.trim_end().to_string()
         }
         None => "# cc-connect configuration, started by FocuSD Island. `cc-connect config example` prints every option.".to_string(),
@@ -140,7 +140,7 @@ pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp:
     text.push('\n');
     text.push_str(&project_block(project, today));
     if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("无法创建 {}：{error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
     }
     write(path, &text)?;
     Ok(original)
@@ -150,15 +150,15 @@ pub(super) fn add_project(path: &Path, project: &NewProject, today: &str, stamp:
 pub(super) fn restore(path: &Path, original: Option<&str>) -> Result<(), String> {
     match original {
         Some(text) => write(path, text),
-        None => fs::remove_file(path).map_err(|error| format!("无法撤回 {}：{error}", path.display())),
+        None => fs::remove_file(path).map_err(|error| format!("Could not undo {}: {error}", path.display())),
     }
 }
 
 /// Through a `.tmp` file, so cc-connect never reads half a config.
 fn write(path: &Path, text: &str) -> Result<(), String> {
     let temp = path.with_file_name(format!("{FILE_NAME}.focusd.tmp"));
-    fs::write(&temp, text).map_err(|error| format!("无法写入 {}：{error}", temp.display()))?;
-    fs::rename(&temp, path).map_err(|error| format!("无法写入 {}：{error}", path.display()))
+    fs::write(&temp, text).map_err(|error| format!("Could not write {}: {error}", temp.display()))?;
+    fs::rename(&temp, path).map_err(|error| format!("Could not write {}: {error}", path.display()))
 }
 
 #[cfg(test)]

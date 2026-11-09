@@ -123,14 +123,14 @@ pub async fn get_cc_connect_status(path: Option<String>) -> Result<CcConnectStat
 pub async fn send_cc_connect_message(path: Option<String>, project: String, session_key: String, text: String) -> Result<(), String> {
     let plain = |value: &str| !value.is_empty() && value.len() <= 256 && !value.chars().any(char::is_control);
     if !plain(&project) || !plain(&session_key) || !session_key.contains(':') {
-        return Err("cc-connect 项目或聊天无效。".into());
+        return Err("The cc-connect project or chat is not valid.".into());
     }
     if text.trim().is_empty() {
-        return Err("推送内容是空的。".into());
+        return Err("The push has no text.".into());
     }
     let text: String = text.chars().take(MAX_TEXT_CHARS).collect();
     tauri::async_runtime::spawn_blocking(move || {
-        let (exe, _) = locate::find(path.as_deref(), app_dir())?.ok_or_else(|| "找不到 cc-connect 程序，请在插件里填写它的路径。".to_string())?;
+        let (exe, _) = locate::find(path.as_deref(), app_dir())?.ok_or_else(|| "cc-connect was not found; fill in its path in the plugin's settings.".to_string())?;
         send(&exe, &project, &session_key, &text)
     })
     .await
@@ -140,7 +140,7 @@ pub async fn send_cc_connect_message(path: Option<String>, project: String, sess
 /// Downloads the latest cc-connect for this computer into the island's data folder; returns where.
 #[tauri::command]
 pub async fn install_cc_connect() -> Result<String, String> {
-    let app_dir = app_dir().ok_or("cc-connect 还没准备好。")?.to_path_buf();
+    let app_dir = app_dir().ok_or("cc-connect is not ready yet.")?.to_path_buf();
     install::install(app_dir).await.map(|exe| exe.display().to_string())
 }
 
@@ -162,7 +162,7 @@ pub async fn add_cc_connect_project(
     allow_from: String,
 ) -> Result<(), String> {
     let config = config_file::config_path(&data_dir()?);
-    let app_dir = app_dir().ok_or("cc-connect 还没准备好。")?.to_path_buf();
+    let app_dir = app_dir().ok_or("cc-connect is not ready yet.")?.to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
         let proxy = crate::system::updater::get_updater_proxy();
         let new = config_file::NewProject {
@@ -176,7 +176,7 @@ pub async fn add_cc_connect_project(
         let now = chrono::Local::now();
         let (today, stamp) = (now.format("%Y-%m-%d").to_string(), now.format("%Y%m%d-%H%M%S").to_string());
         if platform == "feishu" {
-            let (exe, _) = locate::find(path.as_deref(), Some(&app_dir))?.ok_or("找不到 cc-connect 程序，请先下载。")?;
+            let (exe, _) = locate::find(path.as_deref(), Some(&app_dir))?.ok_or("cc-connect was not found; download it first.")?;
             return feishu::start(&exe, &config, &new, &app_dir, &today, &stamp);
         }
         config_file::add_project(&config, &new, &today, &stamp)?;
@@ -210,10 +210,10 @@ fn send(exe: &Path, project: &str, session_key: &str, text: &str) -> Result<(), 
         .stderr(Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
-        .map_err(|error| format!("无法运行 cc-connect：{error}"))?;
+        .map_err(|error| format!("Could not run cc-connect: {error}"))?;
     // Dropping stdin after the write closes it, which ends the message.
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(text.as_bytes()).map_err(|error| format!("无法把内容交给 cc-connect：{error}"))?;
+        stdin.write_all(text.as_bytes()).map_err(|error| format!("Could not hand the text to cc-connect: {error}"))?;
     }
     let deadline = Instant::now() + SEND_TIMEOUT;
     let status = loop {
@@ -223,9 +223,9 @@ fn send(exe: &Path, project: &str, session_key: &str, text: &str) -> Result<(), 
             Ok(None) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Err("cc-connect 10 秒没有回应。".into());
+                return Err("cc-connect did not answer within 10 seconds.".into());
             }
-            Err(error) => return Err(format!("cc-connect 出错：{error}")),
+            Err(error) => return Err(format!("cc-connect failed: {error}")),
         }
     };
     if status.success() {
@@ -237,7 +237,7 @@ fn send(exe: &Path, project: &str, session_key: &str, text: &str) -> Result<(), 
     }
     // "Error: cc-connect is not running (socket not found: ...)" and the like; the first line says it.
     let reason = stderr.lines().map(str::trim).find(|line| !line.is_empty()).map(str::to_string);
-    Err(format!("cc-connect：{}", reason.unwrap_or_else(|| format!("退出码 {}", status.code().unwrap_or(-1)))))
+    Err(format!("cc-connect：{}", reason.unwrap_or_else(|| format!("exit code {}", status.code().unwrap_or(-1)))))
 }
 
 /// This module's Tauri commands. `lib.rs` chains every module's list into one `generate_handler!`.

@@ -28,7 +28,7 @@ pub(super) fn find(setting: Option<&str>, app_dir: Option<&Path>) -> Result<Opti
         return if path.is_file() {
             Ok(Some((path, "setting")))
         } else {
-            Err(format!("找不到 cc-connect 程序：{}", path.display()))
+            Err(format!("cc-connect is not at {}", path.display()))
         };
     }
     if let Some(path) = crate::win32::process::running_executable(&[EXE_NAME]) {

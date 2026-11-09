@@ -90,7 +90,7 @@ pub(crate) fn apply(settings: &Map<String, Value>, app_dir: Option<&Path>, confi
         stop();
         return Ok(());
     }
-    let app_dir = app_dir.ok_or("cc-connect 还没准备好。")?.to_path_buf();
+    let app_dir = app_dir.ok_or("cc-connect is not ready yet.")?.to_path_buf();
     let setting = settings.get("path").and_then(Value::as_str).map(str::trim).filter(|path| !path.is_empty()).map(str::to_string);
     let mut current = runner();
     if current.as_ref().is_some_and(|runner| runner.setting == setting) {
@@ -166,7 +166,7 @@ fn run_once(setting: Option<&str>, app_dir: &Path, config: &Path, status: &Mutex
     }
     let exe = match locate::find(setting, Some(app_dir)) {
         Ok(Some((exe, _))) => exe,
-        Ok(None) => return Ended::Waiting(RunState::Failed("找不到 cc-connect 程序，请先下载或填写路径。".into())),
+        Ok(None) => return Ended::Waiting(RunState::Failed("cc-connect was not found; download it or fill in its path first.".into())),
         Err(error) => return Ended::Waiting(RunState::Failed(error)),
     };
     let log = app_dir.join(FOLDER).join(LOG_NAME);
@@ -188,7 +188,7 @@ fn run_once(setting: Option<&str>, app_dir: &Path, config: &Path, status: &Mutex
         match child.try_wait() {
             Ok(None) => {}
             Ok(Some(exit)) => {
-                let reason = last_line(&log).unwrap_or_else(|| format!("cc-connect 退出了（{exit}）"));
+                let reason = last_line(&log).unwrap_or_else(|| format!("cc-connect exited ({exit})"));
                 return Ended::Exited { stable: started.elapsed() >= STABLE, reason };
             }
             Err(error) => {
@@ -203,10 +203,10 @@ fn run_once(setting: Option<&str>, app_dir: &Path, config: &Path, status: &Mutex
 /// cc-connect started hidden in a job, its output into `log`; the job ends what it started too.
 fn start(exe: &Path, config: &Path, log: &Path) -> Result<(Child, Job), String> {
     if let Some(dir) = log.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("无法创建 {}：{error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
     }
-    let out = File::create(log).map_err(|error| format!("无法写入 {}：{error}", log.display()))?;
-    let err = out.try_clone().map_err(|error| format!("无法写入 {}：{error}", log.display()))?;
+    let out = File::create(log).map_err(|error| format!("Could not write {}: {error}", log.display()))?;
+    let err = out.try_clone().map_err(|error| format!("Could not write {}: {error}", log.display()))?;
     let mut command = Command::new(exe);
     command
         .arg("--config")
@@ -218,7 +218,7 @@ fn start(exe: &Path, config: &Path, log: &Path) -> Result<(Child, Job), String> 
     if let Some(dir) = config.parent() {
         command.current_dir(dir);
     }
-    let mut child = command.spawn().map_err(|error| format!("无法运行 cc-connect：{error}"))?;
+    let mut child = command.spawn().map_err(|error| format!("Could not run cc-connect: {error}"))?;
     // Started suspended, so the agents it starts are in the job too.
     match Job::new().and_then(|job| job.assign(&child).map(|()| job)).and_then(|job| job::resume(child.id()).map(|()| job)) {
         Ok(job) => Ok((child, job)),

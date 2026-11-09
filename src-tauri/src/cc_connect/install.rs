@@ -39,10 +39,10 @@ struct Asset {
 pub(super) async fn install(app_dir: PathBuf) -> Result<PathBuf, String> {
     let client = client()?;
     let release: Release =
-        serde_json::from_slice(&get(&client, LATEST, MAX_TEXT).await?).map_err(|error| format!("GitHub 的发布信息读不懂：{error}"))?;
+        serde_json::from_slice(&get(&client, LATEST, MAX_TEXT).await?).map_err(|error| format!("Could not read GitHub's release: {error}"))?;
     let tag = release.tag_name.as_str();
     if tag.is_empty() || !tag.bytes().all(|byte| byte.is_ascii_alphanumeric() || b".-_".contains(&byte)) {
-        return Err(format!("cc-connect 的版本号不对：{tag}"));
+        return Err(format!("cc-connect's version tag is not valid: {tag}"));
     }
     let dir = app_dir.join(FOLDER).join(tag);
     let exe = dir.join(EXE_NAME);
@@ -56,14 +56,14 @@ pub(super) async fn install(app_dir: PathBuf) -> Result<PathBuf, String> {
             .iter()
             .find(|asset| asset.name == name && asset.browser_download_url.starts_with(DOWNLOADS))
             .map(|asset| asset.browser_download_url.as_str())
-            .ok_or_else(|| format!("cc-connect {tag} 没有发布 {name}。"))
+            .ok_or_else(|| format!("cc-connect {tag} has no {name}."))
     };
     let sums = get(&client, url_of("checksums.txt")?, MAX_TEXT).await?;
-    let expected = checksum_for(&String::from_utf8_lossy(&sums), &zip_name).ok_or_else(|| format!("checksums.txt 里没有 {zip_name}。"))?;
+    let expected = checksum_for(&String::from_utf8_lossy(&sums), &zip_name).ok_or_else(|| format!("checksums.txt does not list {zip_name}."))?;
     let zip = get(&client, url_of(&zip_name)?, MAX_ZIP).await?;
     let actual: String = Sha256::digest(&zip).iter().map(|byte| format!("{byte:02x}")).collect();
     if actual != expected {
-        return Err("下载的 cc-connect 和发布的校验值对不上，已丢弃。".into());
+        return Err("The downloaded cc-connect does not match the release's checksum; it was thrown away.".into());
     }
     tauri::async_runtime::spawn_blocking(move || unpack(&zip, &dir, &exe).map(|()| exe))
         .await
@@ -81,16 +81,16 @@ fn client() -> Result<reqwest::Client, String> {
 }
 
 async fn get(client: &reqwest::Client, url: &str, limit: u64) -> Result<Vec<u8>, String> {
-    let response = client.get(url).send().await.map_err(|error| format!("连不上 {url}：{error}"))?;
+    let response = client.get(url).send().await.map_err(|error| format!("Could not reach {url}: {error}"))?;
     if !response.status().is_success() {
-        return Err(format!("{url} 回答 {}。", response.status()));
+        return Err(format!("{url} answered {}.", response.status()));
     }
     if response.content_length().is_some_and(|length| length > limit) {
-        return Err(format!("{url} 超过 {limit} 字节。"));
+        return Err(format!("{url} is larger than {limit} bytes."));
     }
-    let bytes = response.bytes().await.map_err(|error| format!("下载 {url} 失败：{error}"))?;
+    let bytes = response.bytes().await.map_err(|error| format!("Could not download {url}: {error}"))?;
     if bytes.len() as u64 > limit {
-        return Err(format!("{url} 超过 {limit} 字节。"));
+        return Err(format!("{url} is larger than {limit} bytes."));
     }
     Ok(bytes.to_vec())
 }
@@ -100,7 +100,7 @@ fn asset_name(tag: &str, arch: &str) -> Result<String, String> {
     let arch = match arch {
         "x86_64" => "amd64",
         "aarch64" => "arm64",
-        other => return Err(format!("cc-connect 没有 {other} 版的 Windows 程序。")),
+        other => return Err(format!("cc-connect has no Windows build for {other}.")),
     };
     Ok(format!("cc-connect-{tag}-windows-{arch}.zip"))
 }
@@ -116,24 +116,24 @@ fn checksum_for(sums: &str, name: &str) -> Option<String> {
 
 /// Writes the zip's one .exe to `exe` (in `dir`), through a `.part` file so a cut-off write is never found.
 fn unpack(zip: &[u8], dir: &Path, exe: &Path) -> Result<(), String> {
-    let mut archive = zip::ZipArchive::new(Cursor::new(zip)).map_err(|error| format!("cc-connect 的压缩包打不开：{error}"))?;
+    let mut archive = zip::ZipArchive::new(Cursor::new(zip)).map_err(|error| format!("Could not open the cc-connect zip: {error}"))?;
     let index = (0..archive.len())
         .find(|&index| {
             archive
                 .by_index(index)
                 .is_ok_and(|file| file.is_file() && file.name().is_ok_and(|name| name.to_ascii_lowercase().ends_with(".exe")))
         })
-        .ok_or("cc-connect 的压缩包里没有程序。")?;
-    let file = archive.by_index(index).map_err(|error| format!("cc-connect 的压缩包读不了：{error}"))?;
+        .ok_or("The cc-connect zip has no program in it.")?;
+    let file = archive.by_index(index).map_err(|error| format!("Could not read the cc-connect zip: {error}"))?;
     if file.size() > MAX_EXE {
-        return Err("cc-connect 的程序大得不正常，已放弃。".into());
+        return Err("The cc-connect program is unusually large; gave up.".into());
     }
-    fs::create_dir_all(dir).map_err(|error| format!("无法创建 {}：{error}", dir.display()))?;
+    fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
     let part = dir.join(format!("{EXE_NAME}.part"));
-    let mut out = File::create(&part).map_err(|error| format!("无法写入 {}：{error}", part.display()))?;
-    io::copy(&mut file.take(MAX_EXE), &mut out).map_err(|error| format!("解压 cc-connect 失败：{error}"))?;
+    let mut out = File::create(&part).map_err(|error| format!("Could not write {}: {error}", part.display()))?;
+    io::copy(&mut file.take(MAX_EXE), &mut out).map_err(|error| format!("Could not unpack cc-connect: {error}"))?;
     drop(out);
-    fs::rename(&part, exe).map_err(|error| format!("无法放好 {}：{error}", exe.display()))
+    fs::rename(&part, exe).map_err(|error| format!("Could not put {} in place: {error}", exe.display()))
 }
 
 #[cfg(test)]

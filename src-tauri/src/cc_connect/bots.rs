@@ -34,13 +34,13 @@ pub struct Sender {
 pub(super) async fn check(platform: &str, token: &str) -> Result<BotCheck, String> {
     let token = token.trim();
     if token.is_empty() || token.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
-        return Err("机器人 token 不对。".into());
+        return Err("That bot token does not look right.".into());
     }
     let client = client()?;
     let result = match platform {
         "telegram" => telegram(&client, token).await,
         "discord" => discord(&client, token).await,
-        _ => Err(format!("{platform} 不用检查 token。")),
+        _ => Err(format!("{platform} has no token to check.")),
     };
     result.map_err(|error| error.replace(token, "[token]"))
 }
@@ -72,14 +72,14 @@ async fn telegram_call(client: &reqwest::Client, token: &str, method: &str) -> R
         .get(&url)
         .send()
         .await
-        .map_err(|error| format!("连不上 Telegram：{error}"))?
+        .map_err(|error| format!("Could not reach Telegram: {error}"))?
         .json()
         .await
-        .map_err(|error| format!("Telegram 的回答读不懂：{error}"))?;
+        .map_err(|error| format!("Could not read Telegram's answer: {error}"))?;
     match (answer.ok, answer.error_code) {
         (true, _) => Ok(answer.result),
-        (false, 401 | 404) => Err("Telegram 不认这个 token，请从 BotFather 重新复制。".into()),
-        (false, 409) => Err("这个机器人正被别的程序（多半是 cc-connect）收消息，先停掉它再识别。".into()),
+        (false, 401 | 404) => Err("Telegram does not know this token; copy it again from BotFather.".into()),
+        (false, 409) => Err("Another program (most likely cc-connect) is receiving this bot's messages; stop it, then look again.".into()),
         (false, _) => Err(format!("Telegram：{}", answer.description)),
     }
 }
@@ -117,15 +117,15 @@ async fn discord(client: &reqwest::Client, token: &str) -> Result<BotCheck, Stri
         .header("Authorization", format!("Bot {token}"))
         .send()
         .await
-        .map_err(|error| format!("连不上 Discord：{error}"))?;
+        .map_err(|error| format!("Could not reach Discord: {error}"))?;
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err("Discord 不认这个 token，请在开发者门户的 Bot 页重新生成并复制。".into());
+        return Err("Discord does not know this token; reset and copy it on the Bot page of the Developer Portal.".into());
     }
     if !response.status().is_success() {
-        return Err(format!("Discord 回答 {}。", response.status()));
+        return Err(format!("Discord answered {}.", response.status()));
     }
-    let me: Value = response.json().await.map_err(|error| format!("Discord 的回答读不懂：{error}"))?;
-    let id = me["id"].as_str().filter(|id| id.bytes().all(|byte| byte.is_ascii_digit())).ok_or("Discord 没给出机器人的 id。")?;
+    let me: Value = response.json().await.map_err(|error| format!("Could not read Discord's answer: {error}"))?;
+    let id = me["id"].as_str().filter(|id| id.bytes().all(|byte| byte.is_ascii_digit())).ok_or("Discord did not give the bot's id.")?;
     Ok(BotCheck {
         name: me["username"].as_str().unwrap_or_default().to_string(),
         invite_url: Some(discord_invite(id)),

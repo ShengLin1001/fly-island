@@ -58,7 +58,7 @@ fn setup() -> MutexGuard<'static, Option<Setup>> {
 pub(super) fn start(exe: &Path, config: &Path, project: &config_file::NewProject, app_dir: &Path, today: &str, stamp: &str) -> Result<(), String> {
     let mut current = setup();
     if current.as_ref().is_some_and(|setup| setup.ended.is_none()) {
-        return Err("飞书扫码已经在进行了。".into());
+        return Err("A Feishu QR setup is already running.".into());
     }
     let original = config_file::add_project(config, project, today, stamp)?;
     let qr = app_dir.join(FOLDER).join("feishu-qr.png");
@@ -99,7 +99,7 @@ pub(super) fn start(exe: &Path, config: &Path, project: &config_file::NewProject
 
 fn spawn(exe: &Path, config: &Path, project: &str, qr: &Path) -> Result<(Child, Job), String> {
     if let Some(dir) = qr.parent() {
-        fs::create_dir_all(dir).map_err(|error| format!("无法创建 {}：{error}", dir.display()))?;
+        fs::create_dir_all(dir).map_err(|error| format!("Could not create {}: {error}", dir.display()))?;
     }
     let mut child = Command::new(exe)
         .args(["feishu", "new", "--config"])
@@ -112,7 +112,7 @@ fn spawn(exe: &Path, config: &Path, project: &str, qr: &Path) -> Result<(Child, 
         .stderr(Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW | job::START_SUSPENDED)
         .spawn()
-        .map_err(|error| format!("无法运行 cc-connect：{error}"))?;
+        .map_err(|error| format!("Could not run cc-connect: {error}"))?;
     match Job::new().and_then(|job| job.assign(&child).map(|()| job)).and_then(|job| job::resume(child.id()).map(|()| job)) {
         Ok(job) => Ok((child, job)),
         Err(error) => {
@@ -175,7 +175,7 @@ fn failure(output: &[String]) -> String {
         .find(|line| line.starts_with("Error"))
         .or(output.last())
         .cloned()
-        .unwrap_or_else(|| "飞书扫码没有完成。".into())
+        .unwrap_or_else(|| "The Feishu QR setup did not finish.".into())
 }
 
 /// Stops a setup still waiting for the scan and takes its project out again. One that made the app
@@ -236,6 +236,6 @@ mod tests {
         let output = ["请扫码".to_string(), "Error: onboarding failed: timed out".into(), "Tip: bind instead".into()];
         assert_eq!(failure(&output), "Error: onboarding failed: timed out");
         assert_eq!(failure(&output[..1]), "请扫码");
-        assert_eq!(failure(&[]), "飞书扫码没有完成。");
+        assert_eq!(failure(&[]), "The Feishu QR setup did not finish.");
     }
 }
