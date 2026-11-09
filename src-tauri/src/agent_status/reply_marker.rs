@@ -61,7 +61,7 @@ pub(super) fn split_reply(text: &str) -> (Option<ReplyMarker>, &str) {
 }
 
 /// Opens the block; the version lets a newer island replace an older wording.
-const BLOCK_START: &str = "<!-- focusd-island: reply marker v2 -->";
+const BLOCK_START: &str = "<!-- focusd-island: reply marker v3 -->";
 pub(super) const BLOCK_START_PREFIX: &str = "<!-- focusd-island: reply marker";
 const BLOCK_END: &str = "<!-- /focusd-island: reply marker -->";
 
@@ -71,9 +71,11 @@ const BLOCK_BODY: &str = "\
 
 End every reply with one extra line that holds only one of these characters, so FocuSD Island can show what this session is waiting for:
 
-- `↩` you asked the user a question, or need their decision or input, before you can go on
-- `⋯` you are waiting for a background task you started yourself (a background command, a subagent) and will continue on your own
-- `✓` the work is finished and nothing is needed from the user
+- `↩` the next step is the user's: you asked a question, offered options or a next step (\"want me to…?\"), asked them to do something and tell you, or need their decision, approval or input
+- `⋯` nothing is needed from the user yet: you ended the turn only to wait for a background task you started (a background command, a subagent, a monitor, a scheduled wake-up) that will wake you
+- `✓` the work the user asked for is finished, nothing is left for them to answer or decide, and nothing you started is still running
+
+When more than one fits, `↩` wins over `⋯`, and `⋯` over `✓`. When unsure, use `↩`.
 
 Write the character alone on the last line, without backticks, and nothing after it. To stop, switch off \"Reply status marker\" in FocuSD Island's Settings → AI Agent, which deletes this file.";
 
