@@ -12,6 +12,8 @@ export type CurrentLyric = {
 };
 
 const NONE: CurrentLyric = { text: null, index: -1, longest: "" };
+// How long the last line stays when the island times the song itself.
+const LAST_LINE_MS = 12_000;
 
 /**
  * The line sung now, for the collapsed island. Rather than ticking, it wakes when the next line
@@ -21,8 +23,14 @@ export function useCurrentLyric(lines: LyricLine[] | null, mediaState: MediaStat
   const [now, setNow] = useState(() => Date.now());
   const on = active && mediaState.playbackStatus === "playing" && lines !== null && lines.length > 0;
   const position = playbackPosition(mediaState, now) - offsetMs;
-  const at = on && lines ? lyricAt(lines, position) : null;
-  const nextAt = at?.nextAt ?? null;
+  const found = on && lines ? lyricAt(lines, position) : null;
+  // The island times a player that reports no position (trackClock.ts) and cannot see it start
+  // the same song again (repeat one): well past the last line, the bar stops showing it.
+  const lastAt = lines && lines.length > 0 ? lines[lines.length - 1].timeMs : 0;
+  const timedByIsland = mediaState.positionEstimate !== undefined;
+  const ended = found !== null && timedByIsland && found.nextAt === null && position >= lastAt + LAST_LINE_MS;
+  const at = ended ? null : found;
+  const nextAt = found && timedByIsland && found.nextAt === null && !ended ? lastAt + LAST_LINE_MS : found?.nextAt ?? null;
 
   // A new report from the player (seek, pause, next track) restarts the clock from it.
   useEffect(() => {

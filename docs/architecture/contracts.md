@@ -55,6 +55,7 @@
 | `island-banner-hover-changed`（载荷为 `bool`：光标是否在新消息横幅上；只在横幅用 `set_island_banner_rect` 交出矩形期间有意义，供横幅悬停暂停计时） | `island/passthrough.rs`（常量在 `island/banner_hit.rs`） | 广播（通过主窗口对象调用 `emit`） |
 | `island-cursor-moved`（载荷 `{ x, y }`：光标在主窗口 CSS 像素中的位置，窗口外也有；只在 `set_island_cursor_tracking(true)` 后、光标移动时发，约 28 次/秒，供中心图案的眼睛跟随） | `island/passthrough.rs` | 广播（通过主窗口对象调用 `emit`） |
 | `foreground-fullscreen-changed`（载荷为 `{ active, onIslandMonitor }`：前台是否有全屏程序、是否占住岛所在的显示器，供游戏模式使用） | `system/fullscreen.rs` | 广播 |
+| `media-session-changed`（载荷为 `{ kind, at, sessionId }`：播放器换歌（`kind: "track"`，`at` 是新歌出声的 Unix 毫秒）或播放、暂停（`"playback"`，`at` 是事件发生时）；主窗口据此立刻读媒体状态，给不报进度的播放器按事件时间计时） | `media_control/events.rs` | 广播 |
 | `clipboard-history-changed` | `clipboard_history/service.rs`（常量在 `mod.rs`） | 广播 |
 | `clipboard-history-shortcut` | `clipboard_history/service.rs`（常量在 `hotkey.rs`） | 广播 |
 | `clipboard-history-shortcut-status`（载荷为字符串或 `null`：剪贴板快捷键注册失败的原因，成功或关闭时为 `null`；最近一次结果也可用 `get_clipboard_shortcut_error` 读取） | `clipboard_history/hotkey.rs` | 广播 |

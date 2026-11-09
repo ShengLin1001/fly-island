@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getMediaState, sendMediaCommand, type MediaCommand, type MediaPlaybackStatus, type MediaState } from "./api";
+import { getMediaState, sendMediaCommand, type MediaCommand, type MediaPlaybackStatus, type MediaSessionChange, type MediaState } from "./api";
 import { AUDIO_ACTIVE_THRESHOLD, DEFAULT_MEDIA_STATE, isSameMediaState } from "./mediaState";
-import { advanceClock, alignClock, clockPosition, hasTimeline, NO_CLOCK, type TrackClock } from "./trackClock";
+import { advanceClock, alignClock, clockPosition, hasTimeline, NO_CLOCK, startClockAt, type TrackClock } from "./trackClock";
 import { useAudioLevel } from "./useAudioLevel";
+import { useMediaSessionChanges } from "./useMediaSessionChanges";
 import { useMusicSourcePriority } from "./useMusicSourcePriority";
 
 /**
@@ -20,6 +21,8 @@ export function useMediaState(enabled = true) {
   const isRefreshingMediaState = useRef(false);
   const isRunningMediaCommand = useRef(false);
   const trackClock = useRef<TrackClock>(NO_CLOCK);
+  // Changes the player announced while a reading was under way; each gets its own reading.
+  const pendingChanges = useRef<MediaSessionChange[]>([]);
   const mediaPlaybackIntent = useRef<{
     status: MediaPlaybackStatus;
     expiresAt: number;
@@ -27,8 +30,10 @@ export function useMediaState(enabled = true) {
   const { musicSourcePriority, reorderMusicSource, removeMusicSource } =
     useMusicSourcePriority(mediaState.sessions);
 
-  const refreshMediaState = useCallback(async () => {
+  /** Reads the player's state; `change`, an event it raised, times the clock to the event. */
+  const refreshMediaState = useCallback(async function refresh(change?: MediaSessionChange): Promise<void> {
     if (isRefreshingMediaState.current) {
+      if (change) pendingChanges.current.push(change);
       return;
     }
 
@@ -54,7 +59,14 @@ export function useMediaState(enabled = true) {
       const untimed = nextMediaState.title && !hasTimeline(nextMediaState)
         ? `${nextMediaState.sourceApp ?? ""}\u001f${nextMediaState.title}\u001f${nextMediaState.artist ?? ""}`
         : null;
-      trackClock.current = untimed ? advanceClock(trackClock.current, untimed, playbackStatus === "playing", now) : NO_CLOCK;
+      // An event from the player read here counts from when it happened, not from this reading.
+      const event = change && (change.sessionId === null || change.sessionId === nextMediaState.activeSessionId) ? change : null;
+      const playing = playbackStatus === "playing";
+      trackClock.current = !untimed
+        ? NO_CLOCK
+        : event?.kind === "track"
+          ? startClockAt(trackClock.current, untimed, playing, event.at, now)
+          : advanceClock(trackClock.current, untimed, playing, event ? Math.min(event.at, now) : now);
       const timeline = untimed
         ? { positionMs: clockPosition(trackClock.current, now), updatedAt: now, positionEstimate: trackClock.current.fromStart ? "timed" as const : "unsure" as const }
         : {};
@@ -87,6 +99,8 @@ export function useMediaState(enabled = true) {
       setMediaState(DEFAULT_MEDIA_STATE);
     } finally {
       isRefreshingMediaState.current = false;
+      const next = pendingChanges.current.shift();
+      if (next) void refresh(next);
     }
   }, []);
 
@@ -185,6 +199,8 @@ export function useMediaState(enabled = true) {
     mediaPlaybackIntent,
     enabled && (mediaState.playbackStatus === "playing" || mediaState.audioActive),
   );
+
+  useMediaSessionChanges(enabled, refreshMediaState);
 
   useEffect(() => {
     if (!enabled) {

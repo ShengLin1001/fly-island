@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 // 与 src-tauri/src/media_control/service.rs 中的 MediaState、MediaSessionInfo、AudioLevel 对应。
 export type MediaPlaybackStatus = "unavailable" | "playing" | "paused";
@@ -62,4 +63,20 @@ export function sendMediaCommand(command: MediaCommand, target: string | undefin
 
 export function getAudioLevel() {
   return invoke<AudioLevel>("get_audio_level");
+}
+
+// Mirrors MEDIA_SESSION_CHANGED_EVENT in src-tauri/src/media_control/events.rs.
+export const MEDIA_SESSION_CHANGED_EVENT = "media-session-changed";
+
+/** A player changed track or played / paused (SessionChange in src-tauri/src/media_control/events.rs). */
+export type MediaSessionChange = {
+  /** "track": another song started, `at` when its sound began; "playback": it played or paused. */
+  kind: "track" | "playback";
+  /** Unix milliseconds. */
+  at: number;
+  sessionId: string | null;
+};
+
+export function listenMediaSessionChanges(handler: (change: MediaSessionChange) => void) {
+  return listen<MediaSessionChange>(MEDIA_SESSION_CHANGED_EVENT, ({ payload }) => handler(payload));
 }

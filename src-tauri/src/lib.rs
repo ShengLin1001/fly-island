@@ -131,6 +131,7 @@ pub fn run() {
                 island::start_cursor_passthrough_loop(window);
             }
             system::fullscreen::start(app.handle());
+            media_control::start_session_events(app.handle());
             system_levels::init(app.handle());
             device_events::init(app.handle());
             Ok(())

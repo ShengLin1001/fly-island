@@ -47,3 +47,18 @@ export function alignClock(clock: TrackClock, positionMs: number, now: number): 
 export function clockPosition(clock: TrackClock, now: number) {
   return clock.elapsedMs + (clock.runningSince === null ? 0 : Math.max(0, now - clock.runningSince));
 }
+
+// How far the clock may already be past what a start at `at` explains (polls and events race).
+const START_SLACK_MS = 2000;
+
+/**
+ * The clock for `key` started at `at`, when the player says its sound began then. A clock that
+ * is already further along than that (the song was playing before) is left as it is.
+ */
+export function startClockAt(clock: TrackClock, key: string, playing: boolean, at: number, now: number): TrackClock {
+  if (clock.key === key && clockPosition(clock, now) > now - at + START_SLACK_MS) return clock;
+  const since = Math.min(at, now);
+  return playing
+    ? { key, elapsedMs: 0, runningSince: since, fromStart: true }
+    : { key, elapsedMs: 0, runningSince: null, fromStart: true };
+}

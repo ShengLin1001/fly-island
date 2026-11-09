@@ -1,12 +1,14 @@
 //! Windows media sessions (SMTC) and the system audio endpoint behind the music page.
 
 mod audio;
+mod events;
 mod plugin_view;
 mod service;
 mod session;
 mod source_icon;
 
 pub(crate) use plugin_view::{now_playing_key, plugin_cover, plugin_media_command, plugin_now_playing};
+pub(crate) use events::start as start_session_events;
 pub(crate) use source_icon::current_source_icon;
 
 #[tauri::command]
