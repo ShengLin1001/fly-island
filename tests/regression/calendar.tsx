@@ -27,7 +27,7 @@ const EVENTS: CalendarEvent[] = [
   event("设计评审：日历页、会前倒计时和加入会议按钮的最终方案确认与排期", at(0, 10), at(0, 11), { location: "3 楼大会议室", meetingLink: "https://vc.feishu.cn/j/123" }),
   event("1:1", at(1, 15), at(1, 15, 30)),
 ];
-const SNAPSHOT: CalendarSnapshot = { events: EVENTS, problems: [{ sourceId: "x", message: "账号或密码不对" }], fetchedAt: now, sourceCount: 2 };
+const SNAPSHOT: CalendarSnapshot = { events: EVENTS, problems: [{ sourceId: "x", message: "账号或密码不对" }], fetchedAt: now, fromMs: new Date(new Date(now).getFullYear(), new Date(now).getMonth() - 1, 1).getTime(), toMs: new Date(new Date(now).getFullYear(), new Date(now).getMonth() + 2, 1).getTime(), sourceCount: 2 };
 
 const calls: Array<{ command: string; payload: Record<string, unknown> }> = [];
 let sources = [{ id: "cal-1", kind: "caldav", name: "飞书", url: "https://caldav.feishu.cn", host: "caldav.feishu.cn", username: "u_abc" }];
@@ -73,20 +73,39 @@ try {
   });
   const days = [...document.querySelectorAll<HTMLElement>(".calendar-day")];
   const titles = (day: HTMLElement) => [...day.querySelectorAll(".calendar-event__title")].map((title) => title.textContent);
-  check(days.length === 2 && days[0].querySelector("h3")?.textContent === "今天" && days[1].querySelector("h3")?.textContent === "明天", "分今天和明天两组");
+  check(days.length === 2 && days[0].querySelector("h3")?.textContent?.startsWith("今天 · ") && days[1].querySelector("h3")?.textContent?.startsWith("明天 · ") && /\d+月\d+日 周./.test(days[0].querySelector("h3")?.textContent ?? ""), "分今天和明天两组，标题带日期和星期");
   check(titles(days[0]).join("|") === "全员假期|晨会|设计评审：日历页、会前倒计时和加入会议按钮的最终方案确认与排期" && titles(days[1]).join("|") === "1:1", "日程按时间排在对应的一天");
   const rows = [...document.querySelectorAll<HTMLElement>(".calendar-event")];
   check(rows[0].querySelector(".calendar-event__time")?.textContent === "全天" && rows[2].querySelector(".calendar-event__time")?.textContent === "10:00–11:00", "全天日程写「全天」，其他写起止时间");
   check(rows[1].classList.contains("calendar-event--past") && !rows[1].querySelector(".calendar-event__join"), "已结束的日程变淡，不再给加入按钮");
   check(rows[2].classList.contains("calendar-event--now") && rows[2].querySelector(".calendar-event__place")?.textContent === "3 楼大会议室 · 工作", "进行中的日程高亮，下面写地点和日历名");
   const title = rows[2].querySelector<HTMLElement>(".calendar-event__title")!;
-  check(title.scrollWidth > title.clientWidth && document.getElementById("panel")!.scrollWidth <= 460, "长标题单行省略，不撑宽页面");
+  check(title.scrollWidth > title.clientWidth && document.getElementById("panel")!.scrollWidth <= 640, "长标题单行省略，不撑宽页面");
   const joinButton = rows[2].querySelector<HTMLButtonElement>(".calendar-event__join")!;
   check(joinButton.getAttribute("aria-label") === "加入「设计评审：日历页、会前倒计时和加入会议按钮的最终方案确认与排期」的会议", "加入按钮的读屏文字说明是哪个会议");
   await act(async () => { joinButton.click(); await wait(); });
   check(calls.some((call) => call.command === "plugin:opener|open_url" && JSON.stringify(call.payload).includes("vc.feishu.cn/j/123")), "点加入打开会议链接");
   check(refreshed >= 1, "打开日历页时重新读取日历");
   check(document.querySelector(".calendar-panel__status")?.textContent === "1 个日历没读到，到设置里看看", "有日历读不到时在顶部提示");
+  const cells = () => [...document.querySelectorAll<HTMLButtonElement>(".calendar-month__day")];
+  const todayCell = () => document.querySelector<HTMLButtonElement>(".calendar-month__day--today")!;
+  check(cells().length === 42 && todayCell()?.getAttribute("aria-current") === "date" && todayCell().getAttribute("aria-label")?.includes("3 个日程"), "月历六周，今天高亮，读屏写出日程数");
+  check(cells().every((cell) => cell.querySelector(".calendar-month__lunar")) && document.querySelector(".calendar-month__day--today .calendar-month__dot"), "每天都有农历，有日程的日子有圆点");
+  const panelRect = document.getElementById("panel")!.getBoundingClientRect();
+  const lastCell = cells()[41].getBoundingClientRect();
+  check(lastCell.bottom <= panelRect.bottom + 0.5 && lastCell.right <= panelRect.right + 0.5, "月历整个放得下，不溢出面板");
+  const tomorrowCell = cells()[cells().indexOf(todayCell()) + 1];
+  await act(async () => { tomorrowCell.click(); await wait(); });
+  const picked = [...document.querySelectorAll<HTMLElement>(".calendar-day")];
+  check(picked.length === 1 && !picked[0].querySelector("h3")?.textContent?.startsWith("今天") && titles(picked[0]).join("|") === "1:1", "点某一天，左边只列那天的日程");
+  const back = document.querySelector<HTMLButtonElement>(".calendar-month__today")!;
+  check(back?.textContent === "今天", "离开今天后出现回到今天的按钮");
+  const monthTitle = () => document.querySelector(".calendar-month__title")?.textContent;
+  const shownMonth = monthTitle();
+  await act(async () => { document.querySelectorAll<HTMLButtonElement>(".calendar-month__turn")[1].click(); await wait(); });
+  check(monthTitle() !== shownMonth, "可以翻到下个月");
+  await act(async () => { document.querySelector<HTMLButtonElement>(".calendar-month__today")!.click(); await wait(); });
+  check(monthTitle() === shownMonth && document.querySelectorAll(".calendar-day").length === 2, "回到今天：月份和今天、明天两组都回来");
 
   let added = 0;
   const empty = { ...SNAPSHOT, events: [], problems: [], sourceCount: 0 };

@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCcw, Settings, Video } from "lucide-react";
-import { useTranslation } from "../../i18n";
+import { useLocale, useTranslation } from "../../i18n";
 import { openMeetingLink, type CalendarEvent, type CalendarSnapshot } from "./api";
 import { CalendarEmpty } from "./CalendarEmpty";
-import { clockTime, sameDay } from "./upcoming";
+import { CalendarMonth } from "./CalendarMonth";
+import { chineseDay } from "./lunar.ts";
+import { eventsOn, isRead, monthStart, namesTheDay, nextDay, nextSpecialDay, startOfDay } from "./monthView.ts";
+import { clockTime } from "./upcoming";
 import "./CalendarPanel.css";
 
 function join(link: string) {
@@ -11,9 +14,10 @@ function join(link: string) {
 }
 
 /**
- * The island's calendar page: today's and tomorrow's events, each with its time, title and
- * place; a meeting with a join link gets a "Join" button until it ends. Opening the page reads
- * the calendars again. With no calendar added, it shows how to add one (CalendarEmpty.tsx).
+ * The island's calendar page: the day list on the left (today and tomorrow, or the day picked in
+ * the month), each event with its time, title and place and a "Join" button for a meeting until
+ * it ends; the month on the right, with lunar dates and holiday marks. Opening the page reads the
+ * calendars again. With no calendar added, it shows how to add one (CalendarEmpty.tsx).
  */
 export function CalendarPanel({
   snapshot,
@@ -28,6 +32,13 @@ export function CalendarPanel({
 }) {
   const t = useTranslation();
   const text = t.calendar;
+  const lunar = useLocale().locale === "zh-CN";
+  const today = startOfDay(now);
+  // Null: today (so the page follows midnight); a month of null follows the picked day.
+  const [picked, setPicked] = useState<number | null>(null);
+  const [month, setMonth] = useState<number | null>(null);
+  const selected = picked ?? today;
+  const shownMonth = month ?? monthStart(selected);
   useEffect(() => {
     onRefresh();
   }, [onRefresh]);
@@ -40,11 +51,21 @@ export function CalendarPanel({
     );
   }
 
-  const tomorrow = now + 86_400_000;
-  const days = [
-    { label: text.today, events: snapshot.events.filter((event) => sameDay(event.startMs, now) || (event.startMs < now && event.endMs > now)) },
-    { label: text.tomorrow, events: snapshot.events.filter((event) => sameDay(event.startMs, tomorrow)) },
-  ];
+  const select = (day: number) => {
+    setPicked(day === today ? null : day);
+    setMonth(null);
+  };
+  const subtitle = (day: number) => {
+    if (!lunar) return "";
+    const chinese = chineseDay(new Date(day));
+    const named = chinese.festival ?? chinese.term;
+    const coming = day === today && !named ? nextSpecialDay(day) : null;
+    return [chinese.lunar, named, coming ? text.daysUntil(coming.name, coming.days) : ""].filter(Boolean).join(" · ");
+  };
+  const tomorrow = nextDay(today);
+  const days = selected === today
+    ? [{ day: today, label: `${text.today} · ${text.dayTitle(new Date(today))}` }, { day: tomorrow, label: `${text.tomorrow} · ${text.dayTitle(new Date(tomorrow))}` }]
+    : [{ day: selected, label: text.dayTitle(new Date(selected)) }];
 
   const row = (event: CalendarEvent) => {
     const past = event.endMs <= now;
@@ -69,25 +90,41 @@ export function CalendarPanel({
 
   return (
     <section className="calendar-panel" aria-label={text.title}>
-      <div className="calendar-panel__head">
-        <span className="calendar-panel__status">
-          {snapshot.problems.length > 0 ? text.problems(snapshot.problems.length) : snapshot.fetchedAt ? text.updatedAt(clockTime(snapshot.fetchedAt)) : ""}
-        </span>
-        <button className="calendar-panel__icon" type="button" aria-label={text.refresh} onClick={onRefresh}>
-          <RefreshCcw size={14} strokeWidth={2.2} aria-hidden="true" />
-        </button>
-        <button className="calendar-panel__icon" type="button" aria-label={text.openSettings} onClick={onOpenSettings}>
-          <Settings size={14} strokeWidth={2.2} aria-hidden="true" />
-        </button>
+      <div className="calendar-panel__list">
+        <div className="calendar-panel__head">
+          <span className="calendar-panel__status">
+            {snapshot.problems.length > 0 ? text.problems(snapshot.problems.length) : snapshot.fetchedAt ? text.updatedAt(clockTime(snapshot.fetchedAt)) : ""}
+          </span>
+          <button className="calendar-panel__icon" type="button" aria-label={text.refresh} onClick={onRefresh}>
+            <RefreshCcw size={14} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+          <button className="calendar-panel__icon" type="button" aria-label={text.openSettings} onClick={onOpenSettings}>
+            <Settings size={14} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="calendar-panel__days">
+          {days.map(({ day, label }) => {
+            const events = eventsOn(snapshot.events, day).filter((event) => !namesTheDay(event));
+            const read = snapshot.fromMs === 0 || isRead(snapshot, day);
+            const sub = subtitle(day);
+            return (
+              <div key={day} className="calendar-day">
+                <h3 className="calendar-day__label">{label}</h3>
+                {sub && <p className="calendar-day__lunar">{sub}</p>}
+                {events.length > 0 ? <ul className="calendar-day__events">{events.map(row)}</ul> : <p className="calendar-day__empty">{read ? text.nothing : text.notRead}</p>}
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="calendar-panel__days">
-        {days.map((day) => (
-          <div key={day.label} className="calendar-day">
-            <h3 className="calendar-day__label">{day.label}</h3>
-            {day.events.length > 0 ? <ul className="calendar-day__events">{day.events.map(row)}</ul> : <p className="calendar-day__empty">{text.nothing}</p>}
-          </div>
-        ))}
-      </div>
+      <CalendarMonth
+        month={shownMonth}
+        today={today}
+        selected={selected}
+        events={snapshot.events}
+        onSelect={select}
+        onMonth={(delta) => setMonth(monthStart(shownMonth, delta))}
+      />
     </section>
   );
 }

@@ -40,7 +40,7 @@ import { useMessageView } from "./useMessageView";
 import { useIslandBanner } from "./useIslandBanner";
 import { useIslandMessagePanel } from "./useIslandMessagePanel";
 import { useIslandPopup } from "./useIslandPopup";
-import { pluginPageIslandWidth } from "./layout";
+import { pageIslandWidth } from "./layout";
 import { MessageBanner } from "../../features/messages/banner/MessageBanner";
 import { PluginPageButtons } from "./PluginPageButtons";
 import { useCollapsedSlots } from "./useCollapsedSlots";
@@ -157,7 +157,7 @@ export function IslandApp() {
   const { popup, expandedIslandWidth } = useIslandPopup(
     mode,
     messagePanel.arrivals !== null || alertPopup,
-    pluginPageIslandWidth(pluginPages.entry?.width, settings.expandedScale),
+    pageIslandWidth(page, pluginPages.entry?.width, settings.expandedScale),
   );
   const expandedIslandHeight = getExpandedIslandHeight({
     page,

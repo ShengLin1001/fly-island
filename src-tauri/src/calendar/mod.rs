@@ -1,4 +1,5 @@
-//! Calendars for the island: today's and tomorrow's events and the next meeting, from the
+//! Calendars for the island: the events of last month to next month (the calendar page's month
+//! view, today's and tomorrow's list) and the next meeting, from the
 //! calendars the user added (sources.rs): ICS subscription links and CalDAV accounts. Nothing is
 //! fetched until a calendar is added. Events are read again every 15 minutes, or at once when the
 //! island asks (it opened the calendar page), and kept in memory only.
@@ -13,7 +14,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use chrono::{DateTime, Days, Local, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone, Utc};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
@@ -35,12 +36,16 @@ pub struct SourceProblem {
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CalendarSnapshot {
-    /// Today's and tomorrow's events of every calendar, by start.
+    /// The events of every calendar between `from_ms` and `to_ms`, by start.
     events: Vec<CalendarEvent>,
     /// Calendars that could not be read this time, and why.
     problems: Vec<SourceProblem>,
     /// When the events were read (Unix ms); 0 before the first read.
     fetched_at: i64,
+    /// The time the events were read for (Unix ms): local midnight on the 1st of last month, to
+    /// that of the month after next. Both 0 before the first read.
+    from_ms: i64,
+    to_ms: i64,
     /// How many calendars are added; the island shows its calendar page only with one.
     source_count: usize,
 }
@@ -54,11 +59,14 @@ struct Cached {
 
 static CACHE: Mutex<Option<Cached>> = Mutex::new(None);
 
-/// From this computer's midnight today to midnight two days on.
+/// From this computer's midnight on the 1st of last month to that of the month after next: the
+/// months the calendar page shows events in (this one, and one either side).
 fn window(now: DateTime<Local>) -> (DateTime<Utc>, DateTime<Utc>) {
-    let midnight = now.date_naive().and_hms_opt(0, 0, 0).and_then(|naive| Local.from_local_datetime(&naive).earliest()).unwrap_or(now);
-    let end = midnight.checked_add_days(Days::new(2)).unwrap_or(midnight);
-    (midnight.with_timezone(&Utc), end.with_timezone(&Utc))
+    let midnight = |date: NaiveDate| date.and_hms_opt(0, 0, 0).and_then(|naive| Local.from_local_datetime(&naive).earliest()).unwrap_or(now);
+    let first = now.date_naive().with_day(1).unwrap_or(now.date_naive());
+    let start = first.checked_sub_months(Months::new(1)).unwrap_or(first);
+    let end = first.checked_add_months(Months::new(2)).unwrap_or(first);
+    (midnight(start).with_timezone(&Utc), midnight(end).with_timezone(&Utc))
 }
 
 fn app_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
@@ -125,7 +133,13 @@ async fn read_source(source: &CalendarSource, secret: &str, from: DateTime<Utc>,
 
 async fn read_all(sources: &[CalendarSource]) -> CalendarSnapshot {
     let (from, to) = window(Local::now());
-    let mut snapshot = CalendarSnapshot { fetched_at: Utc::now().timestamp_millis(), source_count: sources.len(), ..CalendarSnapshot::default() };
+    let mut snapshot = CalendarSnapshot {
+        fetched_at: Utc::now().timestamp_millis(),
+        from_ms: from.timestamp_millis(),
+        to_ms: to.timestamp_millis(),
+        source_count: sources.len(),
+        ..CalendarSnapshot::default()
+    };
     for source in sources {
         let result = match sources::read_secret(&source.id) {
             Ok(Some(secret)) => read_source(source, &secret, from, to).await,
@@ -143,7 +157,7 @@ async fn read_all(sources: &[CalendarSource]) -> CalendarSnapshot {
     snapshot
 }
 
-/// Today's and tomorrow's events. Read again when 15 minutes old, when the calendars changed, or
+/// The events of last month to next month. Read again when 15 minutes old, when the calendars changed, or
 /// with `refresh`; with no calendar added, nothing is read and the list is empty.
 #[tauri::command]
 pub async fn get_calendar_events(app: AppHandle, refresh: bool) -> Result<CalendarSnapshot, String> {
@@ -250,10 +264,11 @@ mod tests {
     }
 
     #[test]
-    fn the_window_runs_from_local_midnight_for_two_days() {
-        let now = Local.with_ymd_and_hms(2026, 11, 7, 15, 30, 0).unwrap();
-        let (from, to) = window(now);
-        assert_eq!(from, Local.with_ymd_and_hms(2026, 11, 7, 0, 0, 0).unwrap().with_timezone(&Utc));
-        assert_eq!(to, Local.with_ymd_and_hms(2026, 11, 9, 0, 0, 0).unwrap().with_timezone(&Utc));
+    fn the_window_runs_from_last_month_to_next_month() {
+        let local = |y, m, d| Local.with_ymd_and_hms(y, m, d, 0, 0, 0).unwrap().with_timezone(&Utc);
+        let (from, to) = window(Local.with_ymd_and_hms(2026, 11, 7, 15, 30, 0).unwrap());
+        assert_eq!((from, to), (local(2026, 10, 1), local(2027, 1, 1)));
+        let (from, to) = window(Local.with_ymd_and_hms(2027, 1, 31, 23, 0, 0).unwrap());
+        assert_eq!((from, to), (local(2026, 12, 1), local(2027, 3, 1)));
     }
 }

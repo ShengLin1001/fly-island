@@ -21,7 +21,28 @@ export type CalendarText = {
   addHolidays: string;
   addWork: string;
   adding: string;
+  /** The month view: weekday heads from Monday, the month's title, the day's title. */
+  weekdays: string[];
+  monthTitle: (year: number, month: number) => string;
+  dayTitle: (date: Date) => string;
+  previousMonth: string;
+  nextMonth: string;
+  backToToday: string;
+  /** A holiday calendar's marks: a day off, a make-up workday (the short form in the cell). */
+  off: string;
+  work: string;
+  offLabel: string;
+  workLabel: string;
+  /** "13 天后小雪", beside today's title (only where lunar dates are shown). */
+  daysUntil: (name: string, days: number) => string;
+  /** A day's cell, for screen readers. */
+  dayLabel: (title: string, events: number) => string;
+  /** A day outside the months that were read. */
+  notRead: string;
 };
+
+const ZH_WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+const EN_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export const zhCN: CalendarText = {
   title: "日历",
@@ -44,6 +65,19 @@ export const zhCN: CalendarText = {
   addHolidays: "订阅中国节假日",
   addWork: "添加工作日历",
   adding: "正在订阅…",
+  weekdays: ["一", "二", "三", "四", "五", "六", "日"],
+  monthTitle: (year, month) => `${year}年${month + 1}月`,
+  dayTitle: (date) => `${date.getMonth() + 1}月${date.getDate()}日 周${ZH_WEEKDAYS[date.getDay()]}`,
+  previousMonth: "上个月",
+  nextMonth: "下个月",
+  backToToday: "今天",
+  off: "休",
+  work: "班",
+  offLabel: "休息日",
+  workLabel: "调休上班",
+  daysUntil: (name, days) => (days === 1 ? `明天${name}` : `${days} 天后${name}`),
+  dayLabel: (title, events) => (events > 0 ? `${title}，${events} 个日程` : title),
+  notRead: "只读取上个月到下个月的日程，这一天的看不到",
 };
 
 export const en: CalendarText = {
@@ -67,4 +101,17 @@ export const en: CalendarText = {
   addHolidays: "Subscribe to China's holidays",
   addWork: "Add a work calendar",
   adding: "Subscribing…",
+  weekdays: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+  monthTitle: (year, month) => `${EN_MONTHS[month]} ${year}`,
+  dayTitle: (date) => `${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()]}, ${EN_MONTHS[date.getMonth()].slice(0, 3)} ${date.getDate()}`,
+  previousMonth: "Previous month",
+  nextMonth: "Next month",
+  backToToday: "Today",
+  off: "Off",
+  work: "Work",
+  offLabel: "Day off",
+  workLabel: "Make-up workday",
+  daysUntil: (name, days) => (days === 1 ? `${name} tomorrow` : `${name} in ${days} days`),
+  dayLabel: (title, events) => (events === 0 ? title : `${title}, ${events === 1 ? "1 event" : `${events} events`}`),
+  notRead: "Only last month to next month are read; this day's events are not shown",
 };

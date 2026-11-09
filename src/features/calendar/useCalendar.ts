@@ -7,7 +7,7 @@ const POLL_MS = 60_000;
 
 const NO_EVENTS: readonly CalendarEvent[] = [];
 
-export const EMPTY_CALENDAR: CalendarSnapshot = { events: [], problems: [], fetchedAt: 0, sourceCount: 0 };
+export const EMPTY_CALENDAR: CalendarSnapshot = { events: [], problems: [], fetchedAt: 0, fromMs: 0, toMs: 0, sourceCount: 0 };
 
 function isSnapshot(value: unknown): value is CalendarSnapshot {
   const snapshot = value as CalendarSnapshot | null;
@@ -25,7 +25,7 @@ export type CalendarState = {
 };
 
 /**
- * Today's and tomorrow's events while the calendar module is on, and the next meeting.
+ * The events of last month to next month while the calendar module is on, and the next meeting.
  * `extra` are events from elsewhere (todos that start with a time, todoEvents.ts), merged in.
  */
 export function useCalendar(enabled: boolean, remindMinutes: number, extra: readonly CalendarEvent[] = NO_EVENTS): CalendarState {

@@ -28,6 +28,18 @@ export function maxExpandedIslandWidth(scale: number) {
 }
 
 /** The island's width for a plugin page asking for `pageWidth` (E15), or null for the usual width. */
+/** The calendar page: the day list beside the month view (CalendarMonth.css), as far as it fits. */
+export const CALENDAR_ISLAND_WIDTH = 680;
+
+/**
+ * The expanded island's width (before its scale) for `page`, or null for the usual width: the
+ * calendar page is wider, as is a plugin page asking for more (`pluginWidth`, E15).
+ */
+export function pageIslandWidth(page: string, pluginWidth: number | null | undefined, scale: number) {
+  if (page === "calendar") return Math.min(CALENDAR_ISLAND_WIDTH, maxExpandedIslandWidth(scale));
+  return pluginPageIslandWidth(pluginWidth, scale);
+}
+
 export function pluginPageIslandWidth(pageWidth: number | null | undefined, scale: number) {
   if (typeof pageWidth !== "number") return null;
   return Math.min(Math.max(pageWidth + EXPANDED_SIDE_PADDING, EXPANDED_ISLAND_WIDTH), maxExpandedIslandWidth(scale));
@@ -37,8 +49,12 @@ export const POPUP_HEADER_SAVING = 58;
 /** An Agent alert popup also drops the list's 4px top padding (AgentSessionsPanel.css). */
 export const AGENT_POPUP_LIST_SAVING = 4;
 export const TODO_ARCHIVE_EXPANDED_ISLAND_HEIGHT = 352;
-/** The calendar page: two days of events, scrolling past about six. */
-export const CALENDAR_EXPANDED_ISLAND_HEIGHT = 340;
+/**
+ * The calendar page: the month view's six weeks at 44px a row, below its title and weekdays
+ * (CalendarMonth.css), within the island's padding and header. A lower panel height limit
+ * squeezes the rows, which then drop their lunar line.
+ */
+export const CALENDAR_EXPANDED_ISLAND_HEIGHT = 404;
 export const MUSIC_EXPANDED_ISLAND_HEIGHT = 320;
 // Expanded island around an empty clipboard list: island padding, header and gap (86),
 // then the panel's padding, title, tabs, search and their gaps (158).

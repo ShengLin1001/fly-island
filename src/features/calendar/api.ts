@@ -23,11 +23,14 @@ export type CalendarEvent = {
 
 /** Mirrors CalendarSnapshot in src-tauri/src/calendar/mod.rs. */
 export type CalendarSnapshot = {
-  /** Today's and tomorrow's events, by start. */
+  /** The events between `fromMs` and `toMs`, by start. */
   events: CalendarEvent[];
   /** Calendars that could not be read this time. */
   problems: { sourceId: string; message: string }[];
   fetchedAt: number;
+  /** The time the events were read for: from the 1st of last month to that of the month after next; 0 before a read. */
+  fromMs: number;
+  toMs: number;
   /** How many calendars are added; none hides the calendar page. */
   sourceCount: number;
 };

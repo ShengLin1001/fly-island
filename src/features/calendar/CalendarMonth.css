@@ -1,0 +1,198 @@
+/* The calendar page's month view (CalendarMonth.tsx): straight on the island like the day list. */
+.calendar-month {
+  --calendar-accent: 255, 154, 118;
+  flex: none;
+  width: 322px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calendar-month__head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  margin-bottom: 2px;
+}
+
+.calendar-month__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-left: 4px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-month__today,
+.calendar-month__turn {
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 8px;
+  color: rgba(var(--calendar-ink), 0.72);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.calendar-month__turn {
+  width: 24px;
+  padding: 0;
+}
+
+.calendar-month__today {
+  color: rgb(var(--calendar-accent));
+}
+
+.calendar-month__today:hover,
+.calendar-month__turn:hover {
+  color: rgba(var(--calendar-ink), 0.96);
+  background: rgba(var(--calendar-ink), 0.08);
+}
+
+.calendar-month__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  height: 18px;
+  color: rgba(var(--calendar-ink), 0.46);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* Six rows share whatever height the panel leaves; short rows drop the lunar line (below). */
+.calendar-month__grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  container-type: size;
+}
+
+.calendar-month__day {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  margin: 1px;
+  padding: 0;
+  color: rgba(var(--calendar-ink), 0.92);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  cursor: pointer;
+}
+
+.calendar-month__day:hover {
+  background: rgba(var(--calendar-ink), 0.08);
+}
+
+.calendar-month__day:focus-visible {
+  outline: 2px solid rgba(var(--calendar-accent), 0.9);
+  outline-offset: -2px;
+}
+
+.calendar-month__date {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-month__lunar {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(var(--calendar-ink), 0.5);
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.calendar-month__lunar--special {
+  color: rgb(var(--calendar-accent));
+}
+
+.calendar-month__day--weekend .calendar-month__date {
+  color: rgba(var(--calendar-ink), 0.66);
+}
+
+.calendar-month__day--outside {
+  opacity: 0.38;
+}
+
+.calendar-month__day--selected {
+  background: rgba(var(--calendar-ink), 0.12);
+}
+
+.calendar-month__day--today {
+  color: #fff;
+  background: rgba(var(--calendar-accent), 0.88);
+}
+
+.calendar-month__day--today:hover {
+  background: rgb(var(--calendar-accent));
+}
+
+.calendar-month__day--today .calendar-month__date,
+.calendar-month__day--today .calendar-month__lunar {
+  color: #fff;
+}
+
+.calendar-month__mark {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.calendar-month__day--off .calendar-month__mark {
+  color: #6fd39b;
+}
+
+.calendar-month__day--work .calendar-month__mark {
+  color: #ff8a8a;
+}
+
+.calendar-month__day--today .calendar-month__mark {
+  color: #fff;
+}
+
+.calendar-month__dot {
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--calendar-accent), 0.95);
+}
+
+.calendar-month__day--today .calendar-month__dot {
+  background: #fff;
+}
+
+/* English, or rows too short for two lines: only the date. */
+.calendar-month--plain .calendar-month__day {
+  gap: 0;
+}
+
+@container (max-height: 216px) {
+  .calendar-month__lunar {
+    display: none;
+  }
+}

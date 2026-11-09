@@ -4,9 +4,27 @@
   height: 100%;
   min-height: 0;
   display: flex;
+  gap: 18px;
+  color: rgba(var(--calendar-ink), 0.94);
+}
+
+/* The day list beside the month (CalendarMonth.css). */
+.calendar-panel__list {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
   flex-direction: column;
   gap: 6px;
-  color: rgba(var(--calendar-ink), 0.94);
+}
+
+.calendar-day__lunar {
+  margin: -2px 0 4px;
+  overflow: hidden;
+  color: rgba(var(--calendar-ink), 0.42);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calendar-panel__head {
