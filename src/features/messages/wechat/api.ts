@@ -15,6 +15,8 @@ export type ReminderSnapshot = {
   exposeUi: boolean;
   /** How that is going; null while off. */
   exposeStatus: string | null;
+  /** Setting: a minimized WeChat leaves the taskbar, so minimizing can stand in for the tray. */
+  hideTaskbarButton: boolean;
 };
 
 /** One chat with a new message (contact and the last message as WeChat's chat list shows them). */
@@ -39,6 +41,10 @@ export function setWeChatRemindersEnabled(enabled: boolean) {
 
 export function setWeChatExposeUi(enabled: boolean) {
   return invoke<ReminderSnapshot>("set_wechat_expose_ui", { enabled });
+}
+
+export function setWeChatHideTaskbarButton(enabled: boolean) {
+  return invoke<ReminderSnapshot>("set_wechat_hide_taskbar_button", { enabled });
 }
 
 /** Brings WeChat up; with `chat` it also opens that chat when WeChat's list shows it. */

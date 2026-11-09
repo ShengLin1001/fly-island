@@ -3,6 +3,7 @@
 //! reads the chat list to tell who wrote and what. The "expose WeChat's UI" setting switches that
 //! on in the running WeChat (gate.rs).
 
+mod button;
 mod chats;
 mod gate;
 mod plugin_view;
@@ -45,6 +46,9 @@ pub struct ReminderSnapshot {
     expose_ui: bool,
     /// How that is going, for the settings; `None` while off.
     expose_status: Option<String>,
+    /// Setting: a minimized WeChat leaves the taskbar, so it can stay minimized (and readable)
+    /// rather than closed to the tray (button.rs).
+    hide_taskbar_button: bool,
 }
 
 /// One chat with a new message, as WeChat's chat list shows it.
@@ -73,6 +77,7 @@ impl Default for ReminderSnapshot {
             message: None,
             expose_ui: false,
             expose_status: None,
+            hide_taskbar_button: false,
         }
     }
 }
@@ -95,6 +100,7 @@ impl ReminderState {
             status: if enabled { "waiting" } else { "disabled" }.into(),
             expose_ui: self.snapshot.expose_ui,
             expose_status: self.snapshot.expose_status.take(),
+            hide_taskbar_button: self.snapshot.hide_taskbar_button,
             ..Default::default()
         };
         true
@@ -105,6 +111,15 @@ impl ReminderState {
             return false;
         }
         self.snapshot.expose_ui = on;
+        self.snapshot.revision += 1;
+        true
+    }
+
+    fn set_hide_taskbar_button(&mut self, on: bool) -> bool {
+        if self.snapshot.hide_taskbar_button == on {
+            return false;
+        }
+        self.snapshot.hide_taskbar_button = on;
         self.snapshot.revision += 1;
         true
     }
@@ -154,6 +169,8 @@ struct ReminderService {
     state: Mutex<ReminderState>,
     /// WeChat's accessibility byte, when the island set it.
     gate: Mutex<gate::Keeper>,
+    /// WeChat's taskbar button, when the island took it off.
+    button: Mutex<button::Keeper>,
     wake: mpsc::SyncSender<()>,
 }
 
@@ -171,6 +188,7 @@ pub fn init(app: &AppHandle) -> Result<(), String> {
         app: app.clone(),
         state: Mutex::new(ReminderState::default()),
         gate: Mutex::new(gate::Keeper::new(folder)),
+        button: Mutex::new(button::Keeper::default()),
         wake,
     });
     let worker = service.clone();
@@ -266,10 +284,39 @@ pub fn set_wechat_expose_ui(enabled: bool) -> Result<ReminderSnapshot, String> {
     Ok(snapshot)
 }
 
-/// Puts WeChat's byte back when the island exits.
+/// Turns the "minimized WeChat leaves the taskbar" setting on or off; the listener applies it.
+#[tauri::command]
+pub fn set_wechat_hide_taskbar_button(enabled: bool) -> Result<ReminderSnapshot, String> {
+    let service = service()?;
+    let (snapshot, changed) = {
+        let mut state = service.state.lock().map_err(|_| "微信提醒状态不可用。")?;
+        let changed = state.set_hide_taskbar_button(enabled);
+        (state.snapshot.clone(), changed)
+    };
+    if changed {
+        publish(service, snapshot.clone());
+        let _ = service.wake.try_send(());
+    }
+    Ok(snapshot)
+}
+
+/// Puts WeChat's byte and taskbar button back when the island exits.
 pub(crate) fn shutdown() {
     if let Some(service) = SERVICE.get() {
         let _ = service.gate.lock().map(|mut gate| gate.off());
+        let _ = service.button.lock().map(|mut button| button.restore());
+    }
+}
+
+/// Keeps a minimized WeChat off the taskbar while the setting (and the chat list reading it is
+/// for) is on.
+fn keep_button(service: &ReminderService, executable: &Path) {
+    let on = service.state.lock().is_ok_and(|state| {
+        let snapshot = &state.snapshot;
+        snapshot.enabled && snapshot.expose_ui && snapshot.hide_taskbar_button
+    });
+    if let Ok(mut button) = service.button.lock() {
+        button.tick(on, || main_window(executable));
     }
 }
 
@@ -487,12 +534,14 @@ fn monitor(service: Arc<ReminderService>, receiver: mpsc::Receiver<()>) {
                     {
                         // Reminders off: WeChat's UI goes back to hidden too.
                         keep_gate(&service, &reader.executable);
+                        keep_button(&service, &reader.executable);
                         break;
                     }
                     if keep_gate(&service, &reader.executable) {
                         // Readable from now on: take the list as it is as the baseline.
                         reader.seen = reader.read();
                     }
+                    keep_button(&service, &reader.executable);
                     listener.poll();
                     let _ = listener.stats();
                     for event in events.take() {
@@ -668,6 +717,7 @@ macro_rules! tauri_commands {
             crate::wechat_reminders::set_wechat_reminders_enabled,
             crate::wechat_reminders::open_wechat,
             crate::wechat_reminders::set_wechat_expose_ui,
+            crate::wechat_reminders::set_wechat_hide_taskbar_button,
         ] $($rest)*)
     };
 }

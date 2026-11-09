@@ -81,6 +81,15 @@ export function MessagesSettingsPage({
             onChange={(enabled) => void wechatReminders.setExposeUi(enabled)}
           />
         )}
+        {wechatReminders.snapshot.enabled && wechatReminders.snapshot.exposeUi && (
+          <SettingsToggleRow
+            title={t.wechat.hideTaskbarButton}
+            description={t.wechat.hideTaskbarButtonDescription}
+            checked={wechatReminders.snapshot.hideTaskbarButton}
+            indent
+            onChange={(enabled) => void wechatReminders.setHideTaskbarButton(enabled)}
+          />
+        )}
       </SettingsGroup>
       <MailGroups settings={settings} onSettingsChange={onSettingsChange} />
     </>

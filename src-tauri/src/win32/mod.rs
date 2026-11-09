@@ -25,6 +25,7 @@ pub(crate) mod process_tree;
 pub(crate) mod registry;
 pub(crate) mod session_notifications;
 pub(crate) mod shell_hook;
+pub(crate) mod taskbar;
 pub(crate) mod uia_list;
 pub(crate) mod uia_tabs;
 pub(crate) mod url_protocol;

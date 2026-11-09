@@ -1,12 +1,16 @@
 import { useTranslation } from "../../../i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { launchWeChat, listenWeChatReminderChanged, setWeChatExposeUi, setWeChatRemindersEnabled, type ChatMessage, type ReminderSnapshot } from "./api";
-import { isWeChatExposeUiEnabled, isWeChatRemindersEnabled, saveWeChatExposeUiEnabled, saveWeChatRemindersEnabled } from "./storage";
+import { launchWeChat, listenWeChatReminderChanged, setWeChatExposeUi, setWeChatHideTaskbarButton, setWeChatRemindersEnabled, type ChatMessage, type ReminderSnapshot } from "./api";
+import {
+  isWeChatExposeUiEnabled, isWeChatHideTaskbarButtonEnabled, isWeChatRemindersEnabled,
+  saveWeChatExposeUiEnabled, saveWeChatHideTaskbarButtonEnabled, saveWeChatRemindersEnabled,
+} from "./storage";
 
 const EMPTY_SNAPSHOT: ReminderSnapshot = {
   revision: 0, enabled: false, status: "disabled", pending: false,
   lastAttentionAt: null, error: null, message: null, exposeUi: false, exposeStatus: null,
+  hideTaskbarButton: false,
 };
 
 export function useWeChatReminders(canPreview: boolean) {
@@ -67,6 +71,8 @@ export function useWeChatReminders(canPreview: boolean) {
       if (!cancelled) acceptSnapshot(next);
       const exposed = await setWeChatExposeUi(isWeChatExposeUiEnabled());
       if (!cancelled) acceptSnapshot(exposed);
+      const hidden = await setWeChatHideTaskbarButton(isWeChatHideTaskbarButtonEnabled());
+      if (!cancelled) acceptSnapshot(hidden);
     })().catch((error: unknown) => {
       if (!cancelled) setActionError(String(error));
     }).finally(() => {
@@ -115,6 +121,12 @@ export function useWeChatReminders(canPreview: boolean) {
     saveWeChatExposeUiEnabled(enabled);
   }), [acceptSnapshot, run]);
 
+  /** Takes a minimized WeChat off the taskbar (or stops doing so). */
+  const setHideTaskbarButton = useCallback((enabled: boolean) => run(async () => {
+    acceptSnapshot(await setWeChatHideTaskbarButton(enabled));
+    saveWeChatHideTaskbarButtonEnabled(enabled);
+  }), [acceptSnapshot, run]);
+
   /** Brings WeChat up; `chat` (a preview's) also opens that chat. */
   const openWeChat = useCallback((chat?: string | null) => run(async () => {
     await launchWeChat(chat);
@@ -123,7 +135,7 @@ export function useWeChatReminders(canPreview: boolean) {
 
   const showing = canPreview && snapshot.pending && previewReceivedAt !== null;
   return {
-    snapshot, busy, actionError, setEnabled, setExposeUi, openWeChat,
+    snapshot, busy, actionError, setEnabled, setExposeUi, setHideTaskbarButton, openWeChat,
     previewReceivedAt: showing ? previewReceivedAt : null,
     previewMessage: showing ? previewMessage : null,
   };
