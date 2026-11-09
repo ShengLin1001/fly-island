@@ -222,6 +222,10 @@ function subscriptions(host, subscribe, params) {
 
 function notify(host, params) {
   text(params?.title, 80, "title");
+  // Like the island: unknown values fall back to the default, other types are refused.
+  for (const key of ["icon", "layout"]) {
+    if (params?.[key] != null && typeof params[key] !== "string") fail(400, `"${key}" must be a string.`);
+  }
   const now = Date.now();
   host.notifyTimes = host.notifyTimes.filter((at) => now - at < 60_000);
   if (host.notifyTimes.length >= NOTIFY_PER_MINUTE) fail(429, "At most 6 messages a minute.");

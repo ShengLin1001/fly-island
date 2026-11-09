@@ -591,6 +591,21 @@ fn notifications_are_checked_and_clamped() {
 }
 
 #[test]
+fn notifications_take_an_icon_and_a_layout() {
+    use super::notify::{parse_notification, NotificationIcon, NotificationLayout};
+    let plain = parse_notification(&json!({ "title": "x" })).expect("valid");
+    assert_eq!((plain.icon, plain.layout), (NotificationIcon::Plugin, NotificationLayout::Card));
+    let styled = parse_notification(&json!({ "title": "x", "icon": "media", "layout": "inline" })).expect("valid");
+    assert_eq!((styled.icon, styled.layout), (NotificationIcon::Media, NotificationLayout::Inline));
+    // A value from a newer SDK falls back, so the message still shows.
+    let newer = parse_notification(&json!({ "title": "x", "icon": "app", "layout": "hero" })).expect("valid");
+    assert_eq!((newer.icon, newer.layout), (NotificationIcon::Plugin, NotificationLayout::Card));
+    assert!(parse_notification(&json!({ "title": "x", "icon": 1 })).expect_err("invalid").contains("icon"));
+    let payload = serde_json::to_value(&styled).expect("serializes");
+    assert_eq!((payload["icon"].as_str(), payload["layout"].as_str()), (Some("media"), Some("inline")));
+}
+
+#[test]
 fn notifications_are_limited_per_minute() {
     use super::notify::{take_slot, RATE_LIMIT};
     use std::{collections::VecDeque, time::{Duration, Instant}};

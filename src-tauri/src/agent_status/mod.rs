@@ -7,7 +7,8 @@ mod codex_hooks;
 mod editor_terminal;
 mod external;
 mod hooks_state;
-mod host_icon;
+// Also gives media_control the playing app's icon for plugin notifications.
+pub(crate) mod host_icon;
 mod codex_usage;
 mod codex_version;
 mod magpie;

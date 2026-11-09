@@ -155,6 +155,10 @@ export interface NotifyOptions {
   body?: string;
   durationMs?: number;
   actions?: { id: string; title: LocalizedText }[];
+  /** "media": the icon of the app playing media instead of the plugin's (capability `notifyStyle`; older islands ignore it). */
+  icon?: "plugin" | "media";
+  /** "inline": alone in the new-messages popup, the island is the message, with no title row or card (capability `notifyStyle`). */
+  layout?: "card" | "inline";
 }
 
 export interface CreatePluginOptions {

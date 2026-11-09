@@ -11,7 +11,8 @@
     { "name": "webview", "since": 2, "meaning": "contributes.views with template 'webview' (the plugin's own HTML page); webview.postMessage and the 'webview.message' notification." },
     { "name": "permissions", "since": 2, "meaning": "manifest optionalPermissions and permissions.request; initialize.optionalPermissions." },
     { "name": "openView", "since": 2, "meaning": "island.openView: a plugin opens its own page right after the user used it." },
-    { "name": "statusCells", "since": 2, "meaning": "status.update draws 'cells' (label-over-value columns) and a 'ring' (0-1). Islands without it ignore both and show the text." }
+    { "name": "statusCells", "since": 2, "meaning": "status.update draws 'cells' (label-over-value columns) and a 'ring' (0-1). Islands without it ignore both and show the text." },
+    { "name": "notifyStyle", "since": 2, "meaning": "island.notify takes 'icon' ('media': the icon of the app playing media) and 'layout' ('inline': alone in the new-messages popup, the island is the message, with no title row or card). Islands without it ignore both." }
   ],
   "permissions": [
     { "name": "todos:read", "since": 1 },
@@ -235,7 +236,7 @@
       "name": "island.notify",
       "permission": "island:notify",
       "since": 2,
-      "params": { "title": "string (1-80 chars)", "body?": "string (max 200)", "durationMs?": "number, clamped to 2000-15000, default 5000", "actions?": "[{ id: [A-Za-z0-9-]{1,32}, title: string (max 16) }] (max 2)" },
+      "params": { "title": "string (1-80 chars)", "body?": "string (max 200)", "durationMs?": "number, clamped to 2000-15000, default 5000", "actions?": "[{ id: [A-Za-z0-9-]{1,32}, title: string (max 16) }] (max 2)", "icon?": "'plugin' (default) | 'media': the icon of the app playing media, else the plugin's (capability notifyStyle)", "layout?": "'card' (default) | 'inline': alone in the new-messages popup, no title row or card (capability notifyStyle)" },
       "result": "{ muted }: true when the user turned this plugin's messages off (nothing is shown). At most 6 per minute per plugin, else -32000 with status 429."
     },
     {

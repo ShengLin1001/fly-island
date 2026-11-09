@@ -1,6 +1,7 @@
 //! `island.notify`: a plugin shows a short message in the collapsed island's
 //! message preview, optionally with buttons the plugin hears about as a
-//! `notification.action` notification.
+//! `notification.action` notification. With the `notifyStyle` capability it may
+//! also ask for the playing app's icon and a layout without a card.
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -12,7 +13,7 @@ use std::{
 use tauri::{AppHandle, Emitter};
 
 use super::{host, lock, manifest::LocalizedText};
-use crate::island;
+use crate::{island, media_control};
 
 /// Mirrored by `PLUGIN_NOTIFICATION_EVENT` in src/features/plugins/api.ts.
 const NOTIFICATION_EVENT: &str = "plugin-notification";
@@ -31,6 +32,23 @@ pub(super) struct NotificationAction {
     pub title: String,
 }
 
+/// The icon beside the message: the plugin's, or the app playing media's (`"media"`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) enum NotificationIcon {
+    Plugin,
+    Media,
+}
+
+/// `"inline"`: alone in the new-messages popup, the island itself is the message, with no title
+/// row or card around it. `"card"` (the default) is a row like any other message's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) enum NotificationLayout {
+    Card,
+    Inline,
+}
+
 /// Mirrored by `PluginNotification` in src/features/plugins/api.ts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +57,8 @@ pub(super) struct Notification {
     pub body: String,
     pub duration_ms: u64,
     pub actions: Vec<NotificationAction>,
+    pub icon: NotificationIcon,
+    pub layout: NotificationLayout,
 }
 
 /// Same rule as command ids: letters, digits and '-', 1 to 32 long.
@@ -63,7 +83,20 @@ fn text(params: &Value, key: &str, max: usize, required: bool) -> Result<String,
     }
 }
 
-/// Checks `{ title, body?, durationMs?, actions? }`.
+/// A string choice; a value this island does not know (from a newer SDK) is the default, so the
+/// message still shows.
+fn choice<T>(params: &Value, key: &str, default: T, known: &[(&str, T)]) -> Result<T, String>
+where
+    T: Copy,
+{
+    match params.get(key) {
+        None | Some(Value::Null) => Ok(default),
+        Some(Value::String(value)) => Ok(known.iter().find(|(name, _)| *name == value).map_or(default, |(_, choice)| *choice)),
+        _ => Err(format!("\"{key}\" must be a string.")),
+    }
+}
+
+/// Checks `{ title, body?, durationMs?, actions?, icon?, layout? }`.
 pub(super) fn parse_notification(params: &Value) -> Result<Notification, String> {
     let title = text(params, "title", MAX_TITLE, true)?;
     let body = text(params, "body", MAX_BODY, false)?;
@@ -92,7 +125,9 @@ pub(super) fn parse_notification(params: &Value) -> Result<Notification, String>
         }
         Some(_) => return Err(format!("\"actions\" must be a list of at most {MAX_ACTIONS}.")),
     };
-    Ok(Notification { title, body, duration_ms, actions })
+    let icon = choice(params, "icon", NotificationIcon::Plugin, &[("plugin", NotificationIcon::Plugin), ("media", NotificationIcon::Media)])?;
+    let layout = choice(params, "layout", NotificationLayout::Card, &[("card", NotificationLayout::Card), ("inline", NotificationLayout::Inline)])?;
+    Ok(Notification { title, body, duration_ms, actions, icon, layout })
 }
 
 /// Drops times older than RATE_WINDOW and records `now` unless RATE_LIMIT
@@ -130,6 +165,10 @@ pub(super) fn show(app: &AppHandle, plugin_id: &str, params: &Value) -> Result<V
         let mut payload = json!(notification);
         payload["pluginId"] = json!(plugin_id);
         payload["pluginName"] = json!(plugin_name);
+        // Read here, not by the page: the music page may be off, and the page cannot read exe icons.
+        if notification.icon == NotificationIcon::Media {
+            payload["iconUrl"] = json!(media_control::current_source_icon());
+        }
         let _ = app.emit_to(island::WINDOW_LABEL, NOTIFICATION_EVENT, payload);
     }
     Ok(json!({ "muted": muted }))

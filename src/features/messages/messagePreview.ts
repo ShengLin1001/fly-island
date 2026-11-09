@@ -12,6 +12,10 @@ export type MessagePreview = {
   receivedAt: number;
   /** The mailbox a mail preview came from, which picks the mail icon. */
   account?: string | null;
+  /** A plugin message's own icon (island.notify `icon: "media"`), as a data URL. */
+  iconUrl?: string | null;
+  /** A plugin message that, alone in the new-messages popup, shows without a title row or card. */
+  inline?: boolean;
 };
 
 export const MESSAGE_SOURCE_LABELS: Record<MessageSource, string> = zhCN.messages.sourceLabels;

@@ -3,6 +3,8 @@
   /* Its own content height, never the page's: the island's height is measured from it. */
   flex: none;
   align-self: start;
+  /* align-self: start would otherwise shrink the rows to their text. */
+  width: 100%;
   display: grid;
   gap: 8px;
   align-content: start;
@@ -169,6 +171,36 @@
 .message-arrivals__action:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
+}
+
+/* One inline plugin message (C11c): no card, the island is the message; the icon is bigger and
+   centred on the two lines beside it. 8px above the text, with the popup's 8px top padding. */
+.message-arrivals--inline .message-arrivals__item {
+  background: transparent;
+}
+
+.message-arrivals--inline .message-arrivals__row {
+  align-items: center;
+  gap: 12px;
+  padding: 8px 2px 0;
+}
+
+.message-arrivals--inline .message-arrivals__row:hover {
+  background: transparent;
+}
+
+.message-arrivals--inline .message-arrivals__row > .message-brand-icon {
+  margin-top: 0;
+  border-radius: 8px;
+}
+
+.message-arrivals--inline .message-arrivals__sender {
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.message-arrivals--inline .message-arrivals__actions {
+  padding: 8px 2px 0 46px;
 }
 
 @media (prefers-reduced-motion: reduce) {

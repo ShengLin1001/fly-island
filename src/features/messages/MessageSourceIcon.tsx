@@ -26,14 +26,19 @@ const MAIL_PROVIDER_ICONS: Record<MailProvider, string> = {
 /**
  * A message source's icon. Mail shows the logo of the mailbox's service: pass
  * `account` (the mailbox address), or `mailProvider` when several mailboxes
- * share one; an unknown service, or none, gets the plain mail icon.
+ * share one; an unknown service, or none, gets the plain mail icon. A plugin
+ * message may bring its own `iconUrl` (the app playing media).
  */
-export function MessageSourceIcon({ source, size = 16, account, mailProvider }: {
+export function MessageSourceIcon({ source, size = 16, account, mailProvider, iconUrl }: {
   source: PreviewSource;
   size?: number;
   account?: string | null;
   mailProvider?: MailProvider | null;
+  iconUrl?: string | null;
 }) {
+  if (source === "plugin" && iconUrl) {
+    return <img className="message-brand-icon message-brand-icon--app" src={iconUrl} alt="" aria-hidden="true" width={size} height={size} draggable={false} />;
+  }
   if (source === "plugin") {
     return <Puzzle className="message-brand-icon message-brand-icon--plugin" size={size} strokeWidth={2.2} aria-hidden="true" />;
   }

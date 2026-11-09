@@ -366,6 +366,7 @@ QQ 邮箱授权码、翻译服务密钥这类凭据，任何权限都拿不到�
 | `views` | `contributes.views` 页面；`view.update` / `view.patch` 和 `view.*` 通知 |
 | `status` | `contributes.statusItems` 折叠条状态；`status.update` |
 | `statusCells` | `status.update` 的 `cells`（列）和 `ring`（小环） |
+| `notifyStyle` | `island.notify` 的 `icon`（音乐软件的图标）和 `layout`（不带卡片） |
 
 - **第 1 版插件的行为不变**：`events.*`、`storage.*`、`view.*`、`status.update` 对它们仍然返回"方法不存在"；清单里的 `keybinding`、`when`、`menus`、`views`、`statusItems` 被忽略（写成什么样都不影响加载）。新权限（`island:notify`、`secrets` 等）在第 1 版清单里也能申请，申请了就能调用对应方法。
 - 兼容规则：同一版本内只做新增（新方法、新的可选参数和结果字段、新事件）。插件要忽略不认识的字段和通知。
@@ -413,7 +414,7 @@ QQ 邮箱授权码、翻译服务密钥这类凭据，任何权限都拿不到�
 | `note.set` | 1 | `notes:write` | `{ note }` 或 `{ append }` | `{ date, note }` |
 | `agentStatus.report` | 1 | `agent-status:write` | `{ source, phase, name?, title?, taskId?, host?, agent?, cwd? }` | 保存后的状态，`id` 为 `<插件 id>/<source>`。`phase` 为 `idle`、`running`、`waiting`、`completed` 或 `failed`；同时给出 `host`（机器名）和 `agent`（`claudeCode` / `codex`）时，作为另一台电脑上的会话列在 Agent 页上；省略的字段沿用上次的值 |
 | `agentStatus.clear` | 1 | `agent-status:write` | `{ source? }` | `{ cleared }`；省略 `source` 时清除这个插件的全部来源 |
-| `island.notify` | 2 | `island:notify` | `{ title, body?, durationMs?, actions? }` | `{ muted }`，见下文的「岛上提示」 |
+| `island.notify` | 2 | `island:notify` | `{ title, body?, durationMs?, actions?, icon?, layout? }` | `{ muted }`，见下文的「岛上提示」 |
 | `secrets.get` | 2 | `secrets` | `{ key }` | `{ value }`，没有时为 `null` |
 | `secrets.set` | 2 | `secrets` | `{ key, value }` | `{}` |
 | `secrets.delete` | 2 | `secrets` | `{ key }` | `{ deleted }` |
@@ -462,12 +463,13 @@ QQ 邮箱授权码、翻译服务密钥这类凭据，任何权限都拿不到�
 
 ### 岛上提示（第 2 版）
 
-`island.notify { title, body?, durationMs?, actions? }` 在岛屿上显示一条消息，和 QQ、邮件消息一样出现在折叠条的消息预览里，来源显示为插件名。
+`island.notify { title, body?, durationMs?, actions?, icon?, layout? }` 在岛屿上显示一条消息，和 QQ、邮件消息一样出现在折叠条的消息预览里，来源显示为插件名。
 
 - `title` 1–80 个字符，`body` 最长 200 个字符。`durationMs` 默认 5000，限制在 2000–15000 之间。
 - `actions` 最多 2 个按钮：`{ id, title }`，`id` 为 1–32 个字母、数字或 `-`，`title` 最长 16 个字符。用户点了按钮，插件收到 `notification.action { id }`。
 - 每个插件每分钟最多 6 条，超过返回 `-32000`、状态 429。
 - 用户可以在插件设置页关掉这个插件的提示。关掉后调用仍然成功，但什么也不显示，结果是 `{ muted: true }`。
+- **提示的样式**（能力 `notifyStyle`）：`icon: "media"` 把插件图标换成正在播放的音乐软件的图标（读不到时仍用插件图标）；`layout: "inline"` 让这条提示在新消息「展开面板」里只有它一条时，不显示「新消息」标题和卡片，整个岛就是这条提示（有别的消息时照常是一张卡片）。旧版岛屿会忽略这两个字段，照常显示文字，所以不用先判断能力。不认识的值按默认处理（`"plugin"`、`"card"`）。SDK：Node `plugin.notify(title, { body, icon: "media", layout: "inline" })`，PowerShell `Show-FocusdNotification -Icon media -Layout inline`。
 
 ### 存储与秘密（第 2 版）
 

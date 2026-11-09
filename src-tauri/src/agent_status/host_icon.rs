@@ -28,7 +28,7 @@ pub(super) fn is_icon_source(path: &str) -> bool {
 }
 
 /// The icon of the executable at `path` as a PNG data URL, or `None` when it has none.
-pub(super) fn icon_data_url(path: &str) -> Option<String> {
+pub(crate) fn icon_data_url(path: &str) -> Option<String> {
     if !is_icon_source(path) {
         return None;
     }

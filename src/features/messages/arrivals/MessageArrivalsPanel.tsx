@@ -11,7 +11,9 @@ import "./MessageArrivalsPanel.css";
  * The Messages page while it opened by itself for new messages (roadmap C11): only what arrived
  * since, newest first. A row does what clicking the one-line preview does; plugin rows carry
  * their buttons. Reports its height so the island fits it. Shown as a popup without the island's
- * header (C11b), so its title row carries the way to the whole Messages page.
+ * header (C11b), so its title row carries the way to the whole Messages page. A plugin message
+ * that asked for the inline layout, alone in the popup, drops the title row and the card: the
+ * island is the message (C11c); a press beside it still opens the whole page.
  */
 export function MessageArrivalsPanel({
   arrivals,
@@ -39,15 +41,18 @@ export function MessageArrivalsPanel({
     return () => observer.disconnect();
   }, [onMeasure]);
 
+  const inline = arrivals.length === 1 && arrivals[0].inline === true;
   return (
-    <section className="message-arrivals" ref={ref} aria-label={t.arrivals.title}>
-      <div className="message-arrivals__top">
-        <h2 className="message-arrivals__title">{t.arrivals.title}</h2>
-        <button className="message-arrivals__all" type="button" onClick={onShowAll}>
-          {t.arrivals.showAll}
-          <ChevronRight size={14} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
-        </button>
-      </div>
+    <section className={`message-arrivals${inline ? " message-arrivals--inline" : ""}`} ref={ref} aria-label={t.arrivals.title}>
+      {!inline && (
+        <div className="message-arrivals__top">
+          <h2 className="message-arrivals__title">{t.arrivals.title}</h2>
+          <button className="message-arrivals__all" type="button" onClick={onShowAll}>
+            {t.arrivals.showAll}
+            <ChevronRight size={14} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <ul className="message-arrivals__list">
         {arrivals.map((message) => {
           const title = message.source === "wechat" ? t.wechat : message.title.trim() || (message.source === "qq" ? "QQ" : t.sourceLabels[message.source]);
@@ -62,7 +67,7 @@ export function MessageArrivalsPanel({
                 aria-label={t.openPreview(messagePreviewText(message, t), t.sourceLabels[message.source])}
                 onClick={() => onOpen(message)}
               >
-                <MessageSourceIcon source={message.source} size={20} account={message.account} />
+                <MessageSourceIcon source={message.source} size={inline ? 32 : 20} account={message.account} iconUrl={message.iconUrl} />
                 <span className="message-arrivals__text">
                   <span className="message-arrivals__head">
                     <strong className="message-arrivals__sender">{title}</strong>

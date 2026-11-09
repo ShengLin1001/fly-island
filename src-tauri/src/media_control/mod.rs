@@ -4,8 +4,10 @@ mod audio;
 mod plugin_view;
 mod service;
 mod session;
+mod source_icon;
 
 pub(crate) use plugin_view::{now_playing_key, plugin_cover, plugin_media_command, plugin_now_playing};
+pub(crate) use source_icon::current_source_icon;
 
 #[tauri::command]
 pub async fn get_media_state(target: Option<String>) -> Result<service::MediaState, String> {

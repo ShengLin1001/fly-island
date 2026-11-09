@@ -224,6 +224,25 @@ async function runChecks() {
     await notify("qq", "小张");
     check(rows().length === 0, "你自己在用展开的岛时，新消息不弹面板");
 
+    // island.notify with icon "media" and layout "inline" (C11c): the island is the message.
+    await act(async () => setUserMode("collapsed"));
+    await wait(30);
+    const playerIcon = "data:image/png;base64,iVBORw0KGgo=";
+    await update(() => emit("plugin-notification", {
+      pluginId: "dev.focusd.now-playing", pluginName: "正在播放", title: "倒数", body: "G.E.M.邓紫棋", durationMs: 6000, actions: [],
+      icon: "media", layout: "inline", iconUrl: playerIcon,
+    }));
+    await waitFor(() => rows().length === 1, "一体成型的插件提示弹出");
+    check(document.querySelector(".message-arrivals--inline") && !document.querySelector(".message-arrivals__top"), "只有一条 inline 提示时没有「新消息」标题行");
+    check(rows()[0].querySelector<HTMLImageElement>(".message-brand-icon--app")?.src === playerIcon, "图标换成音乐软件的图标");
+    check(getComputedStyle(rows()[0]).backgroundColor === "rgba(0, 0, 0, 0)", "没有卡片底色");
+    await notify("qq", "小李");
+    await waitFor(() => rows().length === 2, "第二条并进来");
+    check(document.querySelector(".message-arrivals__top") && !document.querySelector(".message-arrivals--inline"), "有两条时回到标题加卡片");
+    const rowWidth = rows()[0].getBoundingClientRect().width;
+    const listWidth = document.querySelector(".message-arrivals__list")!.getBoundingClientRect().width;
+    check(Math.abs(rowWidth - listWidth) < 1 && listWidth > 300, `卡片撑满岛的宽度（${Math.round(rowWidth)}px）`);
+
     results.textContent = messages.join("\n");
     results.dataset.result = "passed";
   } catch (error) {

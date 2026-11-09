@@ -18,6 +18,7 @@
 | `permissions` | 2 | manifest optionalPermissions and permissions.request; initialize.optionalPermissions. |
 | `openView` | 2 | island.openView: a plugin opens its own page right after the user used it. |
 | `statusCells` | 2 | status.update draws 'cells' (label-over-value columns) and a 'ring' (0-1). Islands without it ignore both and show the text. |
+| `notifyStyle` | 2 | island.notify takes 'icon' ('media': the icon of the app playing media) and 'layout' ('inline': alone in the new-messages popup, the island is the message, with no title row or card). Islands without it ignore both. |
 
 ## 权限
 
@@ -70,7 +71,7 @@
 | `note.set` | `notes:write` | 1 | `note | append`：string | { date, note } |
 | `agentStatus.report` | `agent-status:write` | 1 | `source`：string<br>`phase`：idle \| running \| waiting \| completed \| failed<br>`name?`：string<br>`title?`：string<br>`taskId?`：string<br>`host?`：string (max 64): the machine it runs on<br>`agent?`：claudeCode \| codex<br>`cwd?`：string (max 260) | The saved status; id is '<plugin id>/<source>'. |
 | `agentStatus.clear` | `agent-status:write` | 1 | `source?`：string; omitted clears every source of the plugin | { cleared } |
-| `island.notify` | `island:notify` | 2 | `title`：string (1-80 chars)<br>`body?`：string (max 200)<br>`durationMs?`：number, clamped to 2000-15000, default 5000<br>`actions?`：[{ id: [A-Za-z0-9-]{1,32}, title: string (max 16) }] (max 2) | { muted }: true when the user turned this plugin's messages off (nothing is shown). At most 6 per minute per plugin, else -32000 with status 429. |
+| `island.notify` | `island:notify` | 2 | `title`：string (1-80 chars)<br>`body?`：string (max 200)<br>`durationMs?`：number, clamped to 2000-15000, default 5000<br>`actions?`：[{ id: [A-Za-z0-9-]{1,32}, title: string (max 16) }] (max 2)<br>`icon?`：'plugin' (default) \| 'media': the icon of the app playing media, else the plugin's (capability notifyStyle)<br>`layout?`：'card' (default) \| 'inline': alone in the new-messages popup, no title row or card (capability notifyStyle) | { muted }: true when the user turned this plugin's messages off (nothing is shown). At most 6 per minute per plugin, else -32000 with status 429. |
 | `secrets.get` | `secrets` | 2 | `key`：letters, digits, '.', '_', '-' (1-64 chars) | { value }: null when not set |
 | `secrets.set` | `secrets` | 2 | `key`：as above<br>`value`：string (max 1024 chars); at most 32 secrets per plugin (status 413) | {} |
 | `secrets.delete` | `secrets` | 2 | `key`：as above | { deleted } |
