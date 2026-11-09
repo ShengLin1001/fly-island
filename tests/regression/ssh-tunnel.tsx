@@ -1,7 +1,8 @@
 // pnpm dev, then open /tests/regression/ssh-tunnel.html. The SSH proxy tunnel's plugin page
-// (Settings → Plugins → SSH proxy tunnel) against an in-memory native side: the custom local port
-// shows only with "Custom port" picked, hosts list their tunnel states and export line, a bad
-// server port is refused, and a port the server already uses asks first (yes / no).
+// (Settings → Plugins → SSH proxy tunnel) against an in-memory native side: the running info shows
+// the local proxy found and whether it listens, the custom local port shows only with "Custom
+// port" picked, hosts list their tunnel states and export line, a bad server port is refused, and
+// a port the server already uses, or one it could not check, asks first (yes / no).
 import { act, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { mockIPC } from "@tauri-apps/api/mocks";
@@ -11,7 +12,7 @@ import "../../src/windows/settings/LayoutEditor.css";
 import { I18nProvider, LOCALE_STORAGE_KEY } from "../../src/i18n";
 import { PluginDetailPage } from "../../src/features/plugins/PluginDetailPage";
 import type { PluginInfo } from "../../src/features/plugins/api";
-import type { SshTunnelHost } from "../../src/features/ssh-tunnel/api";
+import type { SshTunnelHost, SshTunnelProxy } from "../../src/features/ssh-tunnel/api";
 
 const savedLocale = localStorage.getItem(LOCALE_STORAGE_KEY);
 localStorage.setItem(LOCALE_STORAGE_KEY, "zh-CN");
@@ -31,13 +32,18 @@ let hosts: SshTunnelHost[] = [
   { host: "old", enabled: true, remotePort: 40089, state: "off", error: null },
 ];
 const takenPorts = new Set([10089]);
+const uncheckablePort = 40404;
+let proxy: SshTunnelProxy | null = { port: 7897, found: "clashVerge", listening: true };
 const calls: { command: string; args: Record<string, unknown> }[] = [];
 mockIPC((command, payload) => {
   const args = (payload ?? {}) as Record<string, unknown>;
   calls.push({ command, args });
   switch (command) {
     case "get_ssh_tunnels": return hosts;
-    case "check_ssh_tunnel_port": return takenPorts.has(args.remotePort as number);
+    case "get_ssh_tunnel_proxy": return proxy;
+    case "check_ssh_tunnel_port":
+      if (args.remotePort === uncheckablePort) throw "Neither ss nor netstat runs on the server";
+      return takenPorts.has(args.remotePort as number);
     case "set_ssh_tunnel": {
       const { host, enabled, remotePort } = args as { host: string; enabled: boolean; remotePort: number | null };
       hosts = hosts.map((entry) => entry.host === host ? { ...entry, enabled, remotePort, state: enabled ? "connecting" : "off" } : entry);
@@ -48,7 +54,8 @@ mockIPC((command, payload) => {
 });
 
 const settingsSchema: PluginInfo["settingsSchema"] = [
-  { key: "localProxy", type: "select", title: { "zh-CN": "本地代理", en: "Local proxy" }, default: "clash-verge", options: [
+  { key: "localProxy", type: "select", title: { "zh-CN": "本地代理", en: "Local proxy" }, default: "auto", options: [
+    { value: "auto", title: { "zh-CN": "自动检测", en: "Auto" } },
     { value: "clash-verge", title: { "zh-CN": "Clash Verge（7897）", en: "Clash Verge (7897)" } },
     { value: "v2rayn", title: { "zh-CN": "v2rayN（10808）", en: "v2rayN (10808)" } },
     { value: "custom", title: { "zh-CN": "自定义端口", en: "Custom port" } },
@@ -100,7 +107,20 @@ const answer = async (text: string) => {
 };
 const lastSet = () => calls.filter((call) => call.command === "set_ssh_tunnel").slice(-1)[0]?.args;
 
+const info = () => page.querySelector<HTMLElement>(".plugin-info")?.closest(".settings-section");
+
 try {
+  await render("auto");
+  check(info()?.querySelector(".plugin-info__row code")?.textContent === "127.0.0.1:7897"
+    && info()?.textContent?.includes("端口来自 Clash Verge 的设置，代理正在监听。"),
+  "The running info shows the local proxy found and that it listens");
+  proxy = { port: 10808, found: "v2rayNDefault", listening: false };
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 3_200)); });
+  check(info()?.querySelector("code")?.textContent === "127.0.0.1:10808"
+    && info()?.querySelector(".plugin-card__error")?.textContent === "v2rayN 的默认端口，但现在没有程序在监听这个端口：请打开代理软件。",
+  "A proxy nothing listens on is read again and flagged");
+  proxy = { port: 7897, found: "clashVerge", listening: true };
+
   await render("clash-verge");
   check(page.textContent?.includes("本地代理") && !page.textContent.includes("本地端口"), "The local port field stays hidden until Custom port is picked");
   await render("custom");
@@ -135,6 +155,12 @@ try {
 
   await typePort("zcm6", "10089");
   check(lastSet()?.host === "lab", "Leaving a host's port as it was saves nothing");
+
+  await typePort("a6", String(uncheckablePort));
+  check(dialog()?.textContent?.includes("没能检查 a6 上的端口 40404 是否被占用（Neither ss nor netstat runs on the server），仍要搭建隧道吗？"),
+    "A port the server could not check asks too, and says why");
+  await answer("否");
+  check(!dialog() && lastSet()?.host === "a6" && lastSet()?.enabled === false && lastSet()?.remotePort === uncheckablePort, "No there leaves the host off");
 
   document.documentElement.dataset.testResult = "passed";
 } catch (error) {

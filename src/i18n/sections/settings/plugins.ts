@@ -192,8 +192,18 @@ export type SettingsPluginsText = {
     /** Shown while the plugin is off: switched-on hosts wait for it. */
     waitingForPlugin: string;
     confirm: (host: string, port: number) => string;
+    /** The port check could not run there; `reason` is why. */
+    unchecked: (host: string, port: number, reason: string) => string;
     yes: string;
     no: string;
+    /** The local proxy in the plugin's running info. */
+    proxy: {
+      label: string;
+      looking: string;
+      found: Record<"clashVerge" | "v2rayN" | "systemProxy" | "clashVergeDefault" | "v2rayNDefault" | "custom", string>;
+      listening: string;
+      notListening: string;
+    };
   };
 };
 
@@ -430,8 +440,24 @@ export const zhCN: SettingsPluginsText = {
     },
     waitingForPlugin: "插件开启后连接",
     confirm: (host: string, port: number) => `${host} 上的端口 ${port} 已被占用（可能是另一个隧道），仍要搭建隧道吗？`,
+    unchecked: (host: string, port: number, reason: string) =>
+      `没能检查 ${host} 上的端口 ${port} 是否被占用（${reason}），仍要搭建隧道吗？`,
     yes: "是",
     no: "否",
+    proxy: {
+      label: "本地代理",
+      looking: "正在查找本地代理…",
+      found: {
+        clashVerge: "端口来自 Clash Verge 的设置",
+        v2rayN: "端口来自 v2rayN 的设置",
+        systemProxy: "端口来自 Windows 系统代理",
+        clashVergeDefault: "Clash Verge 的默认端口",
+        v2rayNDefault: "v2rayN 的默认端口",
+        custom: "自定义端口",
+      },
+      listening: "，代理正在监听。",
+      notListening: "，但现在没有程序在监听这个端口：请打开代理软件。",
+    },
   },
 };
 
@@ -668,7 +694,23 @@ export const en: SettingsPluginsText = {
     },
     waitingForPlugin: "Connects once the plugin is on",
     confirm: (host: string, port: number) => `Port ${port} on ${host} is already in use (maybe by another tunnel). Set up the tunnel anyway?`,
+    unchecked: (host: string, port: number, reason: string) =>
+      `Could not check whether port ${port} on ${host} is in use (${reason}). Set up the tunnel anyway?`,
     yes: "Yes",
     no: "No",
+    proxy: {
+      label: "Local proxy",
+      looking: "Looking for the local proxy…",
+      found: {
+        clashVerge: "Port from Clash Verge's settings",
+        v2rayN: "Port from v2rayN's settings",
+        systemProxy: "Port from the Windows system proxy",
+        clashVergeDefault: "Clash Verge's default port",
+        v2rayNDefault: "v2rayN's default port",
+        custom: "Custom port",
+      },
+      listening: "; the proxy is listening.",
+      notListening: ", but nothing listens on it now: start the proxy app.",
+    },
   },
 };

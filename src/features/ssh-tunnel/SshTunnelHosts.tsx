@@ -4,7 +4,7 @@ import { SettingsSwitch } from "../../components/settings/SettingsSwitch";
 import { useTranslation } from "../../i18n";
 import type { SshTunnelHost } from "./api";
 import { exportLine, parseRemotePort } from "./tunnelPort";
-import { useSshTunnels } from "./useSshTunnels";
+import { useSshTunnels, type TakenPort } from "./useSshTunnels";
 import "./SshTunnelHosts.css";
 
 /**
@@ -28,7 +28,7 @@ export function SshTunnelHosts() {
           key={entry.host}
           entry={entry}
           checking={tunnels.checking === entry.host}
-          takenPort={tunnels.taken?.host === entry.host ? tunnels.taken.port : null}
+          question={tunnels.taken?.host === entry.host ? tunnels.taken : null}
           onToggle={(on, port) => tunnels.toggle(entry, on, port)}
           onPort={(port) => tunnels.setPort(entry, port)}
           onAnswer={tunnels.answer}
@@ -42,14 +42,14 @@ export function SshTunnelHosts() {
 function HostRow({
   entry,
   checking,
-  takenPort,
+  question,
   onToggle,
   onPort,
   onAnswer,
 }: {
   entry: SshTunnelHost;
   checking: boolean;
-  takenPort: number | null;
+  question: TakenPort | null;
   onToggle: (on: boolean, port: number | null) => void;
   onPort: (port: number | null) => void;
   onAnswer: (yes: boolean) => void;
@@ -74,6 +74,12 @@ function HostRow({
         ? t.waitingForPlugin
         : t.state[entry.state];
   const line = entry.enabled && entry.remotePort !== null ? exportLine(entry.remotePort) : null;
+  const asked =
+    question === null
+      ? null
+      : question.unchecked === null
+        ? t.confirm(entry.host, question.port)
+        : t.unchecked(entry.host, question.port, question.unchecked);
 
   return (
     <div className="ssh-tunnel__host">
@@ -97,9 +103,9 @@ function HostRow({
         {invalid ? t.portInvalid : state}
         {entry.state === "error" && entry.error ? <span className="ssh-tunnel__reason">{entry.error}</span> : null}
       </p>
-      {takenPort !== null ? (
-        <div className="ssh-tunnel__confirm" role="alertdialog" aria-label={t.confirm(entry.host, takenPort)}>
-          <span>{t.confirm(entry.host, takenPort)}</span>
+      {asked !== null ? (
+        <div className="ssh-tunnel__confirm" role="alertdialog" aria-label={asked}>
+          <span>{asked}</span>
           <button className="plugin-card__button" type="button" onClick={() => onAnswer(true)}>
             {t.yes}
           </button>

@@ -182,13 +182,14 @@ const SSH_TUNNEL_MANIFEST: &str = r#"{
         "type": "select",
         "title": { "zh-CN": "本地代理", "en": "Local proxy" },
         "description": {
-          "zh-CN": "代理软件在这台电脑上接受 HTTP 代理的端口。Clash Verge 默认混合端口 7897，v2rayN 默认 10808（7.0 之前的版本 HTTP 端口是 10809，请选自定义）。",
-          "en": "The port the proxy app on this computer takes HTTP proxy requests on. Clash Verge's mixed port is 7897 by default, v2rayN's 10808 (before 7.0 its HTTP port was 10809: pick Custom)."
+          "zh-CN": "隧道转发到这台电脑上的哪个代理端口。自动检测依次看 Clash Verge 的设置、正在运行的 v2rayN 的设置和 Windows 系统代理，再试两者的默认端口，用第一个真有程序在监听的；之后每 15 秒再看一次，端口变了隧道跟着换。选 Clash Verge 或 v2rayN 时也先读它们的设置，读不到才用默认端口（7897、10808）。",
+          "en": "Which proxy port on this computer the tunnels forward to. Auto looks in turn at Clash Verge's settings, a running v2rayN's settings and the Windows system proxy, then tries both apps' default ports, and takes the first one something listens on; it looks again every 15 seconds and moves the tunnels when the port changes. Clash Verge and v2rayN also read the app's settings first, and use the default port (7897, 10808) only when there are none."
         },
-        "default": "clash-verge",
+        "default": "auto",
         "options": [
-          { "value": "clash-verge", "title": { "zh-CN": "Clash Verge（7897）", "en": "Clash Verge (7897)" } },
-          { "value": "v2rayn", "title": { "zh-CN": "v2rayN（10808）", "en": "v2rayN (10808)" } },
+          { "value": "auto", "title": { "zh-CN": "自动检测", "en": "Auto" } },
+          { "value": "clash-verge", "title": { "zh-CN": "Clash Verge（默认 7897）", "en": "Clash Verge (7897 by default)" } },
+          { "value": "v2rayn", "title": { "zh-CN": "v2rayN（默认 10808）", "en": "v2rayN (10808 by default)" } },
           { "value": "custom", "title": { "zh-CN": "自定义端口", "en": "Custom port" } }
         ]
       },

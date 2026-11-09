@@ -29,3 +29,17 @@ export function setSshTunnel(host: string, enabled: boolean, remotePort: number 
 export function checkSshTunnelPort(host: string, remotePort: number) {
   return invoke<boolean>("check_ssh_tunnel_port", { host, remotePort });
 }
+
+/** Mirrors LocalProxy in src-tauri/src/ssh_tunnel/local_proxy.rs: the proxy the tunnels forward to. */
+export type SshTunnelProxy = {
+  port: number;
+  /** Where the port came from (`Found` there). */
+  found: "clashVerge" | "v2rayN" | "systemProxy" | "clashVergeDefault" | "v2rayNDefault" | "custom";
+  /** Something listens on the port now. */
+  listening: boolean;
+};
+
+/** The local proxy the tunnels forward to; null while the plugin is off or has not looked yet. */
+export function getSshTunnelProxy() {
+  return invoke<SshTunnelProxy | null>("get_ssh_tunnel_proxy");
+}

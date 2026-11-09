@@ -4,7 +4,7 @@ import { SelectControl } from "../../components/controls/SelectControl";
 import { ToggleControl } from "../../components/controls/ToggleControl";
 import { useLocale, useTranslation } from "../../i18n";
 import { CENTER_PATTERN_PET_KEY, CENTER_PATTERN_PLUGIN_ID, petChoices, usePetChoices } from "../center-pattern";
-import { SSH_TUNNEL_PLUGIN_ID, SshTunnelHosts } from "../ssh-tunnel";
+import { SSH_TUNNEL_PLUGIN_ID, SshTunnelHosts, useSshTunnelProxy } from "../ssh-tunnel";
 import { PLUGIN_MEMORY_LIMITS_MB, type PluginInfo } from "./api";
 import type { PromptedPermission } from "./promptedPermissions";
 import { PluginCallLog } from "./PluginCallLog";
@@ -42,6 +42,10 @@ export function PluginDetailPage({
   const running = plugin.status === "running";
   // The center pattern's pet is picked from the pets on disk, not typed in.
   const pets = usePetChoices(plugin.id === CENTER_PATTERN_PLUGIN_ID);
+  // The SSH proxy tunnel shows the local proxy it forwards to, read live rather than set at start.
+  const tunnelShowsProxy = plugin.builtin && plugin.id === SSH_TUNNEL_PLUGIN_ID && plugin.enabled;
+  const tunnelProxy = useSshTunnelProxy(tunnelShowsProxy);
+  const proxyText = t.settings.plugins.sshTunnel.proxy;
   // Clearing takes a second click, like uninstalling.
   const [confirmingClear, setConfirmingClear] = useState(false);
   // The SSH proxy tunnel's own port field matters only with "Custom port" picked.
@@ -75,7 +79,29 @@ export function PluginDetailPage({
           <div className="settings-section__header">
             <span>{t.settings.plugins.detail.info}</span>
           </div>
-          {plugin.info.length > 0 ? (
+          {tunnelShowsProxy ? (
+            tunnelProxy ? (
+              <>
+                {/* PluginInfoList picks the label's language; this one already is in it. */}
+                <PluginInfoList
+                  items={[
+                    {
+                      label: { "zh-CN": proxyText.label, en: proxyText.label },
+                      value: `127.0.0.1:${tunnelProxy.port}`,
+                      copy: true,
+                      secret: false,
+                    },
+                  ]}
+                />
+                <p className={tunnelProxy.listening ? "settings-section__hint" : "plugin-card__error"}>
+                  {proxyText.found[tunnelProxy.found]}
+                  {tunnelProxy.listening ? proxyText.listening : proxyText.notListening}
+                </p>
+              </>
+            ) : (
+              <p className="settings-section__hint">{proxyText.looking}</p>
+            )
+          ) : plugin.info.length > 0 ? (
             <PluginInfoList items={plugin.info} />
           ) : (
             <p className="settings-section__hint">{t.settings.plugins.detail.infoWhenRunning}</p>

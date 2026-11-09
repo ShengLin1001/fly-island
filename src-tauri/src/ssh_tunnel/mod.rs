@@ -3,9 +3,11 @@
 //! computer's proxy (Clash Verge, v2rayN or any port), so `http_proxy=http://127.0.0.1:<port>`
 //! there goes out through it. Separate from the session fetch's connection, which carries the
 //! approval forward (agent_status/remote_fetch.rs). Which hosts and their ports there live in
-//! `ssh-tunnels.json` (config.rs); each tunnel runs on a thread of its own (tunnel.rs).
+//! `ssh-tunnels.json` (config.rs); each tunnel runs on a thread of its own (tunnel.rs), and a
+//! watcher keeps looking where the local proxy is (local_proxy.rs), moving the tunnels with it.
 
 mod config;
+mod local_proxy;
 #[cfg(test)]
 mod tests;
 mod tunnel;
@@ -15,6 +17,7 @@ use std::{
     path::PathBuf,
     sync::{mpsc, Arc, Mutex, MutexGuard, OnceLock, PoisonError},
     thread,
+    time::Duration,
 };
 
 use serde::Serialize;
@@ -22,11 +25,11 @@ use serde_json::{Map, Value};
 use tauri::{AppHandle, Manager};
 
 use crate::agent_status::{remote_fetch::run_ssh, remote_hosts};
+use local_proxy::{Choice, LocalProxy};
 use tunnel::{Spec, Status};
 
-const CLASH_VERGE_PORT: u16 = 7897;
-/// v2rayN's local mixed (socks + http) port; before 7.0 http was 10809.
-const V2RAYN_PORT: u16 = 10808;
+/// How often the watcher looks again where the local proxy is.
+const WATCH_EVERY: Duration = Duration::from_secs(15);
 
 static APP_DIR: OnceLock<PathBuf> = OnceLock::new();
 
@@ -39,8 +42,12 @@ struct Tunnel {
 
 #[derive(Default)]
 struct State {
-    /// The proxy here; Some while the plugin runs.
-    local_port: Option<u16>,
+    /// The local proxy the settings pick; Some while the plugin runs.
+    choice: Option<Choice>,
+    /// Where the watcher last found it; the tunnels forward to its port.
+    proxy: Option<LocalProxy>,
+    /// Wakes the watcher; dropping it ends the watcher.
+    watcher: Option<mpsc::Sender<()>>,
     tunnels: HashMap<String, Tunnel>,
 }
 
@@ -60,42 +67,69 @@ fn app_dir() -> Result<PathBuf, String> {
     APP_DIR.get().cloned().ok_or_else(|| "The SSH proxy tunnel is not set up yet".to_string())
 }
 
-/// The local proxy port the plugin's settings pick: `localProxy` clash-verge, v2rayn or custom
-/// (then `customPort`, 1–65535).
-pub(crate) fn local_port(settings: &Map<String, Value>) -> Result<u16, String> {
-    match settings.get("localProxy").and_then(Value::as_str) {
-        Some("v2rayn") => Ok(V2RAYN_PORT),
-        Some("custom") => settings
-            .get("customPort")
-            .and_then(Value::as_u64)
-            .and_then(|port| u16::try_from(port).ok())
-            .filter(|&port| port > 0)
-            .ok_or_else(|| "The local proxy port must be a whole number from 1 to 65535".to_string()),
-        _ => Ok(CLASH_VERGE_PORT),
-    }
-}
-
-/// Starts the tunnels of the hosts switched on, or moves running ones to a new local port.
+/// Starts the watcher, which finds the local proxy and then starts the tunnels of the hosts
+/// switched on; after a settings change, wakes it to look again at once.
 pub(crate) fn start(settings: &Map<String, Value>) -> Result<(), String> {
-    let port = local_port(settings)?;
+    let choice = local_proxy::choice(settings)?;
     let mut state = state();
-    state.local_port = Some(port);
-    apply(&mut state)
+    state.choice = Some(choice);
+    if let Some(watcher) = &state.watcher {
+        let _ = watcher.send(());
+        return Ok(());
+    }
+    let (watcher, woken) = mpsc::channel();
+    thread::Builder::new()
+        .name("ssh-tunnel-proxy".into())
+        .spawn(move || watch_proxy(&woken))
+        .map_err(|error| format!("Could not start looking for the local proxy: {error}"))?;
+    state.watcher = Some(watcher);
+    Ok(())
 }
 
-/// Ends every tunnel.
+/// Ends the watcher and every tunnel.
 pub(crate) fn stop() {
     let mut state = state();
-    state.local_port = None;
+    state.choice = None;
+    state.proxy = None;
+    state.watcher = None;
     state.tunnels.clear();
+}
+
+/// Looks where the local proxy is (at once, when woken and every WATCH_EVERY) and moves the
+/// tunnels when its port changed, until the plugin stops.
+fn watch_proxy(woken: &mpsc::Receiver<()>) {
+    loop {
+        let (choice, current) = {
+            let state = state();
+            (state.choice, state.proxy)
+        };
+        let Some(choice) = choice else { return };
+        // Unlocked: a port nothing listens on takes a moment to refuse.
+        let found = local_proxy::find(choice, current);
+        {
+            let mut state = state();
+            // A settings change meanwhile has woken this loop to look again.
+            if state.choice == Some(choice) {
+                let moved = state.proxy.map(|proxy| proxy.port) != Some(found.port);
+                state.proxy = Some(found);
+                if moved {
+                    // Fails only without the app folder or a thread, which set_ssh_tunnel reports.
+                    let _ = apply(&mut state);
+                }
+            }
+        }
+        if matches!(woken.recv_timeout(WATCH_EVERY), Err(mpsc::RecvTimeoutError::Disconnected)) {
+            return;
+        }
+    }
 }
 
 /// Makes the running tunnels match the saved hosts: ends those switched off or changed, starts
 /// the missing ones.
 fn apply(state: &mut State) -> Result<(), String> {
     let app_dir = app_dir()?;
-    let wanted: Vec<Spec> = match state.local_port {
-        Some(local_port) => config::read(&app_dir)
+    let wanted: Vec<Spec> = match state.proxy {
+        Some(LocalProxy { port: local_port, .. }) => config::read(&app_dir)
             .into_iter()
             .filter(|saved| saved.enabled)
             .map(|saved| Spec {
@@ -187,6 +221,13 @@ pub async fn set_ssh_tunnel(host: String, enabled: bool, remote_port: Option<u16
     listing()
 }
 
+/// The local proxy the tunnels forward to and whether something listens there; None while the
+/// plugin is off or has not looked yet.
+#[tauri::command]
+pub async fn get_ssh_tunnel_proxy() -> Result<Option<LocalProxy>, String> {
+    Ok(state().proxy)
+}
+
 /// Whether something already listens on `remote_port` on `host` (another tunnel, say), asked
 /// with one short ssh before a tunnel is set up there.
 #[tauri::command]
@@ -210,6 +251,7 @@ macro_rules! tauri_commands {
     ($next:ident [$($done:tt)*] $($rest:tt)*) => {
         $next!([$($done)*
             crate::ssh_tunnel::get_ssh_tunnels,
+            crate::ssh_tunnel::get_ssh_tunnel_proxy,
             crate::ssh_tunnel::set_ssh_tunnel,
             crate::ssh_tunnel::check_ssh_tunnel_port,
         ] $($rest)*)

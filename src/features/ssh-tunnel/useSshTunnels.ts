@@ -5,8 +5,11 @@ import { checkSshTunnelPort, getSshTunnels, setSshTunnel, type SshTunnelHost } f
 /** How often the hosts' tunnel states are read again while the plugin page is open. */
 const STATUS_POLL_MS = 3_000;
 
-/** A port found taken on a host, waiting for the user's yes or no. */
-export type TakenPort = { host: string; port: number };
+/**
+ * A port found taken on a host, or one the check could not look at (`unchecked` says why), waiting
+ * for the user's yes or no.
+ */
+export type TakenPort = { host: string; port: number; unchecked: string | null };
 
 /**
  * The SSH proxy tunnel's hosts: read, polled, switched and given ports. Switching a host on (or
@@ -45,10 +48,9 @@ export function useSshTunnels() {
   const switchOn = (host: string, port: number) => {
     setChecking(host);
     checkSshTunnelPort(host, port)
-      .then((inUse) => (inUse ? setTaken({ host, port }) : save(host, true, port)))
-      // A check that cannot run (no ss or netstat there, say) does not hold the tunnel back: the
-      // tunnel itself shows "port in use" if the server refuses the port.
-      .catch(() => save(host, true, port))
+      .then((inUse) => (inUse ? setTaken({ host, port, unchecked: null }) : save(host, true, port)))
+      // No ss or netstat there, or no answer: the user decides, as for a taken port.
+      .catch((reason: unknown) => setTaken({ host, port, unchecked: getErrorMessage(reason) }))
       .finally(() => setChecking((current) => (current === host ? null : current)));
   };
 
