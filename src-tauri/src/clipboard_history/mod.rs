@@ -10,6 +10,7 @@ mod sequence;
 mod service;
 mod snippets;
 mod store;
+mod transfer;
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -219,6 +220,8 @@ pub(crate) enum CopyAs {
     Path,
     /// Text without its formatting; files and images as their paths (C24.4).
     Plain,
+    /// The text OCR read in an image (C24.9).
+    Text,
 }
 
 #[derive(Clone)]
@@ -412,6 +415,22 @@ pub async fn paste_clipboard_sequence(app: AppHandle, ids: Vec<String>) -> Resul
     sequence::start(&app, ids)
 }
 
+/// Writes the history and snippets to a JSON file in Downloads and returns its path (C24.8).
+#[tauri::command]
+pub async fn export_clipboard_history() -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(|| service()?.export())
+        .await
+        .map_err(|error| format!("Failed to join the export: {error}"))?
+}
+
+/// Adds what an exported file holds and this history does not (C24.8).
+#[tauri::command]
+pub async fn import_clipboard_history(content: String) -> Result<transfer::ImportReport, String> {
+    tauri::async_runtime::spawn_blocking(move || service()?.import(&content))
+        .await
+        .map_err(|error| format!("Failed to join the import: {error}"))?
+}
+
 #[tauri::command]
 pub async fn hide_clipboard_popup(app: AppHandle) -> Result<(), String> {
     popup::hide(&app)
@@ -502,6 +521,8 @@ macro_rules! tauri_commands {
             crate::clipboard_history::paste_clipboard_history_item,
             crate::clipboard_history::hide_clipboard_popup,
             crate::clipboard_history::paste_clipboard_sequence,
+            crate::clipboard_history::export_clipboard_history,
+            crate::clipboard_history::import_clipboard_history,
             crate::clipboard_history::save_clipboard_snippet,
             crate::clipboard_history::delete_clipboard_snippet,
             crate::clipboard_history::paste_clipboard_snippet,

@@ -1055,6 +1055,19 @@
       "page": "clipboard",
       "zh-CN": {
         "group": "剪贴板历史",
+        "title": "识别图片里的文字",
+        "description": "用 Windows 自带的文字识别在本机识别，不联网。识别出的文字可以搜索，也可以单独复制。"
+      },
+      "en": {
+        "group": "Clipboard history",
+        "title": "Read the text in images",
+        "description": "Windows' own text recognition, on this computer, offline. The text can be searched and copied on its own."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "剪贴板历史",
         "title": "记录复制的文件",
         "description": "在资源管理器里复制的文件也进历史，粘贴回去仍是文件；贴到终端里是文件路径。"
       },
@@ -1148,6 +1161,32 @@
         "group": "Clipboard history",
         "title": "Clean up",
         "description": "Entries not copied again for this long are deleted; favourites stay."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "导入导出",
+        "title": "导出剪贴板历史",
+        "description": "历史记录（含图片）和常用片段写成一个 JSON 文件，放在「下载」文件夹。里面可能有你复制过的密码和私人内容，注意保管。"
+      },
+      "en": {
+        "group": "Import and export",
+        "title": "Export the clipboard history",
+        "description": "The entries (with images) and snippets go into one JSON file in Downloads. It may hold passwords and private things you copied; keep it safe."
+      }
+    },
+    {
+      "page": "clipboard",
+      "zh-CN": {
+        "group": "导入导出",
+        "title": "从文件导入",
+        "description": "导入另一台电脑导出的文件：只加入这里还没有的记录和片段，不删除任何东西。"
+      },
+      "en": {
+        "group": "Import and export",
+        "title": "Import from a file",
+        "description": "A file exported on another computer: only entries and snippets not here yet are added, nothing is removed."
       }
     },
     {

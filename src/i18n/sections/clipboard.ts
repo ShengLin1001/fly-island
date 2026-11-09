@@ -16,6 +16,8 @@ export type ClipboardText = {
   emptySearch: string;
   copyBack: string;
   filterByTag: (tag: string) => string;
+  /** An image's text read by OCR (C24.9). */
+  copyOcrText: string;
   popup: {
     title: string;
     search: string;
@@ -66,6 +68,7 @@ export const zhCN: ClipboardText = {
   emptySearch: "没有匹配的剪贴记录",
   copyBack: "复制回剪贴板",
   filterByTag: (tag) => `只看标签 #${tag}`,
+  copyOcrText: "复制图片里识别出的文字",
   popup: {
     title: "剪贴板",
     search: "搜索剪贴记录",
@@ -114,6 +117,7 @@ export const en: ClipboardText = {
   emptySearch: "No matching entries",
   copyBack: "Copy back to clipboard",
   filterByTag: (tag) => `Show only #${tag}`,
+  copyOcrText: "Copy the text read in the image",
   popup: {
     title: "Clipboard",
     search: "Search clipboard history",

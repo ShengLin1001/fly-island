@@ -97,6 +97,10 @@ impl ClipboardHistoryService {
                     write_clipboard_files(&files)?;
                 }
             }
+            (ClipboardHistoryItemKind::Image, CopyAs::Text) => {
+                let text = item.ocr_text.clone().ok_or_else(|| "No text was read in this image.".to_string())?;
+                write_clipboard_text(&text)?;
+            }
             (ClipboardHistoryItemKind::Image, copy_as) => {
                 let image = item
                     .image
@@ -320,16 +324,43 @@ impl ClipboardHistoryService {
             }
         };
 
+        // A new image is read by OCR in the background (C24.9).
+        let ocr_job = (state.settings.ocr)
+            .then(|| item.image.as_ref().map(|image| (item.id.clone(), image.original_path.clone())))
+            .flatten();
         state.items.insert(0, item);
         self.enforce_limit_locked(&mut state);
         self.persist_locked(&state)?;
         drop(state);
 
         self.emit_changed();
+        if let Some((id, path)) = ocr_job {
+            std::thread::spawn(move || {
+                if let Some(text) = read_image_text(&path) {
+                    if let Ok(service) = super::service() {
+                        service.set_ocr_text(&id, text);
+                    }
+                }
+            });
+        }
         Ok(())
     }
 
-    fn persist_image(
+    fn set_ocr_text(&self, id: &str, text: String) {
+        let Ok(mut state) = self.state.lock() else {
+            return;
+        };
+        let Some(item) = state.items.iter_mut().find(|item| item.id == id) else {
+            return;
+        };
+        item.ocr_text = Some(text);
+        if self.persist_locked(&state).is_ok() {
+            drop(state);
+            self.emit_changed();
+        }
+    }
+
+    pub(super) fn persist_image(
         &self,
         hash: &str,
         width: usize,
@@ -368,7 +399,7 @@ impl ClipboardHistoryService {
         })
     }
 
-    fn enforce_limit_locked(&self, state: &mut ClipboardHistoryState) {
+    pub(super) fn enforce_limit_locked(&self, state: &mut ClipboardHistoryState) {
         let days = state.settings.retention_days;
         if days > 0 {
             let cutoff = current_unix_millis().saturating_sub(i64::from(days) * DAY_MS);
@@ -447,6 +478,19 @@ impl ClipboardHistoryService {
     }
 }
 
+
+/// The text Windows' OCR finds in the saved image, shrunk first when larger than OCR takes.
+fn read_image_text(path: &str) -> Option<String> {
+    const OCR_MAX_SIDE: u32 = 2600;
+    let image = image::open(path).ok()?;
+    let image = if image.width() > OCR_MAX_SIDE || image.height() > OCR_MAX_SIDE {
+        image.resize(OCR_MAX_SIDE, OCR_MAX_SIDE, image::imageops::FilterType::Triangle)
+    } else {
+        image
+    };
+    let rgba = image.to_rgba8();
+    win32::ocr::recognize(rgba.width(), rgba.height(), rgba.as_raw())
+}
 
 /// The program that put the current contents on the clipboard, or the one in front.
 fn source_app() -> Option<ClipboardSource> {

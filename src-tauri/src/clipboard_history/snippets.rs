@@ -34,6 +34,12 @@ pub(super) fn expand_snippet(text: &str, now: DateTime<Local>, clipboard: Option
         .replace('\u{1}', "}")
 }
 
+impl ClipboardSnippet {
+    pub(super) fn text(&self) -> &str {
+        &self.text
+    }
+}
+
 impl ClipboardHistoryService {
     /// Adds a snippet (no `id`) or changes one; the title falls back to the text's first line.
     pub(super) fn save_snippet(&self, id: Option<&str>, title: &str, text: &str) -> Result<ClipboardHistorySnapshot, String> {

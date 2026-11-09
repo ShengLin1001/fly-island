@@ -24,6 +24,9 @@ export function ClipboardRecordSettings({ clipboardSettings, onChange }: {
   return (
     <SettingsGroup title={text.title}>
       <SettingsToggleRow title={text.captureImages} checked={clipboardSettings.captureImages} onChange={(captureImages) => onChange({ captureImages })} />
+      {clipboardSettings.captureImages && (
+        <SettingsToggleRow indent title={text.ocr} description={text.ocrHint} checked={clipboardSettings.ocr} onChange={(ocr) => onChange({ ocr })} />
+      )}
       <SettingsToggleRow title={text.captureFiles} description={text.captureFilesHint} checked={clipboardSettings.captureFiles} onChange={(captureFiles) => onChange({ captureFiles })} />
       <SettingsToggleRow title={text.captureHtml} description={text.captureHtmlHint} checked={clipboardSettings.captureHtml} onChange={(captureHtml) => onChange({ captureHtml })} />
       <SettingsToggleRow title={text.skipSensitive} description={text.skipSensitiveHint} checked={clipboardSettings.skipSensitive} onChange={(skipSensitive) => onChange({ skipSensitive })} />

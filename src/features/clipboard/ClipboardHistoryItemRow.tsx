@@ -1,4 +1,4 @@
-import { Check, Copy, FileImage, ImageIcon, Pencil, SquareTerminal, Star, Trash2, X } from "lucide-react";
+import { Check, Copy, FileImage, ScanText, ImageIcon, Pencil, SquareTerminal, Star, Trash2, X } from "lucide-react";
 import { useTranslation } from "../../i18n";
 import type { ClipboardCopyAs, ClipboardHistoryItem } from "./api";
 import { ClipboardEntryIcon } from "./ClipboardEntryIcon";
@@ -46,6 +46,7 @@ export function ClipboardHistoryItemRow({
   const imageCopies = item.kind === "image" ? ([
     ["file", t.clipboard.copyAsFile, FileImage],
     ["path", t.clipboard.copyPath, SquareTerminal],
+    ...(item.ocrText ? [["text", t.clipboard.copyOcrText, ScanText] as const] : []),
   ] as const) : [];
 
   return (

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 // 与 src-tauri/src/clipboard_history/mod.rs 中的同名结构对应。
 export type ClipboardHistorySettings = {
@@ -101,7 +102,7 @@ export function setClipboardHistorySettings(settings: ClipboardHistorySettings) 
 }
 
 /** How an image goes back (C22.1): as copied, as its saved file, or as its quoted path (for terminals). */
-export type ClipboardCopyAs = "original" | "file" | "path" | "plain";
+export type ClipboardCopyAs = "original" | "file" | "path" | "plain" | "text";
 
 // copy_clipboard_history_item_as in src-tauri/src/clipboard_history/mod.rs (CopyAs).
 export function copyClipboardItem(id: string, copyAs: ClipboardCopyAs = "original") {
@@ -138,6 +139,20 @@ export function pasteClipboardSnippet(id: string) {
 /** Pastes the first entry now; each Ctrl+V after it pastes the next one (C24.7). */
 export function pasteClipboardSequence(ids: string[]) {
   return invoke<void>("paste_clipboard_sequence", { ids });
+}
+
+/** Writes the history and snippets to Downloads; resolves to the file's path (C24.8). */
+export function exportClipboardHistory() {
+  return invoke<string>("export_clipboard_history");
+}
+
+/** Adds what an exported file holds; resolves to how many entries and snippets were new. */
+export function importClipboardHistory(content: string) {
+  return invoke<{ items: number; snippets: number }>("import_clipboard_history", { content });
+}
+
+export function revealExportedFile(path: string) {
+  return revealItemInDir(path);
 }
 
 export function hideClipboardPopup() {

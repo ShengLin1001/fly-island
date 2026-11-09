@@ -34,6 +34,19 @@ export type SettingsClipboardText = {
   secretsOptions: Record<"mask" | "skip" | "keep", string>;
   excludedApps: string;
   excludedAppsHint: string;
+  transfer: {
+    title: string;
+    export: string;
+    exportHint: string;
+    exportAction: string;
+    import: string;
+    importHint: string;
+    importAction: string;
+    exported: string;
+    imported: (items: number, snippets: number) => string;
+    failed: string;
+    show: string;
+  };
   snippets: {
     title: string;
     hintTitle: string;
@@ -86,6 +99,19 @@ export const zhCN: SettingsClipboardText = {
   secretsOptions: { mask: "打码", skip: "不记录", keep: "照常" },
   excludedApps: "不记录这些程序复制的内容",
   excludedAppsHint: "填程序名，逗号分隔，比如 keepass.exe。每条记录旁边会显示它来自哪个程序。",
+  transfer: {
+    title: "导入导出",
+    export: "导出剪贴板历史",
+    exportHint: "历史记录（含图片）和常用片段写成一个 JSON 文件，放在「下载」文件夹。里面可能有你复制过的密码和私人内容，注意保管。",
+    exportAction: "导出",
+    import: "从文件导入",
+    importHint: "导入另一台电脑导出的文件：只加入这里还没有的记录和片段，不删除任何东西。",
+    importAction: "选择文件",
+    exported: "已导出",
+    imported: (items, snippets) => `导入了 ${items} 条记录、${snippets} 个片段`,
+    failed: "没有成功",
+    show: "在文件夹中显示",
+  },
   snippets: {
     title: "常用片段",
     hintTitle: "在剪贴板窗口按 Tab 切到「片段」",
@@ -138,6 +164,19 @@ export const en: SettingsClipboardText = {
   secretsOptions: { mask: "Mask", skip: "Skip", keep: "Keep" },
   excludedApps: "Do not record copies from these programs",
   excludedAppsHint: "Program names separated by commas, such as keepass.exe. Each entry shows the program it came from.",
+  transfer: {
+    title: "Import and export",
+    export: "Export the clipboard history",
+    exportHint: "The entries (with images) and snippets go into one JSON file in Downloads. It may hold passwords and private things you copied; keep it safe.",
+    exportAction: "Export",
+    import: "Import from a file",
+    importHint: "A file exported on another computer: only entries and snippets not here yet are added, nothing is removed.",
+    importAction: "Choose file",
+    exported: "Exported",
+    imported: (items, snippets) => `Imported ${items} ${items === 1 ? "entry" : "entries"} and ${snippets} ${snippets === 1 ? "snippet" : "snippets"}`,
+    failed: "That did not work",
+    show: "Show in folder",
+  },
   snippets: {
     title: "Snippets",
     hintTitle: "Press Tab in the clipboard window for Snippets",

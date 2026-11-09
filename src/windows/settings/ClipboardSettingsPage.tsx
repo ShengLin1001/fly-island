@@ -1,5 +1,6 @@
 import { ClipboardSettingsSection } from "../../features/clipboard/ClipboardSettingsSection";
 import { ClipboardSnippetSettings } from "../../features/clipboard/ClipboardSnippetSettings";
+import { ClipboardTransferSettings } from "../../features/clipboard/ClipboardTransferSettings";
 import { useClipboardSettings } from "../../features/clipboard/useClipboardSettings";
 import { SettingsNumberRow } from "../../components/settings/SettingsNumberRow";
 import { MAX_CLIPBOARD_VISIBLE_ROWS, MIN_CLIPBOARD_VISIBLE_ROWS } from "../../features/appearance/settings";
@@ -42,6 +43,7 @@ export function ClipboardSettingsPage({
         </ClipboardSettingsSection>
       )}
       {clipboardSettings.enabled && <ClipboardSnippetSettings />}
+      {clipboardSettings.enabled && <ClipboardTransferSettings />}
       {clipboardSettings.enabled && <ShortcutsLinkSection onOpen={onOpenShortcuts} />}
     </>
   );
