@@ -18,7 +18,11 @@ export function getIslandStageStyle(
     // Classic opacity fades the fill only, so text and icons on it stay solid.
     "--island-fill": hexToRgba(settings.islandBackgroundColor, settings.opacity / 100),
     "--island-fill-alpha": settings.opacity / 100,
+    // The shell's size follows the current mode's scale; each content layer keeps its own
+    // (IslandShell.css), so neither relays out at a new scale while the island opens or closes.
     "--island-scale": mode === "collapsed" ? settings.collapsedScale : settings.expandedScale,
+    "--island-collapsed-scale": settings.collapsedScale,
+    "--island-expanded-scale": settings.expandedScale,
     "--collapsed-island-width": `${collapsedIslandWidth}px`,
     "--expanded-island-height": `${expandedIslandHeight}px`,
     // Unitless so IslandTopEdge.css can also fade the fillet layers out at 0.
