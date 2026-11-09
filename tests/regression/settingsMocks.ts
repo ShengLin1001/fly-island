@@ -2,7 +2,10 @@
 // regression pages. Importing this installs the mocks; the arrays record what was called.
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import type { MailSnapshot } from "../../src/features/messages/mail/api";
+import { DEMO_CURRENT_VERSION, DEMO_UPDATE, playDemoDownload } from "./updateDemo";
 
+// update-reminder.html (updateReminderEnv.ts): the update check finds a newer version.
+const demoUpdate = Boolean((globalThis as { focusdDemoUpdate?: boolean }).focusdDemoUpdate);
 let revision = 0;
 export const commands: string[] = [];
 export const revokedPermissions: string[] = [];
@@ -59,7 +62,9 @@ mockIPC((command, payload) => {
     case "set_translation_shortcut": return args.shortcut;
     case "updater_configured": return true;
     case "get_updater_proxy": return null;
-    case "plugin:app|version": return "0.0.0-test";
+    case "plugin:app|version": return demoUpdate ? DEMO_CURRENT_VERSION : "0.0.0-test";
+    case "updater_check": return demoUpdate ? DEMO_UPDATE : null;
+    case "updater_install": return playDemoDownload(args.onEvent);
     case "get_cached_plugin_market": return null;
     case "list_plugin_views": return { views: [], status: [], statusItems: [{ pluginId: "dev.example.todo-sync", pluginName: { "zh-CN": "待办同步示例", en: "Todo sync example" }, itemId: "count" }] };
     case "get_plugin_market_likes": return { "dev.example.new": { count: 12, url: "https://github.com/TixXin/focusd-plugins/discussions/9" }, "dev.example.todo-sync": { count: 3, url: "https://github.com/TixXin/focusd-plugins/discussions/8" } };

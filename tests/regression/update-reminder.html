@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="UTF-8" />
+  <title>新版本提示检查</title>
+  <style>
+    /* As in src/styles/base.css, which this page does not load; layouts depend on it. */
+    * { box-sizing: border-box; }
+    html body { height: auto; min-height: 100%; margin: 0; overflow: auto; background: #c5cfcc; font: 14px "Segoe UI", "Microsoft YaHei", sans-serif; color: #1b302a; }
+    main { max-width: 1180px; margin: 0 auto; padding: 20px 24px 40px; display: grid; gap: 18px; }
+    h1 { margin: 0; font-size: 18px; }
+    .lead { margin: 0; line-height: 1.7; max-width: 72ch; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+    .case { display: grid; gap: 8px; align-content: start; min-width: 0; }
+    .case > h2 { margin: 0; font-size: 14px; }
+    .case > p { margin: 0; font-size: 13px; line-height: 1.6; color: #3c5a50; }
+    .island-box { position: relative; height: 120px; border-radius: 12px; background: #9fb0ab; overflow: hidden; }
+    .island-box--tall { height: 260px; }
+    .island-box .stage { position: relative; width: 100%; height: 100%; }
+    #settings { position: relative; width: 100%; height: 640px; border-radius: 12px; overflow: hidden; transform: translateZ(0); }
+    #settings > .settings-stage { height: 100%; }
+    /* The settings window inherits its text color from :root (base.css); this page colors body for its own notes. */
+    #settings { color: var(--color-page-text); font-family: var(--font-ui); }
+    #controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    #controls button { padding: 8px 14px; border: 1px solid #5c766c; border-radius: 8px; color: inherit; background: #e8efeb; cursor: pointer; }
+    #results { margin: 0; font-size: 13px; line-height: 1.8; white-space: pre-wrap; }
+    @media (max-width: 900px) { .row { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+  <main>
+    <h1>新版本提示</h1>
+    <p class="lead">模拟后台检查发现新版本 v0.3.4（当前 v0.3.3）。岛上有两处提示：收起条右侧的「↑」按钮和展开后设置按钮上的小圆点，点它们都打开设置的「关于」页。下面的设置窗口就是那一页：可以读更新说明、点「下载并安装」看进度，也可以跳过这个版本。三处用的是同一个更新状态：开始下载或跳过以后，岛上的提示随之消失。</p>
+    <div id="controls"></div>
+    <div class="row">
+      <section class="case"><h2>收起时</h2><p>收起条右侧多出「↑」按钮，带一个小点。悬停显示「发现新版本 v0.3.4，点击查看」。</p><div class="island-box" id="collapsed"></div></section>
+      <section class="case"><h2>展开时</h2><p>右上角的设置按钮带一个小点，悬停文字同上。</p><div class="island-box island-box--tall" id="expanded"></div></section>
+    </div>
+    <section class="case"><h2>设置 → 关于</h2><p>点上面两处提示打开的就是这一页。</p><div id="settings"></div></section>
+    <pre id="results" role="status">准备检查…</pre>
+  </main>
+  <script type="module" src="./update-reminder.tsx"></script>
+</html>

@@ -43,6 +43,7 @@ export const PAGES = [
   "agent-remote.html",
   "ssh-tunnel.html",
   "tucked-hover.html",
+  "update-reminder.html?test=1",
 ];
 
 const PAGE_TIMEOUT_MS = 120_000;
