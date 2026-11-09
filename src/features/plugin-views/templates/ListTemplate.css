@@ -214,3 +214,116 @@ button.plugin-list__main:hover .plugin-list__title {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/*
+ * List pages sit straight on the island like the Agent page (AgentSessionsPanel.css): no card,
+ * rows without boxes, told apart by size and brightness, only the hovered row lights up. The
+ * text takes the island's ink (stageStyle.ts sets --island-ink-rgb), so a light island gets
+ * dark text. The page frame itself is PluginViewPage's; this only undoes it for list pages.
+ */
+.plugin-view--list {
+  --list-ink: var(--island-ink-rgb, 241, 240, 246);
+  --text-1: rgba(var(--list-ink), 0.96);
+  --text-2: rgba(var(--list-ink), 0.68);
+  --text-3: rgba(var(--list-ink), 0.54);
+  /* Reaches 6px into the island's side padding, room for the hovered row's highlight. */
+  margin-inline: -6px;
+  padding: 2px 0 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.plugin-view--list .plugin-view__title {
+  padding: 0 6px;
+}
+
+.plugin-view--list .plugin-view__title > svg {
+  color: var(--text-3);
+}
+
+.plugin-view--list .plugin-list__search {
+  margin: 0 6px;
+  color: var(--text-3);
+  background: rgba(var(--list-ink), 0.07);
+}
+
+.plugin-view--list .plugin-list__error {
+  margin: 0 6px;
+}
+
+.plugin-view--list .plugin-list__scroll {
+  gap: var(--space-md);
+  padding-right: 0;
+}
+
+.plugin-view--list .plugin-list__group-title {
+  padding: 0 8px;
+  color: var(--text-3);
+}
+
+.plugin-view--list .plugin-list__item {
+  min-height: 44px;
+  padding: 4px 8px;
+  background: none;
+  transition: background 140ms ease;
+}
+
+.plugin-view--list .plugin-list__item:hover {
+  background: rgba(var(--list-ink), 0.08);
+}
+
+.plugin-view--list .plugin-list__main {
+  gap: 10px;
+}
+
+.plugin-view--list .plugin-list__title {
+  color: var(--text-1);
+  font-size: 13px;
+}
+
+.plugin-view--list .plugin-list__subtitle {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.plugin-view--list button.plugin-list__main:hover .plugin-list__title {
+  color: rgba(var(--list-ink), 1);
+}
+
+.plugin-view--list .plugin-list__icon,
+.plugin-view--list .plugin-list__link,
+.plugin-view--list .plugin-list__note {
+  color: var(--text-3);
+}
+
+/* The link mark shows on the hovered row only, as the Agent page's row buttons do. */
+.plugin-view--list .plugin-list__link {
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.plugin-view--list .plugin-list__item:hover .plugin-list__link,
+.plugin-view--list .plugin-list__main:focus-visible .plugin-list__link {
+  opacity: 1;
+}
+
+.plugin-view--list .plugin-list__action {
+  color: var(--text-2);
+}
+
+.plugin-view--list .plugin-list__action:hover {
+  color: var(--text-1);
+  background: rgba(var(--list-ink), 0.1);
+}
+
+.plugin-view--list .plugin-list__empty {
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-view--list .plugin-list__item,
+  .plugin-view--list .plugin-list__link {
+    transition: none;
+  }
+}

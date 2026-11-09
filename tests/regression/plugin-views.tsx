@@ -127,6 +127,13 @@ function check() {
   }
   const title = document.querySelector<HTMLElement>('[data-case="list-300"] .plugin-list__item:nth-of-type(2) .plugin-list__title');
   expect("long titles are cut with an ellipsis", title !== null && title.scrollWidth > title.clientWidth && getComputedStyle(title).textOverflow === "ellipsis");
+  // E16: list pages sit on the island like the Agent page; the other templates keep their card.
+  const listPage = document.querySelector<HTMLElement>('[data-case="list-520"] .plugin-view')!;
+  const row = document.querySelector<HTMLElement>('[data-case="list-520"] .plugin-list__item')!;
+  expect("a list page has no card of its own", getComputedStyle(listPage).backgroundImage === "none" && getComputedStyle(listPage).boxShadow === "none");
+  expect("list rows have no box until hovered", getComputedStyle(row).backgroundColor === "rgba(0, 0, 0, 0)");
+  const detailPage = document.querySelector<HTMLElement>('[data-case="detail-520"] .plugin-view')!;
+  expect("other templates keep their card", getComputedStyle(detailPage).backgroundImage !== "none");
   const output = document.getElementById("results");
   if (output) output.textContent = `${results.filter((line) => line.startsWith("FAIL")).length === 0 ? "ALL PASS" : "SOME FAILED"}\n${results.join("\n")}`;
 }
